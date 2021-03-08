@@ -1,0 +1,56 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+version: 2
+jobs:
+  test:
+    docker:
+      - image: circleci/golang:1.13
+    working_directory: /go/src/github.com/easterthebunny/spew-order
+    steps:
+      - checkout
+
+      # specify any bash command here prefixed with `run: `
+      - run: go get -v -t -d ./...
+      - run: go test -v ./...
+  deploy:
+    docker:
+      - image: google/cloud-sdk:alpine
+    working_directory: /go/src/github.com/easterthebunny/spew-order
+    steps:
+      - checkout
+      - run: echo $FunctionsServiceAccount > ./key.json
+      - run: gcloud config set project $ProjectID
+      - run: gcloud config list project
+      - run: gcloud auth activate-service-account --key-file=./key.json
+      - run: gcloud functions deploy order-api-$ENVIRONMENT-$LOCATION --entry-point PublishOrder --set-env-vars GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic" --runtime go113 --trigger-http --allow-unauthenticated
+workflows:
+  version: 2
+  test-release:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only: master
+      - deploy:
+          context:
+            - PROD
+          filters:
+            branches:
+              only: master
+          requires:
+            - test
+  test-ci:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only: ci
+      - deploy:
+          context:
+            - CI
+          filters:
+            branches:
+              only: ci
+          requires:
+            - test
