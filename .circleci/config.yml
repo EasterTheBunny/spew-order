@@ -31,13 +31,13 @@ workflows:
       - test:
           filters:
             branches:
-              only: master
+              only: main
       - deploy:
           context:
             - PROD
           filters:
             branches:
-              only: master
+              only: main
           requires:
             - test
   test-ci:
