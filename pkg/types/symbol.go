@@ -75,3 +75,14 @@ func (s *Symbol) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
+
+func (s Symbol) RoundingPlace() int32 {
+	switch s {
+	case SymbolBitcoin:
+		return 8
+	case SymbolEthereum:
+		return 18
+	default:
+		return 8
+	}
+}
