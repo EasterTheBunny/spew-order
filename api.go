@@ -53,10 +53,12 @@ func PublishOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if or.Quantity <= 0 {
-		http.Error(w, fmt.Sprintf("incorrect quantity: %f", or.Quantity), http.StatusBadRequest)
-		return
-	}
+	/*
+		if or.Quantity <= 0 {
+			http.Error(w, fmt.Sprintf("incorrect quantity: %f", or.Quantity), http.StatusBadRequest)
+			return
+		}
+	*/
 
 	b, err := json.Marshal(or)
 	if err != nil {

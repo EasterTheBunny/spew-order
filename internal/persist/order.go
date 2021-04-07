@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/easterthebunny/spew-order/internal/key"
 	"github.com/easterthebunny/spew-order/pkg/types"
-	"github.com/shopspring/decimal"
 )
 
 // SortSwitch is a magic number for swapping the key sort of buy orders;
@@ -24,32 +22,76 @@ const (
 
 // ExecuteOrInsertOrder ...
 func (gs *GoogleStorage) ExecuteOrInsertOrder(order types.Order) error {
-	var err error
-	s := NewStoredOrder(order)
+	for {
+		qattrs, err := gs.newHeadBatch(order)
+		if err != nil {
+			return err
+		}
 
-	// process the order based on the order type
-	switch order.Type {
-	case types.OrderTypeMarket:
-		s, err = gs.marketOrder(s)
-	case types.OrderTypeLimit:
-		if ok, err := gs.executable(s); ok && err != nil {
-			s, err = gs.limitOrder(s)
+		for _, x := range qattrs {
+
+			book, err := gs.readOrder(x.Name)
 			if err != nil {
 				return err
 			}
+
+			bookOrder := &book.Order
+			tr, o := bookOrder.Resolve(order)
+
+			// a transaction indicates that order pairing occurred
+			// otherwise save the request order to the book
+			if tr != nil {
+				// since a transaction exists, save it
+				err = gs.pairOrders(tr)
+				if err != nil {
+					return err
+				}
+
+				// if an order was returned by the resolve process
+				// determine whether it was the book order or the
+				// request order
+				if o != nil {
+					// if the returned order id matches the book order id
+					// the order should be saved back to the book and the
+					// matching process halted
+					if o.ID == bookOrder.ID {
+						return gs.saveOrder(NewBookOrder(*o))
+					}
+
+					// if the ids don't match, the request order was only
+					// partially filled and needs to continue through the
+					// book
+					if o.ID != bookOrder.ID {
+						order = *o
+						if err := gs.store.Delete(x.Name); err != nil {
+							return err
+						}
+						continue
+					}
+				}
+
+				// in the case that there is no order returned from resolve
+				// delete the book order because both orders were closed
+				if o == nil {
+					return gs.store.Delete(x.Name)
+				}
+
+				return nil
+			} else {
+				return gs.saveOrder(NewBookOrder(*o))
+			}
 		}
-	default:
-		return fmt.Errorf("unexecutable order type: %d", order.Type)
 	}
-
-	if err != nil {
-		return err
-	}
-
-	return gs.saveOrder(s)
 }
 
-func (gs *GoogleStorage) saveOrder(order StoredOrder) error {
+func (gs *GoogleStorage) newHeadBatch(order types.Order) ([]*storage.ObjectAttrs, error) {
+	s := NewBookOrder(order)
+
+	query := getStorageQuery(actionKey(s.Subspace(), s.ActionOrder.Action).String())
+	return gs.store.RangeGet(query, 10)
+}
+
+func (gs *GoogleStorage) saveOrder(order BookOrder) error {
 
 	// no match was found. proceed to insert
 	data, err := json.Marshal(order)
@@ -63,151 +105,31 @@ func (gs *GoogleStorage) saveOrder(order StoredOrder) error {
 	return gs.store.Set(key, data, attrs)
 }
 
-func (gs *GoogleStorage) executable(order StoredOrder) (bool, error) {
-
-	// check the head item in the opposite action book:
-	// if the order is a BUY, check the SELL action book
-	query := getStorageQuery(actionKey(order.Subspace(), order.ActionOrder.Action).String())
-	qattrs, err := gs.store.RangeGet(query, 1)
+func (gs *GoogleStorage) readOrder(key string) (BookOrder, error) {
+	var so BookOrder
+	data, err := gs.store.Get(key)
 	if err != nil {
-		return false, err
+		return so, err
 	}
 
-	// if the incoming order is satisfied by the head order return true
-	if len(qattrs) > 0 && strings.Compare(order.ActionKey().String(), qattrs[0].Name) > 0 {
-		return true, nil
-	}
-
-	return false, nil
+	err = json.Unmarshal(data, &so)
+	return so, err
 }
 
-func (gs *GoogleStorage) limitOrder(order StoredOrder) (StoredOrder, error) {
+func (gs *GoogleStorage) pairOrders(tr *types.Transaction) error {
 
-	// a market order starts at the head of the sorted order book and
-	// applies for each stored order until the market order is satisfied
+	// TODO: save the transaction
+	//fmt.Printf("order 1: %s %s\n", existing.Price, existing.Quantity)
+	//fmt.Printf("order 2: %s %s\n", incoming.Price, incoming.Quantity)
 
 	/*
-		query := getStorageQuery(actionKey(order.Subspace(), order.ActionOrder.Action).String())
-		qattrs, err := gs.store.RangeGet(query, 10)
-		if err != nil {
-			return StoredOrder{}, err
-		}
-
-		for _, x := range qattrs {
-			y := x.Metadata
-			priceStr, ok := y[priceMetaKey]
-			qtyStr, ok := y[quantityMetaKey]
-			if !ok {
-				return StoredOrder{}, fmt.Errorf("missing metadata for order")
-			}
-
-			price, err := strconv.ParseFloat(priceStr, 64)
-			if err != nil {
-				return StoredOrder{}, err
-			}
-
-			// secondary check for price match
-			// when searching through SELL orders, the incoming order price
-			// MUST be larger than the available SELL
-			if order.Order.Action == types.ActionTypeBuy && order.Order.Price < price {
-				return StoredOrder{}, fmt.Errorf("BUY orders on the SELL book MUST have a larger price than available book orders")
-			}
-
-			if order.Order.Action == types.ActionTypeSell && order.Order.Price > price {
-				return StoredOrder{}, fmt.Errorf("SELL orders on the BUY book MUST have a lower price than available book orders")
-			}
-
-			qty, err := strconv.ParseFloat(qtyStr, 64)
-			if err != nil {
-				return StoredOrder{}, err
-			}
-		}
-
-		attrs, err := gs.store.RangeGet(query, 2)
+		s := NewStoredOrder(existing)
+		err := gs.store.Delete(s.Key().String())
 		if err != nil {
 			return err
 		}
 	*/
-
-	return order, nil
-}
-
-// marketOrder ...
-func (gs *GoogleStorage) marketOrder(order StoredOrder) (StoredOrder, error) {
-
-	// a market order starts at the head of the sorted order book and
-	// applies each stored order until the market order quantity is satisfied
-	in := &order
-
-	exitCondition := 0
-	query := getStorageQuery(actionKey(in.Subspace(), in.ActionOrder.Action).String())
-	for exitCondition <= 10 {
-		exitCondition += 10
-		qattrs, err := gs.store.RangeGet(query, 10)
-		if err != nil {
-			return *in, err
-		}
-
-		if len(qattrs) == 0 {
-			return *in, fmt.Errorf("no available items for trade")
-		}
-
-		for _, x := range qattrs {
-			st, err := gs.store.Get(x.Name)
-			if err != nil {
-				return *in, err
-			}
-
-			var o types.Order
-			err = json.Unmarshal(st, &o)
-			if err != nil {
-				return *in, err
-			}
-
-			if o.Action == in.Order.Action {
-				return *in, fmt.Errorf("cannot complete order. matching action types")
-			}
-
-			// in the case that the stored order has a larger quantity than the order coming
-			// in, reduce the quantity of the stored order by the amount of the incoming order
-			// and save the changes
-			if o.Quantity.GreaterThan(in.Order.Quantity) {
-				err = gs.pairOrders(o, in.Order)
-				if err != nil {
-					return *in, err
-				}
-
-				o.Quantity = o.Quantity.Sub(in.Order.Quantity)
-				// return the results of the existing order so that it can be stored
-				return NewStoredOrder(o), nil
-			}
-
-			err = gs.pairOrders(o, in.Order)
-			if err != nil {
-				return *in, err
-			}
-
-			in.Order.Quantity = in.Order.Quantity.Sub(o.Quantity)
-
-			if in.Order.Quantity.Equal(decimal.NewFromInt(0)) {
-				return *in, err
-			}
-		}
-	}
-
-	return *in, nil
-}
-
-func (gs *GoogleStorage) pairOrders(existing, incoming types.Order) error {
-
-	//fmt.Printf("order 1: %s %s\n", existing.Price, existing.Quantity)
-	//fmt.Printf("order 2: %s %s\n", incoming.Price, incoming.Quantity)
-
-	s := NewStoredOrder(existing)
-	err := gs.store.Delete(s.Key().String())
-	if err != nil {
-		return err
-	}
+	//fmt.Printf("pair\n%v\n", *tr)
 
 	return nil
 }
@@ -223,13 +145,11 @@ func getStorageQuery(offset string) *storage.Query {
 	return query
 }
 
-// NewStoredOrder returns a new StoredOrder where the meta data for range queries
+// NewBookOrder returns a new BookOrder where the meta data for range queries
 // includes the order Quantity and Timestamp
-func NewStoredOrder(order types.Order) StoredOrder {
+func NewBookOrder(order types.Order) BookOrder {
 	meta := map[string]string{
-		priceMetaKey:    order.Price.String(),
-		quantityMetaKey: order.Quantity.String(),
-		timeMetaKey:     fmt.Sprintf("%d", order.Timestamp.Unix())}
+		timeMetaKey: fmt.Sprintf("%d", order.Timestamp.Unix())}
 
 	// the action order will be used to search through the opposite sorted list
 	m := order
@@ -239,33 +159,33 @@ func NewStoredOrder(order types.Order) StoredOrder {
 		m.Action = types.ActionTypeBuy
 	}
 
-	return StoredOrder{
+	return BookOrder{
 		Order:       order,
 		ActionOrder: m,
 		MetaData:    meta}
 }
 
-// StoredOrder is a struct for holding an order in storage
-type StoredOrder struct {
+// BookOrder is a struct for holding an order in storage
+type BookOrder struct {
 	Order       types.Order
 	ActionOrder types.Order
 	MetaData    map[string]string
 }
 
 // MarshalJSON ...
-func (o StoredOrder) MarshalJSON() ([]byte, error) {
+func (o BookOrder) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.Order)
 }
 
 // UnmarshalJSON ...
-func (o *StoredOrder) UnmarshalJSON(b []byte) error {
+func (o *BookOrder) UnmarshalJSON(b []byte) error {
 	var order types.Order
 	err := json.Unmarshal(b, &order)
 	if err != nil {
 		return err
 	}
 
-	so := NewStoredOrder(order)
+	so := NewBookOrder(order)
 	o.Order = so.Order
 	o.ActionOrder = so.ActionOrder
 	o.MetaData = so.MetaData
@@ -276,30 +196,24 @@ func (o *StoredOrder) UnmarshalJSON(b []byte) error {
 // Key generates a key that will sort ASC lexigraphically, but remain in type
 // sorted order: buys are sorted largest/oldest to smallest/newest and sells
 // are sorted smallest/oldest to largest/newest
-func (o StoredOrder) Key() key.Key {
-	pr := o.Order.Price
-	if o.Order.Action == types.ActionTypeBuy {
-		pr = decimal.NewFromInt(SortSwitch).Sub(o.Order.Price)
-	}
-	return actionSubspace(o.Subspace(), o.Order.Action).Pack(key.Tuple{pr.StringFixedBank(o.Order.Base.RoundingPlace()), o.Order.Timestamp.Unix()})
+func (o BookOrder) Key() key.Key {
+	t := o.Order.Type.KeyTuple(o.Order.Action)
+	t = append(t, key.Tuple{o.Order.Timestamp.Unix()}...)
+	return actionSubspace(o.Subspace(), o.Order.Action).Pack(t)
 }
 
 // ActionKey generates a key that will find a sorted match in the opposite order book
-func (o StoredOrder) ActionKey() key.Key {
-	pr := o.ActionOrder.Price
-	if o.ActionOrder.Action == types.ActionTypeBuy {
-		pr = decimal.NewFromInt(SortSwitch).Sub(o.ActionOrder.Price)
-	}
-	return actionSubspace(o.Subspace(), o.ActionOrder.Action).Pack(key.Tuple{pr.StringFixedBank(o.Order.Base.RoundingPlace())})
+func (o BookOrder) ActionKey() key.Key {
+	return actionSubspace(o.Subspace(), o.ActionOrder.Action).Pack(o.Order.Type.KeyTuple(o.Order.Action))
 }
 
 // HeadKey returns a key that can be used to range query a lexigraphically sorted set
-func (o StoredOrder) HeadKey() key.Key {
+func (o BookOrder) HeadKey() key.Key {
 	return o.Subspace().Pack(key.Tuple{uint(o.Order.Action)})
 }
 
 // Subspace ...
-func (o StoredOrder) Subspace() key.Subspace {
+func (o BookOrder) Subspace() key.Subspace {
 	return gsRoot.Sub(uint(o.Order.Base)).Sub(uint(o.Order.Target))
 }
 

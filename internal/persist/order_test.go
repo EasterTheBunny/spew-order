@@ -1,101 +1,117 @@
 package persist
 
 import (
-	"sort"
 	"testing"
 	"time"
 
 	"github.com/easterthebunny/spew-order/pkg/types"
+	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
+
+func newLimitBookOrder(t int64, price, quantity float64, action types.ActionType) types.Order {
+	return types.Order{
+		ID:        uuid.NewV4(),
+		Owner:     uuid.NewV4(),
+		Timestamp: time.Unix(t, 0),
+		OrderRequest: types.OrderRequest{
+			Base:   types.SymbolBitcoin,
+			Target: types.SymbolEthereum,
+			Action: action,
+			Type: &types.LimitOrderType{
+				Base:     types.SymbolEthereum,
+				Price:    decimal.NewFromFloat(price),
+				Quantity: decimal.NewFromFloat(quantity),
+			},
+		},
+	}
+}
+
+func newMarketBookOrder(t int64, quantity float64, action types.ActionType) types.Order {
+	return types.Order{
+		ID:        uuid.NewV4(),
+		Owner:     uuid.NewV4(),
+		Timestamp: time.Unix(t, 0),
+		OrderRequest: types.OrderRequest{
+			Base:   types.SymbolBitcoin,
+			Target: types.SymbolEthereum,
+			Action: action,
+			Type: &types.MarketOrderType{
+				Base:     types.SymbolEthereum,
+				Quantity: decimal.NewFromFloat(quantity),
+			},
+		},
+	}
+}
+
+func newOrderBook(times []int64, amounts [][]float64, action types.ActionType) []types.Order {
+	book := make([]types.Order, len(times))
+
+	for i, t := range times {
+		book[i] = newLimitBookOrder(t, amounts[i][0], amounts[i][1], action)
+	}
+
+	return book
+}
 
 func TestExecuteOrInsertOrder(t *testing.T) {
 	st := NewGoogleStorageMock()
 	s := NewGoogleStorage(st)
 
 	// setup the data set for the later match
-	base := newOrderList(types.ActionTypeBuy, types.OrderTypeLimit)
-	base = append(base, newOrderList(types.ActionTypeSell, types.OrderTypeLimit)...)
+	base := newOrderBook(times, buyPrices, types.ActionTypeBuy)
+	base = append(base, newOrderBook(times, sellPrices, types.ActionTypeSell)...)
 	for _, b := range base {
-		err := s.saveOrder(NewStoredOrder(b))
+		err := s.saveOrder(NewBookOrder(b))
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 	}
 
-	t.Run("MatchMarketOrderSellToBuy", func(t *testing.T) {
-		// the expectation of this new order is to match two items from the order book
-		// and to remove one
-		expected := len(base) - 1
+	expected := len(base)
 
-		order := makeOrder(0, 1.2, 12700, types.ActionTypeSell, types.OrderTypeMarket)
+	t.Run("SmallMarketOrder", func(t *testing.T) {
+		// the expectation of this new order is to do a partial match of one item from the order book
+
+		order := newMarketBookOrder(12700, 0.01, types.ActionTypeSell)
 		err := s.ExecuteOrInsertOrder(order)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
 	})
 
-	t.Run("MatchMarketOrderBuyToSell", func(t *testing.T) {
+	t.Run("LargeMarketOrder_3x2", func(t *testing.T) {
 		// the expectation of this new order is to match three items from the order book
 		// and to remove two
-		expected := len(base) - 3
+		expected = expected - 2
 
-		order := makeOrder(0, 1.2, 12700, types.ActionTypeBuy, types.OrderTypeMarket)
+		order := newMarketBookOrder(12700, 1.2, types.ActionTypeBuy)
 		s.ExecuteOrInsertOrder(order)
 
 		assert.Equal(t, expected, st.Len())
-
 	})
 
 	t.Run("InsertLimitSell", func(t *testing.T) {
-		expected := len(base) - 2
+		expected = expected + 1
 
-		order := makeOrder(0.47, 1.2, 12700, types.ActionTypeSell, types.OrderTypeLimit)
+		order := newLimitBookOrder(12700, 0.47, 1.2, types.ActionTypeSell)
 		s.ExecuteOrInsertOrder(order)
 
 		assert.Equal(t, expected, st.Len())
-
 	})
 
 	t.Run("InsertLimitBuy", func(t *testing.T) {
-		expected := len(base) - 1
+		expected = expected + 1
 
-		order := makeOrder(0.33, 1.2, 12700, types.ActionTypeBuy, types.OrderTypeLimit)
+		order := newLimitBookOrder(12700, 0.33, 1.2, types.ActionTypeBuy)
 		s.ExecuteOrInsertOrder(order)
 
 		assert.Equal(t, expected, st.Len())
-
 	})
 }
 
-func TestMarketOrder(t *testing.T) {
-	st := NewGoogleStorageMock()
-	s := NewGoogleStorage(st)
-
-	// setup the data set for the later match
-	base := newOrderList(types.ActionTypeBuy, types.OrderTypeLimit)
-	base = append(base, newOrderList(types.ActionTypeSell, types.OrderTypeLimit)...)
-	for _, b := range base {
-		err := s.saveOrder(NewStoredOrder(b))
-		if err != nil {
-			t.Fatalf("error: %s", err)
-		}
-	}
-
-	order := makeOrder(0.33, 1.2, 12700, types.ActionTypeSell, types.OrderTypeMarket)
-	o, err := s.marketOrder(NewStoredOrder(order))
-	if err != nil {
-		t.Fatalf("error: %s", err)
-	}
-
-	// expect that 2 pairings were created
-	assert.Equal(t, 10, st.Len())
-
-	actual, _ := o.Order.Quantity.Float64()
-	assert.Equal(t, 3.22, actual)
-}
-
+/*
 func TestKeyOrder_Buy(t *testing.T) {
 
 	// buy orders should be listed highest to lowest
@@ -171,6 +187,7 @@ func TestKeyOrder_Sell(t *testing.T) {
 		assert.Equal(t, s, expected[i])
 	}
 }
+*/
 
 var buyPrices = [][]float64{
 	{0.38, 1.02},
@@ -197,34 +214,4 @@ var times = []int64{
 	12334,
 	12345,
 	12346,
-}
-
-func makeOrder(price, quantity float64, m int64, a types.ActionType, t types.OrderType) types.Order {
-	return types.Order{
-		OrderRequest: types.OrderRequest{
-			Base:     types.SymbolBitcoin,
-			Target:   types.SymbolEthereum,
-			Price:    decimal.NewFromFloat(price),
-			Quantity: decimal.NewFromFloat(quantity),
-			Action:   a,
-			Type:     t},
-		Timestamp: time.Unix(m, 0),
-	}
-}
-
-func newOrderList(a types.ActionType, t types.OrderType) []types.Order {
-	var l []types.Order
-	var prices [][]float64
-
-	if a == types.ActionTypeBuy {
-		prices = buyPrices
-	} else {
-		prices = sellPrices
-	}
-
-	for i, p := range prices {
-		l = append(l, makeOrder(p[0], p[1], times[i], a, t))
-	}
-
-	return l
 }
