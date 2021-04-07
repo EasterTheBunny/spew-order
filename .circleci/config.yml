@@ -24,7 +24,7 @@ jobs:
       - run: gcloud config list project
       - run: gcloud auth activate-service-account --key-file=./key.json
       - run: gcloud functions deploy order-api-$ENVIRONMENT-$LOCATION --entry-point PublishOrder --set-env-vars GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic" --runtime go113 --trigger-http --allow-unauthenticated
-      - run: gcloud functions deploy order-book-$ENVIRONMENT-$LOCATION --entry-point OrderPubSub --trigger-topic TestTopic --runtime go113
+      - run: gcloud functions deploy order-book-$ENVIRONMENT-$LOCATION --entry-point OrderPubSub --set-env-vars GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic" --trigger-topic TestTopic --runtime go113
 workflows:
   version: 2
   test-release:
