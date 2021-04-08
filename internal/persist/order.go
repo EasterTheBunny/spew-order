@@ -129,7 +129,7 @@ func (gs *GoogleStorage) pairOrders(tr *types.Transaction) error {
 			return err
 		}
 	*/
-	//fmt.Printf("pair\n%v\n", *tr)
+	log.Printf("%v", tr)
 
 	return nil
 }

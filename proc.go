@@ -2,7 +2,8 @@ package contexttip
 
 import (
 	"context"
-	"log"
+
+	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
 // PubSubMessage is the payload of a Pub/Sub event.
@@ -14,7 +15,14 @@ type PubSubMessage struct {
 
 // OrderPubSub consumes a Pub/Sub message.
 func OrderPubSub(ctx context.Context, m PubSubMessage) error {
-	data := string(m.Data) // Automatically decoded from base64.
-	log.Printf("%s", data)
+	order := &types.Order{}
+	if err := order.UnmarshalJSON(m.Data); err != nil {
+		return err
+	}
+
+	if err := GS.ExecuteOrInsertOrder(*order); err != nil {
+		return err
+	}
+
 	return nil
 }

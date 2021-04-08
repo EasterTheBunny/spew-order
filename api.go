@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/storage"
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -22,8 +24,11 @@ const (
 
 var (
 	// client is a global Pub/Sub client, initialized once per instance.
-	client     *pubsub.Client
-	orderTopic = getEnvVar(envOrderTopic)
+	client        *pubsub.Client
+	storageClient *storage.Client
+	orderTopic    = getEnvVar(envOrderTopic)
+
+	GS *persist.GoogleStorage
 )
 
 func init() {
@@ -39,6 +44,13 @@ func init() {
 	if err != nil {
 		log.Fatalf("pubsub.NewClient: %v", err)
 	}
+
+	storageClient, err := storage.NewClient(context.Background())
+	if err != nil {
+		log.Fatalf("storage.NewClient: %v", err)
+	}
+
+	GS = persist.NewGoogleStorage(persist.NewGoogleStorageAPI(storageClient))
 }
 
 // PublishOrder publishes a message to Pub/Sub. PublishMessage only works
