@@ -65,6 +65,10 @@ func init() {
 
 	// get the primary storage bucket
 	persist.StorageBucket = fmt.Sprintf("%s-%s-%s-%s", conf...)
+
+	// register concrete types for the gob encoder/decoder
+	gob.Register(types.LimitOrderType{})
+	gob.Register(types.MarketOrderType{})
 }
 
 // PublishOrder publishes a message to Pub/Sub. PublishMessage only works
