@@ -16,6 +16,7 @@ import (
 
 var (
 	gsRoot = key.FromBytes([]byte{0xFE})
+	gsBook = gsRoot.Sub("book")
 )
 
 var (

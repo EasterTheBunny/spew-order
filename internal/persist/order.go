@@ -82,6 +82,9 @@ func (gs *GoogleStorage) ExecuteOrInsertOrder(order types.Order) error {
 				return gs.saveOrder(NewBookOrder(*o))
 			}
 		}
+
+		// if the order book is empty, insert the order
+		return gs.saveOrder(NewBookOrder(order))
 	}
 }
 
@@ -215,7 +218,7 @@ func (o BookOrder) HeadKey() key.Key {
 
 // Subspace ...
 func (o BookOrder) Subspace() key.Subspace {
-	return gsRoot.Sub(uint(o.Order.Base)).Sub(uint(o.Order.Target))
+	return gsBook.Sub(uint(o.Order.Base)).Sub(uint(o.Order.Target))
 }
 
 func actionKey(sub key.Subspace, action types.ActionType) key.Key {

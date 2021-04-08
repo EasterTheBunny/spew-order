@@ -55,6 +55,17 @@ func newOrderBook(times []int64, amounts [][]float64, action types.ActionType) [
 	return book
 }
 
+func TestExecuteOrInsertOrder_EmptyBook(t *testing.T) {
+	st := NewGoogleStorageMock()
+	s := NewGoogleStorage(st)
+
+	order := newMarketBookOrder(12700, 0.01, types.ActionTypeSell)
+	err := s.ExecuteOrInsertOrder(order)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, st.Len())
+}
+
 func TestExecuteOrInsertOrder(t *testing.T) {
 	st := NewGoogleStorageMock()
 	s := NewGoogleStorage(st)
