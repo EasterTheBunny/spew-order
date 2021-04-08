@@ -88,17 +88,6 @@ func PublishOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 
-	/*
-		var buf bytes.Buffer
-		enc := gob.NewEncoder(&buf)
-		err := enc.Encode(or)
-		if err != nil {
-			log.Printf("gob.Encode: %v", err)
-			http.Error(w, "Error encoding request", http.StatusBadRequest)
-			return
-		}
-	*/
-
 	b, err := json.Marshal(or)
 	if err != nil {
 		log.Printf("json.Marshal: %v", err)
