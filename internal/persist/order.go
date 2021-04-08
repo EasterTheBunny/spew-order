@@ -3,6 +3,7 @@ package persist
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 
 	"cloud.google.com/go/storage"

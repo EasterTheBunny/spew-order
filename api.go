@@ -20,6 +20,9 @@ import (
 const (
 	envProjectID  = "GOOGLE_CLOUD_PROJECT"
 	envOrderTopic = "ORDER_TOPIC"
+	envAppName    = "APP_NAME"       // application name used as prefix for named resources
+	envRuntimeEnv = "DEPLOYMENT_ENV" // deployment environment; CI, QA, PROD
+	envLocation   = "LOCATION"       // resources location for this function instanc
 )
 
 var (
@@ -51,6 +54,15 @@ func init() {
 	}
 
 	GS = persist.NewGoogleStorage(persist.NewGoogleStorageAPI(storageClient))
+
+	conf := []interface{}{
+		getEnvVar(envAppName),
+		persist.StorageBucket,
+		strings.ToLower(getEnvVar(envRuntimeEnv)),
+		strings.ToLower(getEnvVar(envLocation))}
+
+	// get the primary storage bucket
+	persist.StorageBucket = fmt.Sprintf("%s-%s-%s-%s", conf...)
 }
 
 // PublishOrder publishes a message to Pub/Sub. PublishMessage only works
