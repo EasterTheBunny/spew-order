@@ -3,9 +3,7 @@
 package contexttip
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -67,8 +65,8 @@ func init() {
 	persist.StorageBucket = fmt.Sprintf("%s-%s-%s-%s", conf...)
 
 	// register concrete types for the gob encoder/decoder
-	gob.Register(types.LimitOrderType{})
-	gob.Register(types.MarketOrderType{})
+	//gob.Register(types.LimitOrderType{})
+	//gob.Register(types.MarketOrderType{})
 }
 
 // PublishOrder publishes a message to Pub/Sub. PublishMessage only works
@@ -90,26 +88,26 @@ func PublishOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(or)
-	if err != nil {
-		log.Printf("gob.Encode: %v", err)
-		http.Error(w, "Error encoding request", http.StatusBadRequest)
-		return
-	}
-
 	/*
-		b, err := json.Marshal(or)
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err := enc.Encode(or)
 		if err != nil {
-			log.Printf("json.Marshal: %v", err)
+			log.Printf("gob.Encode: %v", err)
 			http.Error(w, "Error encoding request", http.StatusBadRequest)
 			return
 		}
 	*/
 
+	b, err := json.Marshal(or)
+	if err != nil {
+		log.Printf("json.Marshal: %v", err)
+		http.Error(w, "Error encoding request", http.StatusBadRequest)
+		return
+	}
+
 	m := &pubsub.Message{
-		Data: buf.Bytes(),
+		Data: b,
 	}
 
 	// Publish and Get use r.Context() because they are only needed for this

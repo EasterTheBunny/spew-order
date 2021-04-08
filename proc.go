@@ -1,9 +1,7 @@
 package contexttip
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"log"
 
 	"github.com/easterthebunny/spew-order/pkg/types"
@@ -18,21 +16,22 @@ type PubSubMessage struct {
 
 // OrderPubSub consumes a Pub/Sub message.
 func OrderPubSub(ctx context.Context, m PubSubMessage) error {
-	buf := bytes.NewBuffer(m.Data)
 
-	dec := gob.NewDecoder(buf)
-	var req types.OrderRequest
-	err := dec.Decode(&req)
-	if err != nil {
-		return err
-	}
-
+	req := &types.OrderRequest{}
 	/*
-		if err := order.UnmarshalJSON(m.Data); err != nil {
+		buf := bytes.NewBuffer(m.Data)
+
+		dec := gob.NewDecoder(buf)
+		err := dec.Decode(&req)
+		if err != nil {
 			return err
 		}
 	*/
-	order := types.NewOrderFromRequest(req)
+
+	if err := req.UnmarshalJSON(m.Data); err != nil {
+		return err
+	}
+	order := types.NewOrderFromRequest(*req)
 
 	log.Printf("%s", order.ID)
 
