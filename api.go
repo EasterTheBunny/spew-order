@@ -3,7 +3,9 @@
 package contexttip
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -84,15 +86,26 @@ func PublishOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 
-	b, err := json.Marshal(or)
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(or)
 	if err != nil {
-		log.Printf("json.Marshal: %v", err)
+		log.Printf("gob.Encode: %v", err)
 		http.Error(w, "Error encoding request", http.StatusBadRequest)
 		return
 	}
 
+	/*
+		b, err := json.Marshal(or)
+		if err != nil {
+			log.Printf("json.Marshal: %v", err)
+			http.Error(w, "Error encoding request", http.StatusBadRequest)
+			return
+		}
+	*/
+
 	m := &pubsub.Message{
-		Data: b,
+		Data: buf.Bytes(),
 	}
 
 	// Publish and Get use r.Context() because they are only needed for this
