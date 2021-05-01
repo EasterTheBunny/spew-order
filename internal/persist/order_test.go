@@ -74,7 +74,7 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 	base := newOrderBook(times, buyPrices, types.ActionTypeBuy)
 	base = append(base, newOrderBook(times, sellPrices, types.ActionTypeSell)...)
 	for _, b := range base {
-		err := s.saveOrder(NewBookOrder(b))
+		err := s.saveOrder(types.NewBookOrder(b))
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
@@ -121,84 +121,6 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		assert.Equal(t, expected, st.Len())
 	})
 }
-
-/*
-func TestKeyOrder_Buy(t *testing.T) {
-
-	// buy orders should be listed highest to lowest
-	testOrders := newOrderList(types.ActionTypeBuy, types.OrderTypeLimit)
-	sort.Slice(testOrders, func(i, j int) bool {
-		if testOrders[i].Price.GreaterThan(testOrders[j].Price) {
-			return true
-		}
-
-		if testOrders[i].Price.Equal(testOrders[j].Price) {
-			if testOrders[i].Timestamp.Unix() < testOrders[j].Timestamp.Unix() {
-				return true
-			}
-		}
-
-		return false
-	})
-
-	expected := make([]string, len(testOrders))
-
-	for i, o := range testOrders {
-		s := StoredOrder{
-			Order: o,
-		}
-		expected[i] = s.Key().String()
-	}
-
-	result := make([]string, len(expected))
-	copy(result, expected)
-
-	sort.Strings(result)
-
-	for i, s := range result {
-		if s != expected[i] {
-			assert.Equal(t, s, expected[i])
-		}
-	}
-}
-
-func TestKeyOrder_Sell(t *testing.T) {
-
-	// sell orders should be listed lowest to highest
-	testOrders := newOrderList(types.ActionTypeSell, types.OrderTypeLimit)
-	sort.Slice(testOrders, func(i, j int) bool {
-		if testOrders[i].Price.LessThan(testOrders[j].Price) {
-			return true
-		}
-
-		if testOrders[i].Price.Equal(testOrders[j].Price) {
-			if testOrders[i].Timestamp.Unix() < testOrders[j].Timestamp.Unix() {
-				return true
-			}
-		}
-
-		return false
-	})
-
-	expected := make([]string, len(testOrders))
-
-	for i, o := range testOrders {
-		s := StoredOrder{
-			Order: o,
-		}
-		expected[i] = s.Key().String()
-	}
-
-	result := make([]string, len(expected))
-	copy(result, expected)
-
-	sort.Strings(result)
-
-	for i, s := range result {
-		assert.Equal(t, s, expected[i])
-	}
-}
-*/
 
 var buyPrices = [][]float64{
 	{0.38, 1.02},

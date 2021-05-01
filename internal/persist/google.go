@@ -14,14 +14,31 @@ import (
 	"cloud.google.com/go/storage"
 )
 
+const (
+	bookSub int = iota
+	accountSub
+	symbolsSub
+	balanceSub
+	holdSub
+	postSub
+)
+
+/*
+	/book/...
+	/authz/{authid}
+*/
+
 var (
-	gsRoot = key.FromBytes([]byte{0xFE})
-	gsBook = gsRoot.Sub("book")
+	gsRoot    = key.FromBytes([]byte{0xFE})
+	gsBook    = gsRoot.Sub(bookSub)
+	gsAccount = gsRoot.Sub(accountSub)
 )
 
 var (
 	// ErrStoreConnectionError ...
 	ErrStoreConnectionError = errors.New("connection issue to data store")
+	// ErrAuthzNotFound ...
+	ErrAuthzNotFound = errors.New("authorization not found")
 )
 
 // IGoogleStorage ...

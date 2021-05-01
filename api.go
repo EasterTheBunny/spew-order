@@ -3,7 +3,6 @@
 package contexttip
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,9 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"cloud.google.com/go/pubsub"
-	"cloud.google.com/go/storage"
-	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/pkg/book"
+	"github.com/easterthebunny/spew-order/pkg/queue"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -27,42 +25,24 @@ const (
 
 var (
 	// client is a global Pub/Sub client, initialized once per instance.
-	client        *pubsub.Client
-	storageClient *storage.Client
-	orderTopic    = getEnvVar(envOrderTopic)
+	orderTopic = getEnvVar(envOrderTopic)
 
-	GS *persist.GoogleStorage
+	GS book.OrderBook
+	GQ queue.OrderQueue
 )
 
 func init() {
 	// GOOGLE_CLOUD_PROJECT is a user-set environment variable.
 	var projectID = getEnvVar(envProjectID)
 
-	// err is pre-declared to avoid shadowing client.
-	var err error
-
-	// client is initialized with context.Background() because it should
-	// persist between function invocations.
-	client, err = pubsub.NewClient(context.Background(), projectID)
-	if err != nil {
-		log.Fatalf("pubsub.NewClient: %v", err)
-	}
-
-	storageClient, err := storage.NewClient(context.Background())
-	if err != nil {
-		log.Fatalf("storage.NewClient: %v", err)
-	}
-
-	GS = persist.NewGoogleStorage(persist.NewGoogleStorageAPI(storageClient))
-
 	conf := []interface{}{
 		getEnvVar(envAppName),
-		persist.StorageBucket,
+		"book",
 		strings.ToLower(getEnvVar(envRuntimeEnv)),
 		strings.ToLower(getEnvVar(envLocation))}
 
-	// get the primary storage bucket
-	persist.StorageBucket = fmt.Sprintf("%s-%s-%s-%s", conf...)
+	GS = book.NewGoogleOrderBook(fmt.Sprintf("%s-%s-%s-%s", conf...))
+	GQ = queue.NewGoogleOrderQueue(projectID)
 
 	// register concrete types for the gob encoder/decoder
 	//gob.Register(types.LimitOrderType{})
@@ -72,7 +52,6 @@ func init() {
 // PublishOrder publishes a message to Pub/Sub. PublishMessage only works
 // with topics that already exist.
 func PublishOrder(w http.ResponseWriter, r *http.Request) {
-	// Parse the request body to get the topic name and message.
 	var or types.OrderRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&or); err != nil {
@@ -81,28 +60,7 @@ func PublishOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		if or.Quantity <= 0 {
-			http.Error(w, fmt.Sprintf("incorrect quantity: %f", or.Quantity), http.StatusBadRequest)
-			return
-		}
-	*/
-
-	b, err := json.Marshal(or)
-	if err != nil {
-		log.Printf("json.Marshal: %v", err)
-		http.Error(w, "Error encoding request", http.StatusBadRequest)
-		return
-	}
-
-	m := &pubsub.Message{
-		Data: b,
-	}
-
-	// Publish and Get use r.Context() because they are only needed for this
-	// function invocation. If this were a background function, they would use
-	// the ctx passed as an argument.
-	id, err := client.Topic(orderTopic).Publish(r.Context(), m).Get(r.Context())
+	id, err := GQ.PublishOrderRequest(r.Context(), or)
 	if err != nil {
 		log.Printf("topic(%s).Publish.Get: %v", orderTopic, err)
 		http.Error(w, "Error publishing message", http.StatusInternalServerError)
