@@ -1,13 +1,12 @@
-package persist
+package account
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math"
 
-	"cloud.google.com/go/storage"
 	"github.com/easterthebunny/spew-order/internal/key"
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -15,14 +14,18 @@ import (
 // does not work for math.MaxInt64 and could pose a problem for orders with
 // a price larger than this current value
 const SortSwitch = math.MaxInt32
-const (
-	priceMetaKey    = "prc"
-	quantityMetaKey = "qty"
-	timeMetaKey     = "tme"
-)
+
+// NewKVBookRepository ...
+func NewKVBookRepository(s persist.KVStore) BookRepository {
+	return &bookRepo{store: s}
+}
+
+type bookRepo struct {
+	store persist.KVStore
+}
 
 // ExecuteOrInsertOrder ...
-func (gs *GoogleStorage) ExecuteOrInsertOrder(order types.Order) error {
+func (gs *bookRepo) ExecuteOrInsertOrder(order types.Order) error {
 	for {
 		qattrs, err := gs.newHeadBatch(order)
 		if err != nil {
@@ -56,7 +59,7 @@ func (gs *GoogleStorage) ExecuteOrInsertOrder(order types.Order) error {
 					// the order should be saved back to the book and the
 					// matching process halted
 					if o.ID == bookOrder.ID {
-						return gs.saveOrder(NewBookOrder(*o))
+						return gs.saveOrder(types.NewBookOrder(*o))
 					}
 
 					// if the ids don't match, the request order was only
@@ -79,23 +82,23 @@ func (gs *GoogleStorage) ExecuteOrInsertOrder(order types.Order) error {
 
 				return nil
 			} else {
-				return gs.saveOrder(NewBookOrder(*o))
+				return gs.saveOrder(types.NewBookOrder(*o))
 			}
 		}
 
 		// if the order book is empty, insert the order
-		return gs.saveOrder(NewBookOrder(order))
+		return gs.saveOrder(types.NewBookOrder(order))
 	}
 }
 
-func (gs *GoogleStorage) newHeadBatch(order types.Order) ([]*storage.ObjectAttrs, error) {
-	s := NewBookOrder(order)
+func (gs *bookRepo) newHeadBatch(order types.Order) ([]*persist.KVStoreObjectAttrs, error) {
+	s := types.NewBookOrder(order)
 
-	query := getStorageQuery(actionKey(s.Subspace(), s.ActionOrder.Action).String())
+	query := getStorageQuery(actionKey(Subspace(s), s.ActionOrder.Action).String())
 	return gs.store.RangeGet(query, 10)
 }
 
-func (gs *GoogleStorage) saveOrder(order BookOrder) error {
+func (gs *bookRepo) saveOrder(order types.BookOrder) error {
 
 	// no match was found. proceed to insert
 	data, err := json.Marshal(order)
@@ -103,14 +106,14 @@ func (gs *GoogleStorage) saveOrder(order BookOrder) error {
 		return err
 	}
 
-	attrs := &storage.ObjectAttrsToUpdate{Metadata: order.MetaData}
+	attrs := &persist.KVStoreObjectAttrsToUpdate{Metadata: order.MetaData}
 
-	key := order.Key().String()
+	key := Key(order).String()
 	return gs.store.Set(key, data, attrs)
 }
 
-func (gs *GoogleStorage) readOrder(key string) (BookOrder, error) {
-	var so BookOrder
+func (gs *bookRepo) readOrder(key string) (types.BookOrder, error) {
+	var so types.BookOrder
 	data, err := gs.store.Get(key)
 	if err != nil {
 		return so, err
@@ -120,7 +123,7 @@ func (gs *GoogleStorage) readOrder(key string) (BookOrder, error) {
 	return so, err
 }
 
-func (gs *GoogleStorage) pairOrders(tr *types.Transaction) error {
+func (gs *bookRepo) pairOrders(tr *types.Transaction) error {
 
 	// TODO: save the transaction
 	//fmt.Printf("order 1: %s %s\n", existing.Price, existing.Quantity)
@@ -138,86 +141,35 @@ func (gs *GoogleStorage) pairOrders(tr *types.Transaction) error {
 	return nil
 }
 
-func getStorageQuery(offset string) *storage.Query {
+func getStorageQuery(offset string) *persist.KVStoreQuery {
 	// get the head of the list for the opposite action type
-	query := &storage.Query{
-		StartOffset: offset,
-		Projection:  storage.ProjectionNoACL}
-
-	query.SetAttrSelection([]string{"Name", "MetaData", "Created"})
+	query := &persist.KVStoreQuery{
+		StartOffset: offset}
 
 	return query
-}
-
-// NewBookOrder returns a new BookOrder where the meta data for range queries
-// includes the order Quantity and Timestamp
-func NewBookOrder(order types.Order) BookOrder {
-	meta := map[string]string{
-		timeMetaKey: fmt.Sprintf("%d", order.Timestamp.Unix())}
-
-	// the action order will be used to search through the opposite sorted list
-	m := order
-	if m.Action == types.ActionTypeBuy {
-		m.Action = types.ActionTypeSell
-	} else {
-		m.Action = types.ActionTypeBuy
-	}
-
-	return BookOrder{
-		Order:       order,
-		ActionOrder: m,
-		MetaData:    meta}
-}
-
-// BookOrder is a struct for holding an order in storage
-type BookOrder struct {
-	Order       types.Order
-	ActionOrder types.Order
-	MetaData    map[string]string
-}
-
-// MarshalJSON ...
-func (o BookOrder) MarshalJSON() ([]byte, error) {
-	return json.Marshal(o.Order)
-}
-
-// UnmarshalJSON ...
-func (o *BookOrder) UnmarshalJSON(b []byte) error {
-	var order types.Order
-	err := json.Unmarshal(b, &order)
-	if err != nil {
-		return err
-	}
-
-	so := NewBookOrder(order)
-	o.Order = so.Order
-	o.ActionOrder = so.ActionOrder
-	o.MetaData = so.MetaData
-
-	return nil
 }
 
 // Key generates a key that will sort ASC lexigraphically, but remain in type
 // sorted order: buys are sorted largest/oldest to smallest/newest and sells
 // are sorted smallest/oldest to largest/newest
-func (o BookOrder) Key() key.Key {
+func Key(o types.BookOrder) key.Key {
 	t := o.Order.Type.KeyTuple(o.Order.Action)
-	t = append(t, key.Tuple{o.Order.Timestamp.Unix()}...)
-	return actionSubspace(o.Subspace(), o.Order.Action).Pack(t)
+	t = append(t, key.Tuple{o.Order.Timestamp.UnixNano()}...)
+	return actionSubspace(Subspace(o), o.Order.Action).Pack(t)
 }
 
 // ActionKey generates a key that will find a sorted match in the opposite order book
-func (o BookOrder) ActionKey() key.Key {
-	return actionSubspace(o.Subspace(), o.ActionOrder.Action).Pack(o.Order.Type.KeyTuple(o.Order.Action))
+func ActionKey(o types.BookOrder) key.Key {
+	return actionSubspace(Subspace(o), o.ActionOrder.Action).Pack(o.Order.Type.KeyTuple(o.Order.Action))
 }
 
 // HeadKey returns a key that can be used to range query a lexigraphically sorted set
-func (o BookOrder) HeadKey() key.Key {
-	return o.Subspace().Pack(key.Tuple{uint(o.Order.Action)})
+func HeadKey(o types.BookOrder) key.Key {
+	return Subspace(o).Pack(key.Tuple{uint(o.Order.Action)})
 }
 
 // Subspace ...
-func (o BookOrder) Subspace() key.Subspace {
+func Subspace(o types.BookOrder) key.Subspace {
 	return gsBook.Sub(uint(o.Order.Base)).Sub(uint(o.Order.Target))
 }
 

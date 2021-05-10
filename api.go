@@ -4,16 +4,15 @@ package contexttip
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
-	"cloud.google.com/go/pubsub"
-	"cloud.google.com/go/storage"
-	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/pkg/book"
+	"github.com/easterthebunny/spew-order/pkg/handlers"
+	"github.com/easterthebunny/spew-order/pkg/queue"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -27,88 +26,63 @@ const (
 
 var (
 	// client is a global Pub/Sub client, initialized once per instance.
-	client        *pubsub.Client
-	storageClient *storage.Client
-	orderTopic    = getEnvVar(envOrderTopic)
+	orderTopic = getEnvVar(envOrderTopic)
 
-	GS *persist.GoogleStorage
+	GS book.OrderBook
+	GQ *queue.OrderQueue
+	RH *handlers.RESTHandler
 )
 
 func init() {
 	// GOOGLE_CLOUD_PROJECT is a user-set environment variable.
 	var projectID = getEnvVar(envProjectID)
 
-	// err is pre-declared to avoid shadowing client.
-	var err error
-
-	// client is initialized with context.Background() because it should
-	// persist between function invocations.
-	client, err = pubsub.NewClient(context.Background(), projectID)
-	if err != nil {
-		log.Fatalf("pubsub.NewClient: %v", err)
-	}
-
-	storageClient, err := storage.NewClient(context.Background())
-	if err != nil {
-		log.Fatalf("storage.NewClient: %v", err)
-	}
-
-	GS = persist.NewGoogleStorage(persist.NewGoogleStorageAPI(storageClient))
-
 	conf := []interface{}{
 		getEnvVar(envAppName),
-		persist.StorageBucket,
+		"book",
 		strings.ToLower(getEnvVar(envRuntimeEnv)),
 		strings.ToLower(getEnvVar(envLocation))}
 
-	// get the primary storage bucket
-	persist.StorageBucket = fmt.Sprintf("%s-%s-%s-%s", conf...)
+	bucket := fmt.Sprintf("%s-%s-%s-%s", conf...)
+	GS = book.NewGoogleOrderBook(bucket)
+	GQ, err := queue.NewGoogleOrderQueue(projectID, bucket)
+	if err != nil {
+		log.Fatalf("error creating google order queue: %s", err)
+	}
 
 	// register concrete types for the gob encoder/decoder
 	//gob.Register(types.LimitOrderType{})
 	//gob.Register(types.MarketOrderType{})
+	RH = handlers.NewRESTHandler(GQ)
+	queue.OrderTopic = orderTopic
 }
 
-// PublishOrder publishes a message to Pub/Sub. PublishMessage only works
-// with topics that already exist.
-func PublishOrder(w http.ResponseWriter, r *http.Request) {
-	// Parse the request body to get the topic name and message.
-	var or types.OrderRequest
+// RestAPI forwards all rest requests to the main API handler.
+func RestAPI(w http.ResponseWriter, r *http.Request) {
+	RH.PostOrder(w, r)
+}
 
-	if err := json.NewDecoder(r.Body).Decode(&or); err != nil {
-		log.Printf("json.NewDecoder: %v", err)
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		return
+// PubSubMessage is the payload of a Pub/Sub event.
+// See the documentation for more details:
+// https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage
+type PubSubMessage struct {
+	Data []byte `json:"data"`
+}
+
+// OrderPubSub consumes a Pub/Sub message.
+func OrderPubSub(ctx context.Context, m PubSubMessage) error {
+
+	req := &types.OrderRequest{}
+	if err := req.UnmarshalJSON(m.Data); err != nil {
+		return err
 	}
 
-	/*
-		if or.Quantity <= 0 {
-			http.Error(w, fmt.Sprintf("incorrect quantity: %f", or.Quantity), http.StatusBadRequest)
-			return
-		}
-	*/
-
-	b, err := json.Marshal(or)
-	if err != nil {
-		log.Printf("json.Marshal: %v", err)
-		http.Error(w, "Error encoding request", http.StatusBadRequest)
-		return
+	order := types.NewOrderFromRequest(*req)
+	if err := GS.ExecuteOrInsertOrder(order); err != nil {
+		return err
 	}
 
-	m := &pubsub.Message{
-		Data: b,
-	}
-
-	// Publish and Get use r.Context() because they are only needed for this
-	// function invocation. If this were a background function, they would use
-	// the ctx passed as an argument.
-	id, err := client.Topic(orderTopic).Publish(r.Context(), m).Get(r.Context())
-	if err != nil {
-		log.Printf("topic(%s).Publish.Get: %v", orderTopic, err)
-		http.Error(w, "Error publishing message", http.StatusInternalServerError)
-		return
-	}
-	fmt.Fprintf(w, "Message published: %v", id)
+	return nil
 }
 
 func getEnvVar(key string) string {

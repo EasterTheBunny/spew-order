@@ -6,7 +6,9 @@ require (
 	cloud.google.com/go/pubsub v1.10.1
 	cloud.google.com/go/storage v1.14.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-chi/chi v1.5.4
 	github.com/google/go-cmp v0.5.5 // indirect
+	github.com/google/uuid v1.1.2
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/stretchr/testify v1.7.0

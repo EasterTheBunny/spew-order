@@ -14,6 +14,8 @@ type testFill struct {
 	Description              string
 	BookOrderType            OrderType
 	RequestOrder             Order
+	ExpectedHold             decimal.Decimal
+	ExpectedHoldSymbol       Symbol
 	ExpectedOrderType        OrderType
 	ExpectedTransaction      Transaction
 	ExpectedOrderTransaction *Transaction
@@ -32,6 +34,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000001053),
+		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0234),
@@ -85,6 +89,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000001053),
+		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
 			Quantity: decimal.NewFromFloat(0.0000003),
@@ -123,6 +129,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0234),
@@ -176,6 +184,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
 			Quantity: decimal.NewFromFloat(0.0000003),
@@ -214,6 +224,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0234),
@@ -267,6 +279,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolBitcoin,
 			Quantity: decimal.NewFromFloat(0.00000000702),
@@ -305,6 +319,8 @@ var tests = []testFill{
 			Base:     SymbolEthereum,                  // ask for ETH, no price since market order
 			Quantity: decimal.NewFromFloat(0.0000042), // selling ETH
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000042),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0234),
@@ -343,6 +359,8 @@ var tests = []testFill{
 			Base:     SymbolEthereum,
 			Quantity: decimal.NewFromFloat(0.0000048),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000048),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
 			Quantity: decimal.NewFromFloat(0.0000003),
@@ -396,6 +414,8 @@ var tests = []testFill{
 			Base:     SymbolBitcoin,
 			Quantity: decimal.NewFromFloat(0.00000011232),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.00000011232),
+		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolBitcoin,
 			Quantity: decimal.NewFromFloat(0.00000000702),
@@ -449,6 +469,8 @@ var tests = []testFill{
 			Base:     SymbolBitcoin,
 			Quantity: decimal.NewFromFloat(0.00000009828),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.00000009828),
+		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0234),
@@ -488,6 +510,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0235),
 			Quantity: decimal.NewFromFloat(0.0000042),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000000987),
+		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0234),
@@ -528,6 +552,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0235),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.00000010575),
+		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0235),
@@ -583,7 +609,9 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0235),
 			Quantity: decimal.NewFromFloat(0.0000042),
 		}),
-		ExpectedOrderType: nil,
+		ExpectedHold:       decimal.NewFromFloat(0.0000000987),
+		ExpectedHoldSymbol: SymbolBitcoin,
+		ExpectedOrderType:  nil,
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AddSymbol:   SymbolBitcoin,
@@ -645,6 +673,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000042),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000042),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0235),
@@ -685,6 +715,8 @@ var tests = []testFill{
 			Price:    decimal.NewFromFloat(0.0234),
 			Quantity: decimal.NewFromFloat(0.0000045),
 		}),
+		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
 			Price:    decimal.NewFromFloat(0.0234),
@@ -773,6 +805,24 @@ func TestOrderResolve(t *testing.T) {
 				tran = *test.ExpectedOrderTransaction
 			}
 			assertTransaction(t, tran, *tr)
+		})
+	}
+}
+
+func TestOrderHold(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			order := test.RequestOrder
+			symb, amt := order.OrderRequest.Type.HoldAmount(order.Action, order.Base, order.Target)
+			expected := test.ExpectedHold
+
+			if !amt.Equal(expected) {
+				t.Errorf("unexpected hold amount: %s; expected %s", amt.StringFixedBank(12), expected.StringFixedBank(12))
+			}
+
+			if symb.String() != test.ExpectedHoldSymbol.String() {
+				t.Errorf("unexpected hold symbol: %s; expected %s", symb.String(), test.ExpectedHoldSymbol.String())
+			}
 		})
 	}
 }
