@@ -39,8 +39,24 @@ type KVStoreObjectAttrsToUpdate struct {
 	Metadata map[string]string
 }
 
+func NewGoogleKVStore(bucket *string) (*GoogleKVStore, error) {
+
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if bucket == nil {
+		bucket = &StorageBucket
+	}
+
+	return &GoogleKVStore{client: client, bucket: *bucket}, nil
+}
+
 type GoogleKVStore struct {
 	client *storage.Client
+	bucket string
 }
 
 // Get ...
@@ -50,7 +66,7 @@ func (gs *GoogleKVStore) Get(sKey string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
 	defer cancel()
 
-	rc, err := gs.client.Bucket(StorageBucket).Object(sKey).NewReader(ctx)
+	rc, err := gs.client.Bucket(gs.bucket).Object(sKey).NewReader(ctx)
 	if err != nil {
 		if err == storage.ErrObjectNotExist {
 			err = ErrObjectNotExist
@@ -74,7 +90,7 @@ func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrs
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
 	defer cancel()
 
-	handle := gs.client.Bucket(StorageBucket).Object(sKey)
+	handle := gs.client.Bucket(gs.bucket).Object(sKey)
 
 	wc := handle.NewWriter(ctx)
 	if _, err := io.Copy(wc, value); err != nil {
@@ -108,7 +124,7 @@ func (gs *GoogleKVStore) RangeGet(q *KVStoreQuery, limit int) ([]*KVStoreObjectA
 	}
 	qu.SetAttrSelection([]string{"Name", "MetaData", "Created"})
 
-	it := gs.client.Bucket(StorageBucket).Objects(ctx, qu)
+	it := gs.client.Bucket(gs.bucket).Objects(ctx, qu)
 	attr := []*KVStoreObjectAttrs{}
 	var cnt int
 	for {
@@ -143,7 +159,7 @@ func (gs *GoogleKVStore) Delete(sKey string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
 	defer cancel()
-	return gs.client.Bucket(StorageBucket).Object(sKey).Delete(ctx)
+	return gs.client.Bucket(gs.bucket).Object(sKey).Delete(ctx)
 }
 
 // NewMockKVStore ...

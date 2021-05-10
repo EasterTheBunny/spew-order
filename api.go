@@ -3,7 +3,7 @@
 package contexttip
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/easterthebunny/spew-order/pkg/book"
+	"github.com/easterthebunny/spew-order/pkg/handlers"
 	"github.com/easterthebunny/spew-order/pkg/queue"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
@@ -28,7 +29,8 @@ var (
 	orderTopic = getEnvVar(envOrderTopic)
 
 	GS book.OrderBook
-	GQ queue.OrderQueue
+	GQ *queue.OrderQueue
+	RH *handlers.RESTHandler
 )
 
 func init() {
@@ -41,32 +43,45 @@ func init() {
 		strings.ToLower(getEnvVar(envRuntimeEnv)),
 		strings.ToLower(getEnvVar(envLocation))}
 
-	GS = book.NewGoogleOrderBook(fmt.Sprintf("%s-%s-%s-%s", conf...))
-	GQ = queue.NewGoogleOrderQueue(projectID)
+	bucket := fmt.Sprintf("%s-%s-%s-%s", conf...)
+	GS = book.NewGoogleOrderBook(bucket)
+	GQ, err := queue.NewGoogleOrderQueue(projectID, bucket)
+	if err != nil {
+		log.Fatalf("error creating google order queue: %s", err)
+	}
 
 	// register concrete types for the gob encoder/decoder
 	//gob.Register(types.LimitOrderType{})
 	//gob.Register(types.MarketOrderType{})
+	RH = handlers.NewRESTHandler(GQ)
 }
 
-// PublishOrder publishes a message to Pub/Sub. PublishMessage only works
-// with topics that already exist.
-func PublishOrder(w http.ResponseWriter, r *http.Request) {
-	var or types.OrderRequest
+// RestAPI forwards all rest requests to the main API handler.
+func RestAPI(w http.ResponseWriter, r *http.Request) {
+	RH.PostOrder(w, r)
+}
 
-	if err := json.NewDecoder(r.Body).Decode(&or); err != nil {
-		log.Printf("json.NewDecoder: %v", err)
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		return
+// PubSubMessage is the payload of a Pub/Sub event.
+// See the documentation for more details:
+// https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage
+type PubSubMessage struct {
+	Data []byte `json:"data"`
+}
+
+// OrderPubSub consumes a Pub/Sub message.
+func OrderPubSub(ctx context.Context, m PubSubMessage) error {
+
+	req := &types.OrderRequest{}
+	if err := req.UnmarshalJSON(m.Data); err != nil {
+		return err
 	}
 
-	id, err := GQ.PublishOrderRequest(r.Context(), or)
-	if err != nil {
-		log.Printf("topic(%s).Publish.Get: %v", orderTopic, err)
-		http.Error(w, "Error publishing message", http.StatusInternalServerError)
-		return
+	order := types.NewOrderFromRequest(*req)
+	if err := GS.ExecuteOrInsertOrder(order); err != nil {
+		return err
 	}
-	fmt.Fprintf(w, "Message published: %v", id)
+
+	return nil
 }
 
 func getEnvVar(key string) string {

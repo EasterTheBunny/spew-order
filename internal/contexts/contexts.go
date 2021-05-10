@@ -2,8 +2,13 @@ package contexts
 
 import (
 	"context"
+	"errors"
 
 	"github.com/easterthebunny/spew-order/pkg/types"
+)
+
+var (
+	ErrAccountNotFoundInContext = errors.New("account not found in context")
 )
 
 type contextKey int
@@ -11,6 +16,7 @@ type contextKey int
 const (
 	ctxAuthzKey contextKey = iota
 	ctxErrorKey
+	ctxAccountKey
 )
 
 // AttachAuthorization ...
@@ -31,6 +37,26 @@ func GetAuthorization(ctx context.Context) *types.Authorization {
 	}
 
 	return &auth
+}
+
+// AttachAccount ...
+func AttachAccount(ctx context.Context, a types.Account) context.Context {
+	return context.WithValue(ctx, ctxAccountKey, a)
+}
+
+// GetAccount ...
+func GetAccount(ctx context.Context) *types.Account {
+	val := ctx.Value(ctxAccountKey)
+	if val == nil {
+		return nil
+	}
+
+	a, ok := val.(types.Account)
+	if !ok {
+		return nil
+	}
+
+	return &a
 }
 
 func AttachError(ctx context.Context, err error) context.Context {

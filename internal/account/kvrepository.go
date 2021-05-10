@@ -1,24 +1,43 @@
-package persist
+package account
 
 import (
 	"encoding/json"
 	"fmt"
 
 	"github.com/easterthebunny/spew-order/internal/key"
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 )
 
-type AccountRepository struct {
-	kvstore KVStore
+type KVAccountRepository struct {
+	kvstore persist.KVStore
 }
 
-func NewAccountRepository(store KVStore) *AccountRepository {
-	return &AccountRepository{kvstore: store}
+func NewKVAccountRepository(store persist.KVStore) *KVAccountRepository {
+	return &KVAccountRepository{kvstore: store}
 }
 
-func (r *AccountRepository) Find(id uuid.UUID) (*types.Account, error) {
+var _ AccountRepository = &KVAccountRepository{}
+var _ BalanceRepository = &balanceRepository{}
+
+const (
+	bookSub int = iota
+	accountSub
+	symbolsSub
+	balanceSub
+	holdSub
+	postSub
+)
+
+var (
+	gsRoot    = key.FromBytes([]byte{0xFE})
+	gsBook    = gsRoot.Sub(bookSub)
+	gsAccount = gsRoot.Sub(accountSub)
+)
+
+func (r *KVAccountRepository) Find(id uuid.UUID) (*types.Account, error) {
 
 	key := gsAccount.Pack(key.Tuple{id.String()})
 	b, err := r.kvstore.Get(key.String())
@@ -35,7 +54,7 @@ func (r *AccountRepository) Find(id uuid.UUID) (*types.Account, error) {
 	return &account, nil
 }
 
-func (r *AccountRepository) Save(a *types.Account) error {
+func (r *KVAccountRepository) Save(a *types.Account) error {
 	if a == nil {
 		return fmt.Errorf("no action available for nil value")
 	}
@@ -47,7 +66,7 @@ func (r *AccountRepository) Save(a *types.Account) error {
 		return err
 	}
 
-	attrs := KVStoreObjectAttrsToUpdate{
+	attrs := persist.KVStoreObjectAttrsToUpdate{
 		Metadata: make(map[string]string),
 	}
 
@@ -56,7 +75,7 @@ func (r *AccountRepository) Save(a *types.Account) error {
 	return nil
 }
 
-func (r *AccountRepository) Balances(a *types.Account, s types.Symbol) types.BalanceRepo {
+func (r *KVAccountRepository) Balances(a *types.Account, s types.Symbol) BalanceRepository {
 	return &balanceRepository{
 		kvstore: r.kvstore,
 		account: a,
@@ -65,7 +84,7 @@ func (r *AccountRepository) Balances(a *types.Account, s types.Symbol) types.Bal
 }
 
 type balanceRepository struct {
-	kvstore KVStore
+	kvstore persist.KVStore
 	account *types.Account
 	symbol  types.Symbol
 }
@@ -80,7 +99,7 @@ func (b *balanceRepository) GetBalance() (decimal.Decimal, error) {
 
 	byt, err := b.kvstore.Get(key.String())
 	if err != nil {
-		if err == ErrObjectNotExist {
+		if err == persist.ErrObjectNotExist {
 			return balance, nil
 		}
 		return balance, err
@@ -101,20 +120,20 @@ func (b *balanceRepository) UpdateBalance(bal decimal.Decimal) error {
 		return err
 	}
 
-	attrs := KVStoreObjectAttrsToUpdate{
+	attrs := persist.KVStoreObjectAttrsToUpdate{
 		Metadata: make(map[string]string),
 	}
 
 	return b.kvstore.Set(key.String(), val, &attrs)
 }
 
-func (b *balanceRepository) FindHolds() (holds []*types.BalanceItem, err error) {
+func (b *balanceRepository) FindHolds() (holds []*BalanceItem, err error) {
 
 	s := gsAccount.Sub(b.account.ID.String())
 	s = s.Sub(symbolsSub).Sub(b.symbol.String())
 	key := s.Pack(key.Tuple{holdSub})
 
-	q := KVStoreQuery{
+	q := persist.KVStoreQuery{
 		StartOffset: key.String(),
 	}
 
@@ -130,7 +149,7 @@ func (b *balanceRepository) FindHolds() (holds []*types.BalanceItem, err error) 
 			return
 		}
 
-		var bal types.BalanceItem
+		var bal BalanceItem
 		err = json.Unmarshal(bts, &bal)
 		if err != nil {
 			return
@@ -142,7 +161,7 @@ func (b *balanceRepository) FindHolds() (holds []*types.BalanceItem, err error) 
 	return
 }
 
-func (b *balanceRepository) CreateHold(hold *types.BalanceItem) error {
+func (b *balanceRepository) CreateHold(hold *BalanceItem) error {
 	if hold == nil {
 		return fmt.Errorf("no action available for nil value")
 	}
@@ -157,14 +176,14 @@ func (b *balanceRepository) CreateHold(hold *types.BalanceItem) error {
 		return err
 	}
 
-	attrs := KVStoreObjectAttrsToUpdate{
+	attrs := persist.KVStoreObjectAttrsToUpdate{
 		Metadata: make(map[string]string),
 	}
 
 	return b.kvstore.Set(key.String(), bts, &attrs)
 }
 
-func (b *balanceRepository) DeleteHold(hold *types.BalanceItem) error {
+func (b *balanceRepository) DeleteHold(hold *BalanceItem) error {
 	if hold == nil {
 		return fmt.Errorf("no action available for nil value")
 	}
@@ -177,16 +196,13 @@ func (b *balanceRepository) DeleteHold(hold *types.BalanceItem) error {
 	return b.kvstore.Delete(key.String())
 }
 
-/*
-	/account/{accountid}/symbols/{symbol}/post/{timestamp_nano}{orderid}
-*/
-func (b *balanceRepository) FindPosts() (posts []*types.BalanceItem, err error) {
+func (b *balanceRepository) FindPosts() (posts []*BalanceItem, err error) {
 
 	s := gsAccount.Sub(b.account.ID.String())
 	s = s.Sub(symbolsSub).Sub(b.symbol.String())
 	key := s.Pack(key.Tuple{postSub})
 
-	q := KVStoreQuery{
+	q := persist.KVStoreQuery{
 		StartOffset: key.String(),
 	}
 
@@ -202,7 +218,7 @@ func (b *balanceRepository) FindPosts() (posts []*types.BalanceItem, err error) 
 			return
 		}
 
-		var bal types.BalanceItem
+		var bal BalanceItem
 		err = json.Unmarshal(bts, &bal)
 		if err != nil {
 			return
@@ -214,7 +230,7 @@ func (b *balanceRepository) FindPosts() (posts []*types.BalanceItem, err error) 
 	return
 }
 
-func (b *balanceRepository) CreatePost(post *types.BalanceItem) error {
+func (b *balanceRepository) CreatePost(post *BalanceItem) error {
 	if post == nil {
 		return fmt.Errorf("no action available for nil value")
 	}
@@ -229,14 +245,14 @@ func (b *balanceRepository) CreatePost(post *types.BalanceItem) error {
 		return err
 	}
 
-	attrs := KVStoreObjectAttrsToUpdate{
+	attrs := persist.KVStoreObjectAttrsToUpdate{
 		Metadata: make(map[string]string),
 	}
 
 	return b.kvstore.Set(key.String(), bts, &attrs)
 }
 
-func (b *balanceRepository) DeletePost(post *types.BalanceItem) error {
+func (b *balanceRepository) DeletePost(post *BalanceItem) error {
 	if post == nil {
 		return fmt.Errorf("no action available for nil value")
 	}

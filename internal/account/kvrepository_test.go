@@ -1,9 +1,10 @@
-package persist
+package account
 
 import (
 	"testing"
 	"time"
 
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
@@ -12,8 +13,8 @@ import (
 
 func TestSaveFind(t *testing.T) {
 
-	s := NewMockKVStore()
-	r := &AccountRepository{kvstore: s}
+	s := persist.NewMockKVStore()
+	r := &KVAccountRepository{kvstore: s}
 
 	id := uuid.NewV4()
 
@@ -60,9 +61,9 @@ func TestSaveFind(t *testing.T) {
 
 func TestBalances(t *testing.T) {
 
-	s := NewMockKVStore()
+	s := persist.NewMockKVStore()
 	m := types.SymbolBitcoin
-	r := &AccountRepository{kvstore: s}
+	r := &KVAccountRepository{kvstore: s}
 
 	id := uuid.NewV4()
 
@@ -112,11 +113,11 @@ func TestBalances(t *testing.T) {
 
 	t.Run("InsertAndDeleteHolds", func(t *testing.T) {
 
-		var expected []*types.BalanceItem
+		var expected []*BalanceItem
 
 		for x := 1; x < 4; x++ {
 			amt := decimal.NewFromInt(int64(x))
-			hold := types.BalanceItem{
+			hold := BalanceItem{
 				ID:        uuid.NewV4(),
 				Timestamp: time.Now(),
 				Amount:    amt,
@@ -153,11 +154,11 @@ func TestBalances(t *testing.T) {
 
 	t.Run("InsertAndDeletePosts", func(t *testing.T) {
 
-		var expected []*types.BalanceItem
+		var expected []*BalanceItem
 
 		for x := 1; x < 4; x++ {
 			amt := decimal.NewFromInt(int64(x))
-			post := types.BalanceItem{
+			post := BalanceItem{
 				ID:        uuid.NewV4(),
 				Timestamp: time.Now(),
 				Amount:    amt,

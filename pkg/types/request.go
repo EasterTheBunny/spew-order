@@ -11,6 +11,7 @@ type OrderRequest struct {
 	Base   Symbol     `json:"base"`
 	Target Symbol     `json:"target"`
 	Action ActionType `json:"action"`
+	HoldID string     `json:"holdID"`
 	Type   OrderType  `json:"-"`
 }
 

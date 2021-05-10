@@ -126,6 +126,7 @@ type OrderType interface {
 	Name() string
 	FillWith(Order) (*Transaction, OrderType)
 	KeyTuple(ActionType) key.Tuple
+	HoldAmount(tp ActionType, base Symbol, target Symbol) (Symbol, decimal.Decimal)
 	String() string
 }
 
@@ -272,6 +273,14 @@ func (m MarketOrderType) KeyTuple(t ActionType) key.Tuple {
 	return key.Tuple{pr.StringFixedBank(m.Base.RoundingPlace())}
 }
 
+// HoldAmount ...
+func (m MarketOrderType) HoldAmount(t ActionType, base Symbol, target Symbol) (symb Symbol, amt decimal.Decimal) {
+	amt = m.Quantity
+	symb = m.Base
+
+	return
+}
+
 func (m MarketOrderType) MarshalJSON() ([]byte, error) {
 	data := make(map[string]interface{})
 
@@ -407,6 +416,25 @@ func (l LimitOrderType) KeyTuple(t ActionType) key.Tuple {
 		pr = decimal.NewFromInt(SortSwitch).Sub(l.Price)
 	}
 	return key.Tuple{pr.StringFixedBank(l.Base.RoundingPlace())}
+}
+
+// HoldAmount ...
+func (l LimitOrderType) HoldAmount(t ActionType, base Symbol, target Symbol) (symb Symbol, amt decimal.Decimal) {
+
+	switch t {
+	case ActionTypeBuy:
+		symb = base
+		amt = l.Quantity.Mul(l.Price)
+	case ActionTypeSell:
+		symb = target
+		amt = l.Quantity
+	default:
+		// in the case that an action is not matched, return a giant value for safety
+		symb = base
+		amt = decimal.NewFromInt(math.MaxInt64)
+	}
+
+	return
 }
 
 func (l LimitOrderType) MarshalJSON() ([]byte, error) {

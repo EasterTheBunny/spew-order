@@ -2,7 +2,10 @@ package queue
 
 import (
 	"context"
+	"errors"
 	"log"
+	"math/rand"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 )
@@ -35,3 +38,46 @@ func (g *GooglePubSub) Publish(ctx context.Context, topic string, data []byte) (
 
 	return g.client.Topic(topic).Publish(ctx, m).Get(ctx)
 }
+
+func NewMockPubSub() *MockPubSub {
+	return &MockPubSub{
+		subscribers: make(map[string][]chan []byte)}
+}
+
+type MockPubSub struct {
+	subscribers map[string][]chan []byte
+}
+
+func (m *MockPubSub) Publish(ctx context.Context, topic string, data []byte) (id string, err error) {
+
+	t, ok := m.subscribers[topic]
+	if ok {
+		rand.Seed(time.Now().UnixNano())
+		id = m.randSeq(10)
+
+		for _, sub := range t {
+			go func(s chan []byte) {
+				s <- data
+			}(sub)
+		}
+
+		return
+	}
+
+	err = errors.New("topic not found")
+	return
+}
+
+func (m *MockPubSub) Subscribe(topic string, c chan []byte) {
+	m.subscribers[topic] = append(m.subscribers[topic], c)
+}
+
+func (m MockPubSub) randSeq(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
