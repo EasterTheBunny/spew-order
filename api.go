@@ -54,6 +54,7 @@ func init() {
 	//gob.Register(types.LimitOrderType{})
 	//gob.Register(types.MarketOrderType{})
 	RH = handlers.NewRESTHandler(GQ)
+	queue.OrderTopic = orderTopic
 }
 
 // RestAPI forwards all rest requests to the main API handler.

@@ -37,3 +37,7 @@ type BalanceRepository interface {
 	CreatePost(*BalanceItem) error
 	DeletePost(*BalanceItem) error
 }
+
+type BookRepository interface {
+	ExecuteOrInsertOrder(order types.Order) error
+}

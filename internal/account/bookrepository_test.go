@@ -1,9 +1,10 @@
-package persist
+package account
 
 import (
 	"testing"
 	"time"
 
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
@@ -56,8 +57,8 @@ func newOrderBook(times []int64, amounts [][]float64, action types.ActionType) [
 }
 
 func TestExecuteOrInsertOrder_EmptyBook(t *testing.T) {
-	st := NewGoogleStorageMock()
-	s := NewGoogleStorage(st)
+	st := persist.NewMockKVStore()
+	s := NewKVBookRepository(st)
 
 	order := newMarketBookOrder(12700, 0.01, types.ActionTypeSell)
 	err := s.ExecuteOrInsertOrder(order)
@@ -67,8 +68,8 @@ func TestExecuteOrInsertOrder_EmptyBook(t *testing.T) {
 }
 
 func TestExecuteOrInsertOrder(t *testing.T) {
-	st := NewGoogleStorageMock()
-	s := NewGoogleStorage(st)
+	st := persist.NewMockKVStore()
+	s := &bookRepo{store: st}
 
 	// setup the data set for the later match
 	base := newOrderBook(times, buyPrices, types.ActionTypeBuy)

@@ -1,10 +1,7 @@
 package book
 
 import (
-	"context"
-	"log"
-
-	"cloud.google.com/go/storage"
+	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
@@ -15,19 +12,11 @@ type OrderBook interface {
 
 func NewGoogleOrderBook(bucket string) OrderBook {
 
-	// set the primary storage bucket
-	persist.StorageBucket = bucket
+	kvStore, _ := persist.NewGoogleKVStore(&bucket)
 
-	storageClient, err := storage.NewClient(context.Background())
-	if err != nil {
-		log.Fatalf("storage.NewClient: %v", err)
-	}
-
-	kvStore := persist.NewGoogleStorageAPI(storageClient)
-
-	return persist.NewGoogleStorage(kvStore)
+	return account.NewKVBookRepository(kvStore)
 }
 
 func NewMockOrderBook() OrderBook {
-	return persist.NewGoogleStorage(persist.NewGoogleStorageMock())
+	return account.NewKVBookRepository(persist.NewMockKVStore())
 }

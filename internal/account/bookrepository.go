@@ -1,12 +1,12 @@
-package persist
+package account
 
 import (
 	"encoding/json"
 	"log"
 	"math"
 
-	"cloud.google.com/go/storage"
 	"github.com/easterthebunny/spew-order/internal/key"
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -15,8 +15,17 @@ import (
 // a price larger than this current value
 const SortSwitch = math.MaxInt32
 
+// NewKVBookRepository ...
+func NewKVBookRepository(s persist.KVStore) BookRepository {
+	return &bookRepo{store: s}
+}
+
+type bookRepo struct {
+	store persist.KVStore
+}
+
 // ExecuteOrInsertOrder ...
-func (gs *GoogleStorage) ExecuteOrInsertOrder(order types.Order) error {
+func (gs *bookRepo) ExecuteOrInsertOrder(order types.Order) error {
 	for {
 		qattrs, err := gs.newHeadBatch(order)
 		if err != nil {
@@ -82,14 +91,14 @@ func (gs *GoogleStorage) ExecuteOrInsertOrder(order types.Order) error {
 	}
 }
 
-func (gs *GoogleStorage) newHeadBatch(order types.Order) ([]*storage.ObjectAttrs, error) {
+func (gs *bookRepo) newHeadBatch(order types.Order) ([]*persist.KVStoreObjectAttrs, error) {
 	s := types.NewBookOrder(order)
 
 	query := getStorageQuery(actionKey(Subspace(s), s.ActionOrder.Action).String())
 	return gs.store.RangeGet(query, 10)
 }
 
-func (gs *GoogleStorage) saveOrder(order types.BookOrder) error {
+func (gs *bookRepo) saveOrder(order types.BookOrder) error {
 
 	// no match was found. proceed to insert
 	data, err := json.Marshal(order)
@@ -97,13 +106,13 @@ func (gs *GoogleStorage) saveOrder(order types.BookOrder) error {
 		return err
 	}
 
-	attrs := &storage.ObjectAttrsToUpdate{Metadata: order.MetaData}
+	attrs := &persist.KVStoreObjectAttrsToUpdate{Metadata: order.MetaData}
 
 	key := Key(order).String()
 	return gs.store.Set(key, data, attrs)
 }
 
-func (gs *GoogleStorage) readOrder(key string) (types.BookOrder, error) {
+func (gs *bookRepo) readOrder(key string) (types.BookOrder, error) {
 	var so types.BookOrder
 	data, err := gs.store.Get(key)
 	if err != nil {
@@ -114,7 +123,7 @@ func (gs *GoogleStorage) readOrder(key string) (types.BookOrder, error) {
 	return so, err
 }
 
-func (gs *GoogleStorage) pairOrders(tr *types.Transaction) error {
+func (gs *bookRepo) pairOrders(tr *types.Transaction) error {
 
 	// TODO: save the transaction
 	//fmt.Printf("order 1: %s %s\n", existing.Price, existing.Quantity)
@@ -132,13 +141,10 @@ func (gs *GoogleStorage) pairOrders(tr *types.Transaction) error {
 	return nil
 }
 
-func getStorageQuery(offset string) *storage.Query {
+func getStorageQuery(offset string) *persist.KVStoreQuery {
 	// get the head of the list for the opposite action type
-	query := &storage.Query{
-		StartOffset: offset,
-		Projection:  storage.ProjectionNoACL}
-
-	query.SetAttrSelection([]string{"Name", "MetaData", "Created"})
+	query := &persist.KVStoreQuery{
+		StartOffset: offset}
 
 	return query
 }
