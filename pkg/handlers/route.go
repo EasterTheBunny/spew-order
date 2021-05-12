@@ -1,4 +1,4 @@
-package routes
+package handlers
 
 import (
 	"net/http"
@@ -31,5 +31,12 @@ func AuthorizedRoutes(s types.AuthorizationStore, p types.AuthenticationProvider
 
 		// put the authorization in the context
 		r.Use(middleware.AuthorizationCtx(s, p))
+
+	}
+}
+
+func OrderSubRoutes(handlers *RESTHandler) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Post("/", handlers.PostOrder())
 	}
 }

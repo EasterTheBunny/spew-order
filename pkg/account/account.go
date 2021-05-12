@@ -5,6 +5,7 @@ import (
 
 	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/pkg/types"
+	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -18,6 +19,16 @@ func NewBalanceService(repo account.AccountRepository) *BalanceService {
 
 type BalanceService struct {
 	acct account.AccountRepository
+}
+
+func (m *BalanceService) GetAccount(id string) (a *types.Account, err error) {
+
+	uid, err := uuid.FromString(id)
+	if err != nil {
+		return
+	}
+	a, err = m.acct.Find(uid)
+	return
 }
 
 // GetAvailableBalance returns the total spendable balance for a single Symbol and includes all active holds

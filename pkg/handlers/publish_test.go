@@ -12,7 +12,6 @@ import (
 	"time"
 
 	iaccount "github.com/easterthebunny/spew-order/internal/account"
-	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	iqueue "github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/account"
@@ -36,7 +35,12 @@ func TestPostOrder(t *testing.T) {
 	mps.Subscribe(queue.OrderTopic, subscription)
 
 	acct := types.NewAccount()
-	svc := account.NewBalanceService(iaccount.NewKVAccountRepository(persist.NewMockKVStore()))
+	repo := iaccount.NewKVAccountRepository(persist.NewMockKVStore())
+	err := repo.Save(&acct)
+	if err != nil {
+		t.FailNow()
+	}
+	svc := account.NewBalanceService(repo)
 	svc.PostToBalance(&acct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
 
 	oq := queue.NewOrderQueue(mps, svc)
@@ -49,9 +53,9 @@ func TestPostOrder(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		r := req(t, NewPost(fmt.Sprintf(data, limitType)))
-		r = r.WithContext(contexts.AttachAccount(r.Context(), acct))
+		r.Header.Set("Account", acct.ID.String())
 
-		handler.PostOrder(w, r)
+		handler.PostOrder()(w, r)
 
 		assert.Equal(t, 200, w.Code, "response code is a 200 success")
 
@@ -70,20 +74,16 @@ func TestPostOrder(t *testing.T) {
 		}
 	})
 
-	// the handler requires an account type to be in the context
+	// the handler requires an account id to be in the header, query, or cookie
 	t.Run("MissingAccount", func(t *testing.T) {
 		// create a response recorder for later inspection of the response
 		w := httptest.NewRecorder()
 
 		r := req(t, NewPost(fmt.Sprintf(data, limitType)))
 
-		handler.PostOrder(w, r)
+		handler.PostOrder()(w, r)
 
-		assert.Equal(t, 500, w.Code, "response code is a 200 success")
-
-		if len(logBuf.Bytes()) == 0 {
-			t.Error("empty log; missing account sad path should log something")
-		}
+		assert.Equal(t, 400, w.Code, "response code is a 400 Bad Request")
 
 		// the new order should NOT be posted
 		select {

@@ -50,7 +50,16 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 		return
 	}
 
-	acct := contexts.GetAccount(ctx)
+	aID, err := contexts.GetAccountID(ctx)
+	if err != nil {
+		return
+	}
+
+	acct, err := o.balance.GetAccount(aID)
+	if err != nil {
+		return
+	}
+
 	if acct == nil {
 		err = contexts.ErrAccountNotFoundInContext
 		return

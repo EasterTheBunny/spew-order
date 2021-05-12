@@ -11,9 +11,9 @@ type Symbol uint
 
 const (
 	// SymbolBitcoin ...
-	SymbolBitcoin Symbol = iota
+	SymbolBitcoin Symbol = 2
 	// SymbolEthereum ...
-	SymbolEthereum
+	SymbolEthereum Symbol = 4
 )
 
 const (
@@ -30,15 +30,14 @@ var (
 // String provides a string representation to an Symbol value. Defaults to
 // empty string if value is unrecognized.
 func (s Symbol) String() string {
-	names := [...]string{
-		symbolBitcoinName,
-		symbolEthereumName}
-
-	// default to blank string
-	if !s.typeInRange() {
+	switch s {
+	case SymbolBitcoin:
+		return symbolBitcoinName
+	case SymbolEthereum:
+		return symbolEthereumName
+	default:
 		return ""
 	}
-	return names[s]
 }
 
 func (s Symbol) typeInRange() bool {

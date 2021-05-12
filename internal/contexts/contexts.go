@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrAccountNotFoundInContext = errors.New("account not found in context")
+	ErrAccountNotFoundInContext   = errors.New("account not found in context")
+	ErrAccountIDNotFoundInContext = errors.New("account id not found in context")
 )
 
 type contextKey int
@@ -17,6 +18,7 @@ const (
 	ctxAuthzKey contextKey = iota
 	ctxErrorKey
 	ctxAccountKey
+	ctxAccountIDKey
 )
 
 // AttachAuthorization ...
@@ -57,6 +59,28 @@ func GetAccount(ctx context.Context) *types.Account {
 	}
 
 	return &a
+}
+
+// AttachAccountID ...
+func AttachAccountID(ctx context.Context, a string) context.Context {
+	return context.WithValue(ctx, ctxAccountIDKey, a)
+}
+
+// GetAccountID ...
+func GetAccountID(ctx context.Context) (id string, err error) {
+	val := ctx.Value(ctxAccountIDKey)
+	if val == nil {
+		err = ErrAccountIDNotFoundInContext
+		return
+	}
+
+	id, ok := val.(string)
+	if !ok {
+		err = ErrAccountIDNotFoundInContext
+		return
+	}
+
+	return
 }
 
 func AttachError(ctx context.Context, err error) context.Context {

@@ -2,8 +2,13 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/shopspring/decimal"
+)
+
+var (
+	ErrInvalidTradingPair = errors.New("invalid trading pair")
 )
 
 // OrderRequest represents an incoming order request.
@@ -87,4 +92,17 @@ func (r *OrderRequest) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
+}
+
+func (r *OrderRequest) Validate() error {
+	if r.Base == r.Target {
+		return ErrInvalidTradingPair
+	}
+
+	switch r.Base<<2 | r.Target {
+	case 12:
+		return nil
+	default:
+		return ErrInvalidTradingPair
+	}
 }

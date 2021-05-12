@@ -20,6 +20,10 @@ benchmark: dependencies fmt
 fmt:
 	gofmt -w .
 
+openapi:
+	go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen && \
+	oapi-codegen --config pkg/openapi/config.yaml pkg/openapi/openapi.yaml > pkg/openapi/api.gen.go
+
 build:
 	go build -o $(GOBIN)/$(API) ./cmd/$(API)/*.go || exit
 

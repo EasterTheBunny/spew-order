@@ -23,11 +23,16 @@ func TestPublishOrderRequest(t *testing.T) {
 	mps.Subscribe(OrderTopic, subscription)
 
 	acct := types.NewAccount()
-	svc := account.NewBalanceService(iaccount.NewKVAccountRepository(persist.NewMockKVStore()))
+	repo := iaccount.NewKVAccountRepository(persist.NewMockKVStore())
+	err := repo.Save(&acct)
+	if err != nil {
+		t.FailNow()
+	}
+	svc := account.NewBalanceService(repo)
 	svc.PostToBalance(&acct, types.SymbolBitcoin, decimal.NewFromFloat(2.0))
 
 	// account is required in the context
-	ctx := contexts.AttachAccount(context.Background(), acct)
+	ctx := contexts.AttachAccountID(context.Background(), acct.ID.String())
 
 	q := NewOrderQueue(mps, svc)
 

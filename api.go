@@ -59,7 +59,7 @@ func init() {
 
 // RestAPI forwards all rest requests to the main API handler.
 func RestAPI(w http.ResponseWriter, r *http.Request) {
-	RH.PostOrder(w, r)
+	RH.PostOrder()(w, r)
 }
 
 // PubSubMessage is the payload of a Pub/Sub event.

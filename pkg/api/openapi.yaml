@@ -1,0 +1,126 @@
+openapi: 3.0.3
+info:
+  title: Cloud Exchange REST API
+  version: 0.0.1
+paths:
+  /order:
+    parameters:
+      - $ref: '#/components/parameters/Account'
+    post:
+      description: Publishes an order to the order book
+      requestBody: 
+        description: >
+          Order request
+          Valid order pairs include BTC-ETH
+        required: true
+        content: 
+          'application/json': 
+            schema: 
+              $ref: '#/components/schemas/OrderRequest'
+      responses: 
+        200: 
+          description: OK
+          content: 
+            'application/json': 
+              schema: 
+                $ref: '#/components/schemas/BookOrder'
+components:
+  parameters:
+    Account:
+      in: header
+      name: Account
+      required: true
+      schema:
+        type: string
+      description: The account id for all following operations
+  schemas:
+    QueryTime:
+      type: integer
+      format: int64
+      description: Time in seconds for query to complete
+    ActionType:
+      type: string
+      enum:
+      - BUY
+      - SELL
+      description: >
+        Action type:
+        * `BUY` - use base currency to buy target currency
+        * `SELL` - sell target currency for base currency
+    SymbolType:
+      type: string
+      enum:
+      - BTC
+      - ETH
+      description: >
+        Symbol Type:
+        * `BTC` - bitcoin currency identifier
+        * `ETH` - ethereum currency identifier
+    CurrencyValue:
+      type: string
+    OrderRequest:
+      type: object
+      description: Request to create a new order on the order book
+      required:
+      - base
+      - target
+      - action
+      - type
+      properties:
+        base:
+          $ref: '#/components/schemas/SymbolType'
+        target:
+          $ref: '#/components/schemas/SymbolType'
+        action:
+          $ref: '#/components/schemas/ActionType'
+        type:
+          $ref: '#/components/schemas/OrderRequestType'
+    OrderRequestType:
+      oneOf:
+        - $ref: '#/components/schemas/MarketOrderRequest'
+        - $ref: '#/components/schemas/LimitOrderRequest'
+      discriminator:
+        propertyName: name
+    OrderType:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          enum:
+          - MARKET
+          - LIMIT
+          description: >
+            Order type:
+            * `MARKET` - order type used to buy or sell at market value
+            * `LIMIT` - used to set buy or sell limit
+    MarketOrderRequest:
+      allOf:
+        - $ref: '#/components/schemas/OrderType'
+        - type: object
+          required:
+          - base
+          - quantity
+          properties:
+            base:
+              $ref: '#/components/schemas/SymbolType'
+            quantity:
+              $ref: '#/components/schemas/CurrencyValue'
+    LimitOrderRequest:
+      allOf:
+        - $ref: '#/components/schemas/OrderType'
+        - type: object
+          required:
+          - base
+          - price
+          - quantity
+          properties:
+            base:
+              $ref: '#/components/schemas/SymbolType'
+            price:
+              $ref: '#/components/schemas/CurrencyValue'
+            quantity:
+              $ref: '#/components/schemas/CurrencyValue'
+    BookOrder:
+      type: string

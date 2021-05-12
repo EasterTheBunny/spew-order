@@ -1,0 +1,4 @@
+output: pkg/openapi/api.gen.go
+package: api
+generate:
+  - types

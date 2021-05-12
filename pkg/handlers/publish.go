@@ -2,12 +2,19 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
+	"github.com/easterthebunny/spew-order/internal/contexts"
+	"github.com/easterthebunny/spew-order/pkg/api"
 	"github.com/easterthebunny/spew-order/pkg/queue"
-	"github.com/easterthebunny/spew-order/pkg/types"
+)
+
+var (
+	ErrNoAccountIDFound = errors.New("no account identifier found in request")
 )
 
 type RESTHandler struct {
@@ -20,21 +27,76 @@ func NewRESTHandler(q *queue.OrderQueue) *RESTHandler {
 
 // PostOrder publishes a message to Pub/Sub. PublishMessage only works
 // with topics that already exist.
-func (h *RESTHandler) PostOrder(w http.ResponseWriter, r *http.Request) {
-	var or types.OrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&or); err != nil {
-		log.Printf("json.NewDecoder: %v", err)
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		return
+func (h *RESTHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		aid, err := getAccountIDFromRequest(r, accountFromCookie, accountFromHeader, accountFromQuery)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		ctx := contexts.AttachAccountID(r.Context(), aid)
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		or, err := api.OrderRequestFromBytes(b)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// TODO: validate order request
+
+		id, err := h.queue.PublishOrderRequest(ctx, or)
+		if err != nil {
+			log.Printf("topic(%s).Publish.Get: %v", queue.OrderTopic, err)
+			http.Error(w, "Error publishing message", http.StatusInternalServerError)
+			return
+		}
+
+		res := api.BookOrder(id)
+		out, err := json.Marshal(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprint(w, out)
+	}
+}
+
+func getAccountIDFromRequest(r *http.Request, findIDFns ...func(r *http.Request) string) (string, error) {
+	var idString string
+
+	for _, fn := range findIDFns {
+		idString = fn(r)
+		if idString != "" {
+			break
+		}
 	}
 
-	// TODO: get account and add it to request
+	if idString == "" {
+		return "", ErrNoAccountIDFound
+	}
 
-	id, err := h.queue.PublishOrderRequest(r.Context(), or)
+	return idString, nil
+}
+
+func accountFromCookie(r *http.Request) string {
+	cookie, err := r.Cookie("account")
 	if err != nil {
-		log.Printf("topic(%s).Publish.Get: %v", queue.OrderTopic, err)
-		http.Error(w, "Error publishing message", http.StatusInternalServerError)
-		return
+		return ""
 	}
-	fmt.Fprintf(w, "Message published: %v", id)
+	return cookie.Value
+}
+
+func accountFromHeader(r *http.Request) string {
+	return r.Header.Get("Account")
+}
+
+func accountFromQuery(r *http.Request) string {
+	return r.URL.Query().Get("account")
 }
