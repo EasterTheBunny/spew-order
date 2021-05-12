@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
+	"github.com/easterthebunny/render"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/pkg/api"
 	"github.com/easterthebunny/spew-order/pkg/queue"
@@ -31,7 +30,7 @@ func (h *RESTHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		aid, err := getAccountIDFromRequest(r, accountFromCookie, accountFromHeader, accountFromQuery)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			render.Render(w, r, HTTPBadRequest(err))
 			return
 		}
 
@@ -39,13 +38,13 @@ func (h *RESTHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) {
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			render.Render(w, r, HTTPBadRequest(err))
 			return
 		}
 
 		or, err := api.OrderRequestFromBytes(b)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			render.Render(w, r, HTTPBadRequest(err))
 			return
 		}
 
@@ -53,18 +52,12 @@ func (h *RESTHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) {
 
 		id, err := h.queue.PublishOrderRequest(ctx, or)
 		if err != nil {
-			log.Printf("topic(%s).Publish.Get: %v", queue.OrderTopic, err)
-			http.Error(w, "Error publishing message", http.StatusInternalServerError)
+			log.Printf("PostOrder.PublistOrderRequest: %v", err)
+			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
 
-		res := api.BookOrder(id)
-		out, err := json.Marshal(res)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		fmt.Fprint(w, out)
+		render.Render(w, r, HTTPNewOKResponse(&api.BookOrder{Guid: id}))
 	}
 }
 

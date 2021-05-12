@@ -23,7 +23,11 @@ paths:
           content: 
             'application/json': 
               schema: 
-                $ref: '#/components/schemas/BookOrder'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BookOrder'
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
 components:
   parameters:
     Account:
@@ -34,6 +38,13 @@ components:
         type: string
       description: The account id for all following operations
   schemas:
+    ResponseError:
+      type: object
+      required:
+      - detail
+      properties:
+        detail:
+          type: string
     QueryTime:
       type: integer
       format: int64
@@ -123,4 +134,9 @@ components:
             quantity:
               $ref: '#/components/schemas/CurrencyValue'
     BookOrder:
-      type: string
+      type: object
+      required:
+      - guid
+      properties:
+        guid:
+          type: string

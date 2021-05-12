@@ -28,7 +28,9 @@ const (
 type ActionType string
 
 // BookOrder defines model for BookOrder.
-type BookOrder string
+type BookOrder struct {
+	Guid string `json:"guid"`
+}
 
 // CurrencyValue defines model for CurrencyValue.
 type CurrencyValue string
@@ -82,6 +84,11 @@ type OrderType struct {
 
 // Order type: * `MARKET` - order type used to buy or sell at market value * `LIMIT` - used to set buy or sell limit
 type OrderTypeName string
+
+// ResponseError defines model for ResponseError.
+type ResponseError struct {
+	Detail string `json:"detail"`
+}
 
 // Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
 type SymbolType string
