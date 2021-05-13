@@ -3,9 +3,25 @@ info:
   title: Cloud Exchange REST API
   version: 0.0.1
 paths:
-  /order:
+  /account/{accountID}:
     parameters:
-      - $ref: '#/components/parameters/Account'
+      - $ref: '#/components/parameters/AccountPathParam'
+    get:
+      description: Retrieve account information
+      responses:
+        200:
+          description: OK
+          content:
+            'application/json':
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Account'
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
+  /account/{accountID}/order:
+    parameters:
+      - $ref: '#/components/parameters/AccountPathParam'
     post:
       description: Publishes an order to the order book
       requestBody: 
@@ -30,13 +46,13 @@ paths:
                     $ref: '#/components/schemas/ResponseError'
 components:
   parameters:
-    Account:
-      in: header
-      name: Account
+    AccountPathParam:
+      in: path
+      name: accountID
       required: true
       schema:
         type: string
-      description: The account id for all following operations
+      description: The uuid account identifier
   schemas:
     ResponseError:
       type: object
@@ -69,6 +85,14 @@ components:
         * `ETH` - ethereum currency identifier
     CurrencyValue:
       type: string
+    Account:
+      type: object
+      description: Balances account
+      required:
+      - id
+      properties:
+        id:
+          type: string
     OrderRequest:
       type: object
       description: Request to create a new order on the order book

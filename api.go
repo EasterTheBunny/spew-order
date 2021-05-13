@@ -10,27 +10,27 @@ import (
 	"os"
 	"strings"
 
+	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/book"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
-	"github.com/easterthebunny/spew-order/pkg/queue"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
 const (
-	envProjectID  = "GOOGLE_CLOUD_PROJECT"
-	envOrderTopic = "ORDER_TOPIC"
-	envAppName    = "APP_NAME"       // application name used as prefix for named resources
-	envRuntimeEnv = "DEPLOYMENT_ENV" // deployment environment; CI, QA, PROD
-	envLocation   = "LOCATION"       // resources location for this function instanc
+	envIdentityURI = "IDENTITY_PROVIDER" // identity provider as a URI path
+	envProjectID   = "GOOGLE_CLOUD_PROJECT"
+	envOrderTopic  = "ORDER_TOPIC"
+	envAppName     = "APP_NAME"       // application name used as prefix for named resources
+	envRuntimeEnv  = "DEPLOYMENT_ENV" // deployment environment; CI, QA, PROD
+	envLocation    = "LOCATION"       // resources location for this function instanc
 )
 
 var (
 	// client is a global Pub/Sub client, initialized once per instance.
 	orderTopic = getEnvVar(envOrderTopic)
 
-	GS book.OrderBook
-	GQ *queue.OrderQueue
-	RH *handlers.RESTHandler
+	GS     book.OrderBook
+	Router http.Handler
 )
 
 func init() {
@@ -44,22 +44,35 @@ func init() {
 		strings.ToLower(getEnvVar(envLocation))}
 
 	bucket := fmt.Sprintf("%s-%s-%s-%s", conf...)
-	GS = book.NewGoogleOrderBook(bucket)
-	GQ, err := queue.NewGoogleOrderQueue(projectID, bucket)
-	if err != nil {
-		log.Fatalf("error creating google order queue: %s", err)
-	}
+	queue.OrderTopic = orderTopic
 
 	// register concrete types for the gob encoder/decoder
 	//gob.Register(types.LimitOrderType{})
 	//gob.Register(types.MarketOrderType{})
-	RH = handlers.NewRESTHandler(GQ)
-	queue.OrderTopic = orderTopic
+	ps := handlers.NewGooglePubSub(projectID)
+
+	kv, err := handlers.NewGoogleKVStore(&bucket)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	GS = handlers.NewGoogleOrderBook(kv)
+
+	jwt, err := handlers.NewJWTAuth(envIdentityURI)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	rh, err := handlers.NewDefaultRouter(kv, ps, jwt)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	Router = rh.Routes()
 }
 
 // RestAPI forwards all rest requests to the main API handler.
 func RestAPI(w http.ResponseWriter, r *http.Request) {
-	RH.PostOrder()(w, r)
+	Router.ServeHTTP(w, r)
 }
 
 // PubSubMessage is the payload of a Pub/Sub event.

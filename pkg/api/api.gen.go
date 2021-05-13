@@ -24,6 +24,11 @@ const (
 	SymbolTypeETH SymbolType = "ETH"
 )
 
+// Balances account
+type Account struct {
+	Id string `json:"id"`
+}
+
 // Action type: * `BUY` - use base currency to buy target currency * `SELL` - sell target currency for base currency
 type ActionType string
 
@@ -93,18 +98,11 @@ type ResponseError struct {
 // Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
 type SymbolType string
 
-// Account defines model for Account.
-type Account string
+// AccountPathParam defines model for AccountPathParam.
+type AccountPathParam string
 
-// PostOrderJSONBody defines parameters for PostOrder.
-type PostOrderJSONBody OrderRequest
+// PostAccountAccountIDOrderJSONBody defines parameters for PostAccountAccountIDOrder.
+type PostAccountAccountIDOrderJSONBody OrderRequest
 
-// PostOrderParams defines parameters for PostOrder.
-type PostOrderParams struct {
-
-	// The account id for all following operations
-	Account Account `json:"Account"`
-}
-
-// PostOrderJSONRequestBody defines body for PostOrder for application/json ContentType.
-type PostOrderJSONRequestBody PostOrderJSONBody
+// PostAccountAccountIDOrderJSONRequestBody defines body for PostAccountAccountIDOrder for application/json ContentType.
+type PostAccountAccountIDOrderJSONRequestBody PostAccountAccountIDOrderJSONBody

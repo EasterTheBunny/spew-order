@@ -3,7 +3,6 @@ package account
 import (
 	"errors"
 
-	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
@@ -13,12 +12,12 @@ var (
 	ErrInsufficientBalanceForHold = errors.New("account balance too low for hold")
 )
 
-func NewBalanceService(repo account.AccountRepository) *BalanceService {
+func NewBalanceService(repo AccountRepository) *BalanceService {
 	return &BalanceService{acct: repo}
 }
 
 type BalanceService struct {
-	acct account.AccountRepository
+	acct AccountRepository
 }
 
 func (m *BalanceService) GetAccount(id string) (a *types.Account, err error) {
@@ -107,7 +106,7 @@ func (m *BalanceService) GetPostedBalance(a *types.Account, s types.Symbol) (bal
 func (m *BalanceService) SetHoldOnAccount(a *types.Account, s types.Symbol, amt decimal.Decimal) (holdid string, err error) {
 
 	r := m.acct.Balances(a, s)
-	newHold := account.NewBalanceItem(amt)
+	newHold := NewBalanceItem(amt)
 	err = r.CreateHold(&newHold)
 	if err != nil {
 		return
@@ -153,7 +152,7 @@ func (m *BalanceService) SetHoldOnAccount(a *types.Account, s types.Symbol, amt 
 func (m *BalanceService) PostToBalance(a *types.Account, s types.Symbol, amt decimal.Decimal) error {
 
 	r := m.acct.Balances(a, s)
-	newPost := account.NewBalanceItem(amt)
+	newPost := NewBalanceItem(amt)
 	err := r.CreatePost(&newPost)
 	if err != nil {
 		return err

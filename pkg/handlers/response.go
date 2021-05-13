@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
-	"errors"
 	"net/http"
 	"reflect"
 
@@ -74,27 +72,6 @@ func NewErrResponse(e []*ErrResponse) *APIResponse {
 	return &APIResponse{Error: &e}
 }
 
-// Render is the default rendering function for the API
-func Render(w http.ResponseWriter, r *http.Request, v interface{}) {
-	switch o := v.(type) {
-	case render.Renderer:
-		render.Render(w, r, o)
-		return
-	default:
-		panic(errors.New("missing renderer function for output"))
-	}
-}
-
-// Bind ...
-func Bind(r *http.Request, b interface{}) error {
-	switch o := b.(type) {
-	case render.Binder:
-		return render.Bind(r, o)
-	default:
-		return json.NewDecoder(r.Body).Decode(&b)
-	}
-}
-
 // NewErrorResponseSet ...
 func NewErrorResponseSet(err error) *[]*ErrResponse {
 	if err == nil {
@@ -146,6 +123,7 @@ type APIResponse struct {
 
 // Render implements the render.Renderer interface for use with chi-router
 func (ar *APIResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	w.WriteHeader(ar.HTTPStatusCode)
 	return nil
 }
 

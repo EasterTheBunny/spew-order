@@ -3,7 +3,6 @@ package account
 import (
 	"testing"
 
-	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/shopspring/decimal"
@@ -123,8 +122,8 @@ var seedData = []balanceTestItem{
 	{decimal.NewFromFloat(1.33452823), &c, types.SymbolEthereum},
 }
 
-func newSeededRepo() account.AccountRepository {
-	repo := account.NewKVAccountRepository(persist.NewMockKVStore())
+func newSeededRepo() AccountRepository {
+	repo := NewKVAccountRepository(persist.NewMockKVStore())
 
 	for _, s := range seedData {
 		b := repo.Balances(s.acct, s.sym)

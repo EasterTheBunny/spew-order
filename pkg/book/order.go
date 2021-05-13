@@ -10,13 +10,6 @@ type OrderBook interface {
 	ExecuteOrInsertOrder(order types.Order) error
 }
 
-func NewGoogleOrderBook(bucket string) OrderBook {
-
-	kvStore, _ := persist.NewGoogleKVStore(&bucket)
-
-	return account.NewKVBookRepository(kvStore)
-}
-
 func NewMockOrderBook() OrderBook {
 	return account.NewKVBookRepository(persist.NewMockKVStore())
 }

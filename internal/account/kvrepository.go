@@ -24,6 +24,7 @@ var _ BalanceRepository = &balanceRepository{}
 
 const (
 	bookSub int = iota
+	authzSub
 	accountSub
 	symbolsSub
 	balanceSub
@@ -35,12 +36,13 @@ var (
 	gsRoot    = key.FromBytes([]byte{0xFE})
 	gsBook    = gsRoot.Sub(bookSub)
 	gsAccount = gsRoot.Sub(accountSub)
+	gsAuthz   = gsRoot.Sub(authzSub)
 )
 
 func (r *KVAccountRepository) Find(id uuid.UUID) (*types.Account, error) {
 
-	key := gsAccount.Pack(key.Tuple{id.String()})
-	b, err := r.kvstore.Get(key.String())
+	k := gsAccount.Pack(key.Tuple{id.String()})
+	b, err := r.kvstore.Get(k.String())
 	if err != nil {
 		return nil, err
 	}

@@ -1,14 +1,15 @@
-package types
+package auth
 
 import (
 	"net/http"
 
+	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
 )
 
 // NewAuthorization returns a new auth with values set to defaults and a new
 // id generated.
-func NewAuthorization(accts ...Account) Authorization {
+func NewAuthorization(accts ...types.Account) Authorization {
 	var ids []string
 	for _, a := range accts {
 		ids = append(ids, a.ID.String())
@@ -39,7 +40,6 @@ type AuthorizationStore interface {
 // AuthenticationProvider ...
 type AuthenticationProvider interface {
 	Verifier() func(http.Handler) http.Handler
-	Authenticator() func(http.Handler) http.Handler
 	UpdateAuthz(*Authorization)
 	Subject() string
 }

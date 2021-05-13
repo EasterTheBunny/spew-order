@@ -3,25 +3,26 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
 // AuthorizationCtx ...
-func AuthorizationCtx(as types.AuthorizationStore, p types.AuthenticationProvider) func(http.Handler) http.Handler {
+func AuthorizationCtx(as auth.AuthorizationStore, p auth.AuthenticationProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
-			auth, err := as.GetAuthorization(p.Subject())
+			a, err := as.GetAuthorization(p.Subject())
 
 			if err == persist.ErrAuthzNotFound {
 				acc := types.NewAccount()
 
-				auth = &types.Authorization{
+				a = &auth.Authorization{
 					Accounts: []string{acc.ID.String()}}
 
-				p.UpdateAuthz(auth)
-				err = as.SetAuthorization(auth)
+				p.UpdateAuthz(a)
+				err = as.SetAuthorization(a)
 			}
 
 			if err != nil {
@@ -29,7 +30,7 @@ func AuthorizationCtx(as types.AuthorizationStore, p types.AuthenticationProvide
 				panic(err)
 			}
 
-			ctx := contexts.AttachAuthorization(r.Context(), *auth)
+			ctx := contexts.AttachAuthorization(r.Context(), *a)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 

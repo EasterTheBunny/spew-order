@@ -11,11 +11,10 @@ import (
 	"testing"
 	"time"
 
-	iaccount "github.com/easterthebunny/spew-order/internal/account"
+	"github.com/easterthebunny/spew-order/internal/account"
+	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
-	iqueue "github.com/easterthebunny/spew-order/internal/queue"
-	"github.com/easterthebunny/spew-order/pkg/account"
-	"github.com/easterthebunny/spew-order/pkg/queue"
+	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -31,11 +30,11 @@ func TestPostOrder(t *testing.T) {
 
 	// set up the mocked pub sub and establish a subscription to the topic
 	subscription := make(chan []byte)
-	mps := iqueue.NewMockPubSub()
+	mps := queue.NewMockPubSub()
 	mps.Subscribe(queue.OrderTopic, subscription)
 
 	acct := types.NewAccount()
-	repo := iaccount.NewKVAccountRepository(persist.NewMockKVStore())
+	repo := account.NewKVAccountRepository(persist.NewMockKVStore())
 	err := repo.Save(&acct)
 	if err != nil {
 		t.FailNow()
@@ -46,14 +45,14 @@ func TestPostOrder(t *testing.T) {
 	oq := queue.NewOrderQueue(mps, svc)
 
 	// create handler to test
-	handler := NewRESTHandler(oq)
+	handler := NewOrderHandler(oq)
 
 	t.Run("SuccessPath", func(t *testing.T) {
 		// create a response recorder for later inspection of the response
 		w := httptest.NewRecorder()
 
 		r := req(t, NewPost(fmt.Sprintf(data, limitType)))
-		r.Header.Set("Account", acct.ID.String())
+		r = r.WithContext(contexts.AttachAccount(r.Context(), acct))
 
 		handler.PostOrder()(w, r)
 
@@ -83,7 +82,7 @@ func TestPostOrder(t *testing.T) {
 
 		handler.PostOrder()(w, r)
 
-		assert.Equal(t, 400, w.Code, "response code is a 400 Bad Request")
+		assert.Equal(t, 500, w.Code, "response code is a 500 internal server error")
 
 		// the new order should NOT be posted
 		select {
@@ -104,6 +103,16 @@ Content-Length: %d
 
 %s`
 	return fmt.Sprintf(post, len(cont), cont)
+}
+
+func NewGet(r testing.TB, path string) *http.Request {
+	request, err := http.NewRequest(http.MethodGet, path, nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("User-Agent", "mockagent")
+	if err != nil {
+		r.Errorf("request error: %s", err.Error())
+	}
+	return request
 }
 
 func req(t testing.TB, v string) *http.Request {

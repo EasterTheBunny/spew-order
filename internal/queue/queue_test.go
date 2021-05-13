@@ -5,11 +5,9 @@ import (
 	"testing"
 	"time"
 
-	iaccount "github.com/easterthebunny/spew-order/internal/account"
+	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
-	iqueue "github.com/easterthebunny/spew-order/internal/queue"
-	"github.com/easterthebunny/spew-order/pkg/account"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -19,11 +17,11 @@ func TestPublishOrderRequest(t *testing.T) {
 
 	// set up the mocked pub sub and establish a subscription to the topic
 	subscription := make(chan []byte)
-	mps := iqueue.NewMockPubSub()
+	mps := NewMockPubSub()
 	mps.Subscribe(OrderTopic, subscription)
 
 	acct := types.NewAccount()
-	repo := iaccount.NewKVAccountRepository(persist.NewMockKVStore())
+	repo := account.NewKVAccountRepository(persist.NewMockKVStore())
 	err := repo.Save(&acct)
 	if err != nil {
 		t.FailNow()

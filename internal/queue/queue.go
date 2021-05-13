@@ -7,8 +7,6 @@ import (
 	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
-	"github.com/easterthebunny/spew-order/internal/queue"
-	paccount "github.com/easterthebunny/spew-order/pkg/account"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -17,13 +15,13 @@ var (
 )
 
 func NewGoogleOrderQueue(projectID string, bucket string) (*OrderQueue, error) {
-	q := queue.NewGooglePubSub(projectID)
+	q := NewGooglePubSub(projectID)
 	s, err := persist.NewGoogleKVStore(&bucket)
 	if err != nil {
 		return nil, err
 	}
 	r := account.NewKVAccountRepository(s)
-	bs := paccount.NewBalanceService(r)
+	bs := account.NewBalanceService(r)
 
 	oq := OrderQueue{
 		client:  q,
@@ -32,15 +30,15 @@ func NewGoogleOrderQueue(projectID string, bucket string) (*OrderQueue, error) {
 	return &oq, nil
 }
 
-func NewOrderQueue(pubsub queue.PubSub, bs *paccount.BalanceService) *OrderQueue {
+func NewOrderQueue(pubsub PubSub, bs *account.BalanceService) *OrderQueue {
 	return &OrderQueue{
 		client:  pubsub,
 		balance: bs}
 }
 
 type OrderQueue struct {
-	client  queue.PubSub
-	balance *paccount.BalanceService
+	client  PubSub
+	balance *account.BalanceService
 }
 
 func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequest) (id string, err error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -22,18 +23,18 @@ const (
 )
 
 // AttachAuthorization ...
-func AttachAuthorization(ctx context.Context, auth types.Authorization) context.Context {
-	return context.WithValue(ctx, ctxAuthzKey, auth)
+func AttachAuthorization(ctx context.Context, a auth.Authorization) context.Context {
+	return context.WithValue(ctx, ctxAuthzKey, a)
 }
 
 // GetAuthorization ...
-func GetAuthorization(ctx context.Context) *types.Authorization {
+func GetAuthorization(ctx context.Context) *auth.Authorization {
 	val := ctx.Value(ctxAuthzKey)
 	if val == nil {
 		return nil
 	}
 
-	auth, ok := val.(types.Authorization)
+	auth, ok := val.(auth.Authorization)
 	if !ok {
 		return nil
 	}
