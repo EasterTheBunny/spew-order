@@ -14,12 +14,13 @@ import (
 func newLimitBookOrder(t int64, price, quantity float64, action types.ActionType) types.Order {
 	return types.Order{
 		ID:        uuid.NewV4(),
-		Owner:     uuid.NewV4(),
 		Timestamp: time.Unix(t, 0),
 		OrderRequest: types.OrderRequest{
-			Base:   types.SymbolBitcoin,
-			Target: types.SymbolEthereum,
-			Action: action,
+			Account: uuid.NewV4(),
+			Owner:   uuid.NewV4().String(),
+			Base:    types.SymbolBitcoin,
+			Target:  types.SymbolEthereum,
+			Action:  action,
 			Type: &types.LimitOrderType{
 				Base:     types.SymbolEthereum,
 				Price:    decimal.NewFromFloat(price),
@@ -32,12 +33,13 @@ func newLimitBookOrder(t int64, price, quantity float64, action types.ActionType
 func newMarketBookOrder(t int64, quantity float64, action types.ActionType) types.Order {
 	return types.Order{
 		ID:        uuid.NewV4(),
-		Owner:     uuid.NewV4(),
 		Timestamp: time.Unix(t, 0),
 		OrderRequest: types.OrderRequest{
-			Base:   types.SymbolBitcoin,
-			Target: types.SymbolEthereum,
-			Action: action,
+			Account: uuid.NewV4(),
+			Owner:   uuid.NewV4().String(),
+			Base:    types.SymbolBitcoin,
+			Target:  types.SymbolEthereum,
+			Action:  action,
 			Type: &types.MarketOrderType{
 				Base:     types.SymbolEthereum,
 				Quantity: decimal.NewFromFloat(quantity),

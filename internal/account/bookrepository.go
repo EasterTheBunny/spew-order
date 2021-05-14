@@ -40,6 +40,13 @@ func (gs *bookRepo) ExecuteOrInsertOrder(order types.Order) error {
 			}
 
 			bookOrder := &book.Order
+			// primary check for order owner match
+			// two orders by the same owner cannot resolve each other
+			// prevents a person from buying their own order
+			if bookOrder.Owner == order.Owner || bookOrder.Account.String() == order.Account.String() {
+				continue
+			}
+
 			tr, o := bookOrder.Resolve(order)
 
 			// a transaction indicates that order pairing occurred

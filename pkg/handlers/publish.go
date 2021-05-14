@@ -30,6 +30,7 @@ func (h *OrderHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		acct := contexts.GetAccount(ctx)
+		authz := contexts.GetAuthorization(ctx)
 		if acct == nil {
 			render.Render(w, r, HTTPInternalServerError(errors.New("incorrect route structure")))
 			return
@@ -47,6 +48,9 @@ func (h *OrderHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) 
 			render.Render(w, r, HTTPBadRequest(err))
 			return
 		}
+
+		or.Account = acct.ID
+		or.Owner = authz.ID
 
 		// TODO: validate order request
 

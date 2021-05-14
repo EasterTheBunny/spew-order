@@ -21,21 +21,20 @@ type Order struct {
 	OrderRequest
 	ID        uuid.UUID `json:"id"`
 	Timestamp time.Time `json:"timestamp"`
-	Owner     uuid.UUID `json:"owner"`
 }
 
 func NewOrder() Order {
 	return Order{
 		ID:        uuid.NewV4(),
-		Timestamp: time.Now(),
-		Owner:     uuid.NewV4()}
+		Timestamp: time.Now()}
 }
 
 func (o Order) MarshalJSON() ([]byte, error) {
 	or := make(map[string]interface{})
 
 	or["id"] = o.ID.String()
-	or["owner"] = o.Owner.String()
+	or["owner"] = o.Owner
+	or["account"] = o.Account.String()
 	or["timestamp"] = o.Timestamp.Unix()
 
 	for k, v := range o.OrderRequest.MarshalMap() {
@@ -54,7 +53,8 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 
 	tp := struct {
 		ID        uuid.UUID `json:"id"`
-		Owner     uuid.UUID `json:"owner"`
+		Owner     string    `json:"owner"`
+		Account   uuid.UUID `json:"account"`
 		Timestamp int64     `json:"timestamp"`
 	}{}
 	if err := json.Unmarshal(b, &tp); err != nil {
@@ -63,7 +63,6 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 
 	o.OrderRequest = req
 	o.ID = tp.ID
-	o.Owner = tp.Owner
 	o.Timestamp = time.Unix(tp.Timestamp, 0)
 
 	return nil
@@ -79,7 +78,16 @@ func NewOrderFromRequest(r OrderRequest) Order {
 // Resolve returns a transaction if the orders can be resolved and a new order to save
 // to the book if one is produced from the resolution process.
 func (o *Order) Resolve(order Order) (*Transaction, *Order) {
+	// if both orders are the same owner, a transaction cannot be completed
+	if order.Owner == o.Owner || order.Account.String() == o.Account.String() {
+		return nil, nil
+	}
+
 	tr, ot := o.Type.FillWith(order)
+	if tr != nil {
+		tr.A.AccountID = o.Account
+		tr.B.AccountID = order.Account
+	}
 
 	// if there is a filled order, it is assumed that the requested order
 	// should be closed.
@@ -107,10 +115,9 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 }
 
 type BalanceEntry struct {
-	// AddID       uuid.UUID
+	AccountID   uuid.UUID
 	AddSymbol   Symbol
 	AddQuantity decimal.Decimal
-	// SubID       uuid.UUID
 	SubSymbol   Symbol
 	SubQuantity decimal.Decimal
 }
@@ -140,10 +147,16 @@ func (m MarketOrderType) String() string {
 	return m.Quantity.StringFixed(18)
 }
 
-func calcBalanceEntry(add bool, aB ActionType, sA, sB Symbol, qA, qB, p decimal.Decimal) (Symbol, decimal.Decimal, error) {
+func calcBalanceEntry(add bool, order Order, qA, qB, p decimal.Decimal) (Symbol, decimal.Decimal, error) {
 	x := ActionTypeBuy
 	y := ActionTypeSell
 
+	aB := order.Action
+	sA := order.Target
+	sB := order.Base
+
+	// default is the output for the positive side
+	// this flag switches to the negative side
 	if !add {
 		x = ActionTypeSell
 		y = ActionTypeBuy
@@ -170,12 +183,12 @@ func calcBalanceEntry(add bool, aB ActionType, sA, sB Symbol, qA, qB, p decimal.
 	}
 }
 
-func buildTransaction(aB ActionType, sA, sB Symbol, qA, qB, p decimal.Decimal) Transaction {
+func buildTransaction(order Order, qA, qB, p decimal.Decimal) Transaction {
 	tr := Transaction{
 		Filled: []Order{}}
 
-	addS, addQ, _ := calcBalanceEntry(true, aB, sA, sB, qA, qB, p)
-	subS, subQ, _ := calcBalanceEntry(false, aB, sA, sB, qA, qB, p)
+	addS, addQ, _ := calcBalanceEntry(true, order, qA, qB, p)
+	subS, subQ, _ := calcBalanceEntry(false, order, qA, qB, p)
 
 	// the first balance entry assumes the market order is cased in a sell order
 	a := BalanceEntry{
@@ -213,9 +226,7 @@ func (m *MarketOrderType) FillWith(order Order) (*Transaction, OrderType) {
 			qA = m.Quantity.Div(req.Price)
 		}
 
-		tr := buildTransaction(order.Action,
-			order.Target,
-			order.Base,
+		tr := buildTransaction(order,
 			qA,
 			req.Quantity,
 			req.Price)
@@ -317,9 +328,7 @@ func (l *LimitOrderType) FillWith(order Order) (*Transaction, OrderType) {
 			qB = req.Quantity.Div(l.Price)
 		}
 
-		tr := buildTransaction(order.Action,
-			order.Target,
-			order.Base,
+		tr := buildTransaction(order,
 			l.Quantity,
 			qB,
 			l.Price)
@@ -374,9 +383,7 @@ func (l *LimitOrderType) FillWith(order Order) (*Transaction, OrderType) {
 			}
 		}
 
-		tr := buildTransaction(order.Action,
-			order.Target,
-			order.Base,
+		tr := buildTransaction(order,
 			l.Quantity,
 			req.Quantity,
 			l.Price)

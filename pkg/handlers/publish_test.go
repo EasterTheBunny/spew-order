@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/easterthebunny/spew-order/internal/account"
+	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/queue"
@@ -52,7 +53,11 @@ func TestPostOrder(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		r := req(t, NewPost(fmt.Sprintf(data, limitType)))
-		r = r.WithContext(contexts.AttachAccount(r.Context(), acct))
+		ctx := r.Context()
+		ctx = contexts.AttachAuthorization(ctx, auth.Authorization{
+			ID: "test",
+		})
+		r = r.WithContext(contexts.AttachAccount(ctx, acct))
 
 		handler.PostOrder()(w, r)
 
