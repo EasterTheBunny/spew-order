@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"context"
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
@@ -132,14 +132,14 @@ func tokenFromRequest(j *JWT, r *http.Request, findTokenFns ...func(r *http.Requ
 
 func verifyToken(j *JWT, tokenString string) (jwt.Token, error) {
 	keyPath := "https://" + j.domain + "/.well-known/jwks.json"
-	keySet, err := jwk.Fetch(context.Background(), keyPath)
+	keySet, err := jwk.Fetch(keyPath)
 	if err != nil {
 		return nil, err
 	}
 
 	j.verifier = jwt.WithKeySet(keySet)
 
-	token, err := jwt.Parse([]byte(tokenString), j.verifier)
+	token, err := jwt.Parse(bytes.NewReader([]byte(tokenString)), j.verifier)
 	if err != nil {
 		return token, err
 	}
@@ -222,7 +222,7 @@ func (j *JWT) Decode(tokenString string) (jwt.Token, error) {
 }
 
 func (j *JWT) parse(payload []byte) (jwt.Token, error) {
-	return jwt.Parse(payload)
+	return jwt.Parse(bytes.NewReader([]byte(payload)))
 }
 
 func tokenFromHeader(r *http.Request) string {
