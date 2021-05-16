@@ -6,10 +6,10 @@ import (
 	"github.com/easterthebunny/spew-order/internal/middleware"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/queue"
-	"github.com/easterthebunny/spew-order/pkg/book"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 )
 
-func NewGoogleOrderBook(kv persist.KVStore) book.OrderBook {
+func NewGoogleOrderBook(kv persist.KVStore) domain.OrderBookRepository {
 	return account.NewKVBookRepository(kv)
 }
 

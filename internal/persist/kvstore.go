@@ -19,6 +19,7 @@ var ErrObjectNotExist = fmt.Errorf("object not found for key")
 // KVStore ...
 type KVStore interface {
 	Get(string) ([]byte, error)
+	Attrs(string) (*KVStoreObjectAttrs, error)
 	Set(string, []byte, *KVStoreObjectAttrsToUpdate) error
 	Delete(string) error
 	RangeGet(*KVStoreQuery, int) ([]*KVStoreObjectAttrs, error)
@@ -30,13 +31,15 @@ type KVStoreQuery struct {
 }
 
 type KVStoreObjectAttrs struct {
-	Name     string
-	Metadata map[string]string
-	Created  time.Time
+	Name            string
+	Metadata        map[string]string
+	ContentEncoding string
+	Created         time.Time
 }
 
 type KVStoreObjectAttrsToUpdate struct {
-	Metadata map[string]string
+	ContentEncoding string
+	Metadata        map[string]string
 }
 
 func NewGoogleKVStore(bucket *string) (*GoogleKVStore, error) {
@@ -83,6 +86,31 @@ func (gs *GoogleKVStore) Get(sKey string) ([]byte, error) {
 	return data, nil
 }
 
+// Get ...
+func (gs *GoogleKVStore) Attrs(sKey string) (attrs *KVStoreObjectAttrs, err error) {
+	ctx := context.Background()
+
+	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
+	defer cancel()
+
+	var obj *storage.ObjectAttrs
+	obj, err = gs.client.Bucket(gs.bucket).Object(sKey).Attrs(ctx)
+	if err != nil {
+		if err == storage.ErrObjectNotExist {
+			err = ErrObjectNotExist
+		}
+		return
+	}
+
+	attrs = &KVStoreObjectAttrs{
+		Name:            obj.Name,
+		Metadata:        obj.Metadata,
+		ContentEncoding: obj.ContentEncoding,
+		Created:         obj.Created}
+
+	return
+}
+
 // Set ...
 func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrsToUpdate) error {
 	ctx := context.Background()
@@ -102,7 +130,8 @@ func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrs
 
 	if attrs != nil {
 		at := &storage.ObjectAttrsToUpdate{
-			Metadata: attrs.Metadata}
+			ContentEncoding: attrs.ContentEncoding,
+			Metadata:        attrs.Metadata}
 		handle.Update(ctx, *at)
 	}
 
@@ -122,7 +151,7 @@ func (gs *GoogleKVStore) RangeGet(q *KVStoreQuery, limit int) ([]*KVStoreObjectA
 		qu = &storage.Query{
 			StartOffset: q.StartOffset}
 	}
-	qu.SetAttrSelection([]string{"Name", "MetaData", "Created"})
+	qu.SetAttrSelection([]string{"Name", "MetaData", "Created", "ContentEncoding"})
 
 	it := gs.client.Bucket(gs.bucket).Objects(ctx, qu)
 	attr := []*KVStoreObjectAttrs{}
@@ -139,9 +168,10 @@ func (gs *GoogleKVStore) RangeGet(q *KVStoreQuery, limit int) ([]*KVStoreObjectA
 		var a *KVStoreObjectAttrs
 		if attrs != nil {
 			a = &KVStoreObjectAttrs{
-				Name:     attrs.Name,
-				Metadata: attrs.Metadata,
-				Created:  attrs.Created}
+				Name:            attrs.Name,
+				Metadata:        attrs.Metadata,
+				ContentEncoding: attrs.ContentEncoding,
+				Created:         attrs.Created}
 		}
 
 		attr = append(attr, a)
@@ -182,6 +212,14 @@ func (gsm *MockKVStore) Get(key string) ([]byte, error) {
 		return []byte{}, ErrObjectNotExist
 	}
 	return gsm.data[key], nil
+}
+
+func (gsm *MockKVStore) Attrs(key string) (a *KVStoreObjectAttrs, err error) {
+	a, ok := gsm.meta[key]
+	if !ok {
+		err = ErrObjectNotExist
+	}
+	return
 }
 
 // Set ...

@@ -3,6 +3,7 @@ module github.com/easterthebunny/spew-order
 go 1.13
 
 require (
+	cloud.google.com/go/firestore v1.5.0
 	cloud.google.com/go/pubsub v1.10.1
 	cloud.google.com/go/storage v1.14.0
 	github.com/davecgh/go-spew v1.1.1 // indirect

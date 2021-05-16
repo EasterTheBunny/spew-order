@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
 )
 
 // Symbol ...
-type Symbol uint
+type Symbol int
 
 const (
 	// SymbolBitcoin ...
@@ -44,6 +46,34 @@ func (s Symbol) typeInRange() bool {
 	return s >= SymbolBitcoin && s <= SymbolEthereum
 }
 
+// RoundingPlace provides expected rounding values for each symbol
+func (s Symbol) RoundingPlace() int32 {
+	switch s {
+	case SymbolBitcoin:
+		return 8
+	case SymbolEthereum:
+		return 18
+	default:
+		return 8
+	}
+}
+
+// MarshalBinary ...
+func (s Symbol) MarshalBinary() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d", int(s))), nil
+}
+
+// UnmarshalBinary ...
+func (s *Symbol) UnmarshalBinary(b []byte) error {
+	val, err := strconv.ParseInt(string(b), 10, 32)
+	if err != nil {
+		return err
+	}
+
+	reflect.ValueOf(s).Elem().Set(reflect.ValueOf(int(val)))
+	return nil
+}
+
 // MarshalJSON ...
 func (s Symbol) MarshalJSON() ([]byte, error) {
 	if !s.typeInRange() {
@@ -73,15 +103,4 @@ func (s *Symbol) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
-}
-
-func (s Symbol) RoundingPlace() int32 {
-	switch s {
-	case SymbolBitcoin:
-		return 8
-	case SymbolEthereum:
-		return 18
-	default:
-		return 8
-	}
 }

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/easterthebunny/spew-order/internal/queue"
-	"github.com/easterthebunny/spew-order/pkg/book"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
@@ -29,7 +29,7 @@ var (
 	// client is a global Pub/Sub client, initialized once per instance.
 	orderTopic = getEnvVar(envOrderTopic)
 
-	GS     book.OrderBook
+	GS     domain.OrderBookRepository
 	Router http.Handler
 )
 
@@ -75,15 +75,8 @@ func RestAPI(w http.ResponseWriter, r *http.Request) {
 	Router.ServeHTTP(w, r)
 }
 
-// PubSubMessage is the payload of a Pub/Sub event.
-// See the documentation for more details:
-// https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage
-type PubSubMessage struct {
-	Data []byte `json:"data"`
-}
-
 // OrderPubSub consumes a Pub/Sub message.
-func OrderPubSub(ctx context.Context, m PubSubMessage) error {
+func OrderPubSub(ctx context.Context, m domain.OrderMessage) error {
 
 	req := &types.OrderRequest{}
 	if err := req.UnmarshalJSON(m.Data); err != nil {

@@ -86,7 +86,10 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 	tr, ot := o.Type.FillWith(order)
 	if tr != nil {
 		tr.A.AccountID = o.Account
+		tr.A.Order = *o
+
 		tr.B.AccountID = order.Account
+		tr.B.Order = order
 	}
 
 	// if there is a filled order, it is assumed that the requested order
@@ -115,6 +118,7 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 }
 
 type BalanceEntry struct {
+	Order       Order
 	AccountID   uuid.UUID
 	AddSymbol   Symbol
 	AddQuantity decimal.Decimal
