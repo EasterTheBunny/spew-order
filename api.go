@@ -29,7 +29,7 @@ var (
 	// client is a global Pub/Sub client, initialized once per instance.
 	orderTopic = getEnvVar(envOrderTopic)
 
-	GS     domain.OrderBookRepository
+	GS     *domain.OrderBook
 	Router http.Handler
 )
 

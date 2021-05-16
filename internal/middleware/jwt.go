@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/easterthebunny/spew-order/internal/auth"
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jwt"
@@ -92,7 +92,7 @@ func (j *JWT) Subject() string {
 }
 
 // UpdateAuthz ...
-func (j *JWT) UpdateAuthz(a *auth.Authorization) {
+func (j *JWT) UpdateAuthz(a *persist.Authorization) {
 	a.ID = j.token.Subject()
 	email, ok := j.token.Get("name")
 	if ok {

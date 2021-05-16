@@ -5,20 +5,19 @@ import (
 	"net/http"
 
 	"github.com/easterthebunny/render"
-	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/api"
-	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/go-chi/chi"
 	uuid "github.com/satori/go.uuid"
 )
 
 type AccountHandler struct {
-	repo account.AccountRepository
+	repo persist.AccountRepository
 }
 
-func NewAccountHandler(r account.AccountRepository) *AccountHandler {
+func NewAccountHandler(r persist.AccountRepository) *AccountHandler {
 	return &AccountHandler{repo: r}
 }
 
@@ -37,7 +36,7 @@ func (h *AccountHandler) GetAccount() func(w http.ResponseWriter, r *http.Reques
 func (h *AccountHandler) AccountCtx() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var acct *types.Account
+			var ctxAccount *domain.Account
 			var err error
 			var id uuid.UUID
 
@@ -65,13 +64,16 @@ func (h *AccountHandler) AccountCtx() func(http.Handler) http.Handler {
 					return
 				}
 
+				ctxAccount = domain.NewAccount()
+				ctxAccount.ID = id
+
 				// look for the account in storage and create the account if it doesn't exist
-				acct, err = h.repo.Find(id)
+				_, err = h.repo.Find(id)
 				if err != nil {
 					if err == persist.ErrObjectNotExist {
-						acc := types.NewAccount()
-						acc.ID = id
-						acct = &acc
+						ctxAccount = domain.NewAccount()
+
+						acct := &persist.Account{ID: ctxAccount.ID.String()}
 						err = h.repo.Save(acct)
 						if err != nil {
 							render.Render(w, r, HTTPInternalServerError(err))
@@ -87,7 +89,7 @@ func (h *AccountHandler) AccountCtx() func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := contexts.AttachAccount(r.Context(), *acct)
+			ctx := contexts.AttachAccount(r.Context(), *ctxAccount)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

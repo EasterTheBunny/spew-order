@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/internal/persist/kv"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -20,8 +21,8 @@ func NewGoogleOrderQueue(projectID string, bucket string) (*OrderQueue, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := account.NewKVAccountRepository(s)
-	bs := account.NewBalanceService(r)
+	r := kv.NewAccountRepository(s)
+	bs := domain.NewBalanceManager(r)
 
 	oq := OrderQueue{
 		client:  q,
@@ -30,7 +31,7 @@ func NewGoogleOrderQueue(projectID string, bucket string) (*OrderQueue, error) {
 	return &oq, nil
 }
 
-func NewOrderQueue(pubsub PubSub, bs *account.BalanceService) *OrderQueue {
+func NewOrderQueue(pubsub PubSub, bs *domain.BalanceManager) *OrderQueue {
 	return &OrderQueue{
 		client:  pubsub,
 		balance: bs}
@@ -38,7 +39,7 @@ func NewOrderQueue(pubsub PubSub, bs *account.BalanceService) *OrderQueue {
 
 type OrderQueue struct {
 	client  PubSub
-	balance *account.BalanceService
+	balance *domain.BalanceManager
 }
 
 func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequest) (id string, err error) {

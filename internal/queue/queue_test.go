@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/internal/persist/kv"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -20,14 +21,14 @@ func TestPublishOrderRequest(t *testing.T) {
 	mps := NewMockPubSub()
 	mps.Subscribe(OrderTopic, subscription)
 
-	acct := types.NewAccount()
-	repo := account.NewKVAccountRepository(persist.NewMockKVStore())
-	err := repo.Save(&acct)
+	acct := domain.NewAccount()
+	repo := kv.NewAccountRepository(persist.NewMockKVStore())
+	err := repo.Save(&persist.Account{ID: acct.ID.String()})
 	if err != nil {
 		t.FailNow()
 	}
-	svc := account.NewBalanceService(repo)
-	svc.PostToBalance(&acct, types.SymbolBitcoin, decimal.NewFromFloat(2.0))
+	svc := domain.NewBalanceManager(repo)
+	svc.PostToBalance(acct, types.SymbolBitcoin, decimal.NewFromFloat(2.0))
 
 	// account is required in the context
 	ctx := contexts.AttachAccountID(context.Background(), acct.ID.String())
@@ -98,7 +99,7 @@ func TestPublishOrderRequest(t *testing.T) {
 				Quantity: decimal.NewFromFloat(5.0)}}
 
 		_, err := q.PublishOrderRequest(ctx, or)
-		assert.Error(t, account.ErrInsufficientBalanceForHold, err, "must produce an error for insufficient funds")
+		assert.Error(t, domain.ErrInsufficientBalanceForHold, err, "must produce an error for insufficient funds")
 
 		// nothing should be sent to pubsub
 		select {

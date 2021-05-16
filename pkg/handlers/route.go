@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/internal/middleware"
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/api"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/go-chi/chi"
 )
 
 type Router struct {
-	AuthStore auth.AuthorizationStore
-	Balance   *account.BalanceService
+	AuthStore persist.AuthorizationRepository
+	Balance   *domain.BalanceManager
 	AuthProv  auth.AuthenticationProvider
 	Orders    *OrderHandler
 	Accounts  *AccountHandler

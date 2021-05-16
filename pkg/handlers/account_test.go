@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	iaccount "github.com/easterthebunny/spew-order/internal/account"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/pkg/api"
-	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,11 +21,11 @@ func TestGetAccount(t *testing.T) {
 	var logBuf bytes.Buffer
 	log.SetOutput(&logBuf)
 
-	acct := types.NewAccount()
-	repo := iaccount.NewKVAccountRepository(persist.NewMockKVStore())
+	acct := domain.NewAccount()
+	repo := kv.NewAccountRepository(persist.NewMockKVStore())
 
 	r := NewGet(t, "/")
-	r = r.WithContext(contexts.AttachAccount(r.Context(), acct))
+	r = r.WithContext(contexts.AttachAccount(r.Context(), *acct))
 
 	// create a response recorder for later inspection of the response
 	w := httptest.NewRecorder()

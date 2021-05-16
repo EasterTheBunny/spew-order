@@ -16,6 +16,16 @@ type BalanceRepository struct {
 	symbol  types.Symbol
 }
 
+var _ persist.BalanceRepository = &BalanceRepository{}
+
+func NewBalanceRepository(kv persist.KVStore, a *persist.Account, s types.Symbol) *BalanceRepository {
+	return &BalanceRepository{
+		kvstore: kv,
+		account: a,
+		symbol:  s,
+	}
+}
+
 func (b *BalanceRepository) GetBalance() (balance decimal.Decimal, err error) {
 
 	k := balanceKey(b.account.ID, b.symbol.String())

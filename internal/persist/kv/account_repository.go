@@ -17,7 +17,6 @@ func NewAccountRepository(store persist.KVStore) *AccountRepository {
 }
 
 var _ persist.AccountRepository = &AccountRepository{}
-var _ persist.BalanceRepository = &BalanceRepository{}
 
 const (
 	bookSub int = iota
@@ -36,7 +35,7 @@ var (
 	gsAuthz   = gsRoot.Sub(authzSub)
 )
 
-func (r *AccountRepository) Find(id persist.Key) (a *persist.Account, err error) {
+func (r *AccountRepository) Find(id persist.Key) (account *persist.Account, err error) {
 
 	b, err := r.kvstore.Get(accountKey(id.String()))
 	if err != nil {
@@ -48,22 +47,22 @@ func (r *AccountRepository) Find(id persist.Key) (a *persist.Account, err error)
 		return
 	}
 
-	a = &persist.Account{}
-	err = a.Decode(b, encodingFromStr(attr.ContentEncoding))
+	account = &persist.Account{}
+	err = account.Decode(b, encodingFromStr(attr.ContentEncoding))
 	if err != nil {
 		return
 	}
 
-	return a, nil
+	return
 }
 
-func (r *AccountRepository) Save(a *persist.Account) error {
-	if a == nil {
+func (r *AccountRepository) Save(account *persist.Account) error {
+	if account == nil {
 		return fmt.Errorf("%w for account", persist.ErrCannotSaveNilValue)
 	}
 
 	enc := persist.JSON
-	b, err := a.Encode(enc)
+	b, err := account.Encode(enc)
 	if err != nil {
 		return err
 	}
@@ -73,19 +72,11 @@ func (r *AccountRepository) Save(a *persist.Account) error {
 		Metadata:        make(map[string]string),
 	}
 
-	return r.kvstore.Set(accountKey(a.ID), b, &attrs)
+	return r.kvstore.Set(accountKey(account.ID), b, &attrs)
 }
 
 func (r *AccountRepository) Balances(a *persist.Account, s types.Symbol) persist.BalanceRepository {
 	return NewBalanceRepository(r.kvstore, a, s)
-}
-
-func NewBalanceRepository(kv persist.KVStore, a *persist.Account, s types.Symbol) *BalanceRepository {
-	return &BalanceRepository{
-		kvstore: kv,
-		account: a,
-		symbol:  s,
-	}
 }
 
 func accountKey(id string) string {

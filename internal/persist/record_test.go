@@ -39,7 +39,6 @@ func TestBalanceItemByteEncoding(t *testing.T) {
 	var b []byte
 	var err error
 	bi := BalanceItem{
-		Key:       "test1",
 		ID:        "test2",
 		Timestamp: NanoTime(time.Now()),
 		Amount:    decimal.NewFromFloat(180.998329),
@@ -59,7 +58,6 @@ func TestBalanceItemByteEncoding(t *testing.T) {
 			t.Fatalf("no error expected; encountered: %s", err)
 		}
 
-		assert.Equal(t, bi.Key, dec.Key, "keys must be equal")
 		assert.Equal(t, bi.ID, dec.ID, "keys must be equal")
 		assert.Equal(t, time.Time(bi.Timestamp).UnixNano(), time.Time(dec.Timestamp).UnixNano(), "timestamps must be equal")
 		assert.Equal(t, bi.Amount, dec.Amount, "amount must be equal")
@@ -149,7 +147,6 @@ func BenchmarkBalanceItemByteEncoding(b *testing.B) {
 	b.ReportAllocs()
 
 	bi := &BalanceItem{
-		Key:       "test1",
 		ID:        "test2",
 		Timestamp: NanoTime(time.Now()),
 		Amount:    decimal.NewFromFloat(180.998329),

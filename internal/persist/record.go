@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/easterthebunny/spew-order/pkg/types"
+	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -67,10 +68,16 @@ type BalanceRepository interface {
 }
 
 type BalanceItem struct {
-	Key       string          `json:"key"`
 	ID        string          `json:"id"`
 	Timestamp NanoTime        `json:"timestamp"`
 	Amount    decimal.Decimal `json:"amount"`
+}
+
+func NewBalanceItem(amt decimal.Decimal) *BalanceItem {
+	return &BalanceItem{
+		ID:        uuid.NewV4().String(),
+		Timestamp: NanoTime(time.Now()),
+		Amount:    amt}
 }
 
 // Encode marshals to JSON encoded bytes

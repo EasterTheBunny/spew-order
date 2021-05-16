@@ -9,16 +9,22 @@ import (
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
+type authKey string
+
+func (a authKey) String() string {
+	return string(a)
+}
+
 // AuthorizationCtx ...
-func AuthorizationCtx(as auth.AuthorizationStore, p auth.AuthenticationProvider) func(http.Handler) http.Handler {
+func AuthorizationCtx(as persist.AuthorizationRepository, p auth.AuthenticationProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
-			a, err := as.GetAuthorization(p.Subject())
+			a, err := as.GetAuthorization(authKey(p.Subject()))
 
 			if err == persist.ErrAuthzNotFound {
 				acc := types.NewAccount()
 
-				a = &auth.Authorization{
+				a = &persist.Authorization{
 					Accounts: []string{acc.ID.String()}}
 
 				p.UpdateAuthz(a)

@@ -11,6 +11,10 @@ type OrderBook struct {
 	bir persist.BookRepository
 }
 
+func NewOrderBook(br persist.BookRepository) *OrderBook {
+	return &OrderBook{bir: br}
+}
+
 func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 	item := persist.NewBookItem(order)
 

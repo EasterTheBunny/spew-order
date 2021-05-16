@@ -1,9 +1,10 @@
-package account
+package domain
 
 import (
 	"testing"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/shopspring/decimal"
 )
@@ -19,44 +20,44 @@ func TestGetAvailableBalance(t *testing.T) {
 
 	tests := []balanceTest{
 		{
-			action:     &balanceTestItem{decimal.NewFromFloat(0.4329), &a, types.SymbolBitcoin},
+			action:     &balanceTestItem{decimal.NewFromFloat(0.4329), a, types.SymbolBitcoin},
 			actiontype: 0,
 			expected:   decimal.NewFromFloat(6.79404568),
 			err:        nil,
 		},
 		{
-			action:     &balanceTestItem{decimal.NewFromFloat(0.55442), &a, types.SymbolEthereum},
+			action:     &balanceTestItem{decimal.NewFromFloat(0.55442), a, types.SymbolEthereum},
 			actiontype: 1,
 			expected:   decimal.NewFromFloat(4.22294869),
 			err:        nil,
 		},
 		{
-			action:     &balanceTestItem{decimal.NewFromFloat(0.4329), &b, types.SymbolBitcoin},
+			action:     &balanceTestItem{decimal.NewFromFloat(0.4329), b, types.SymbolBitcoin},
 			actiontype: 0,
 			expected:   decimal.NewFromFloat(6.79404568),
 			err:        nil,
 		},
 		{
-			action:     &balanceTestItem{decimal.NewFromFloat(-0.2222), &a, types.SymbolBitcoin},
+			action:     &balanceTestItem{decimal.NewFromFloat(-0.2222), a, types.SymbolBitcoin},
 			actiontype: 1,
 			expected:   decimal.NewFromFloat(6.57184568),
 			err:        nil,
 		},
 		{
-			action:     &balanceTestItem{decimal.NewFromFloat(0.55442), &b, types.SymbolEthereum},
+			action:     &balanceTestItem{decimal.NewFromFloat(0.55442), b, types.SymbolEthereum},
 			actiontype: 1,
 			expected:   decimal.NewFromFloat(4.22294869),
 			err:        nil,
 		},
 		{
-			action:     &balanceTestItem{decimal.NewFromFloat(4.5), &b, types.SymbolEthereum},
+			action:     &balanceTestItem{decimal.NewFromFloat(4.5), b, types.SymbolEthereum},
 			actiontype: 0,
 			expected:   decimal.NewFromFloat(4.22294869),
 			err:        ErrInsufficientBalanceForHold,
 		},
 	}
 
-	service := NewBalanceService(newSeededRepo())
+	service := NewBalanceManager(newSeededRepo())
 
 	for i, test := range tests {
 		switch test.actiontype {
@@ -93,40 +94,41 @@ func TestGetAvailableBalance(t *testing.T) {
 
 type balanceTestItem struct {
 	amt  decimal.Decimal
-	acct *types.Account
+	acct *Account
 	sym  types.Symbol
 }
 
-var a = types.NewAccount()
-var b = types.NewAccount()
-var c = types.NewAccount()
+var a = NewAccount()
+var b = NewAccount()
+var c = NewAccount()
 
 var seedData = []balanceTestItem{
-	{decimal.NewFromFloat(1.33452823), &a, types.SymbolBitcoin},
-	{decimal.NewFromFloat(5.89238922), &a, types.SymbolBitcoin},
-	{decimal.NewFromFloat(0.00002823), &a, types.SymbolBitcoin}, // 7.22694568
-	{decimal.NewFromFloat(0.00000023), &a, types.SymbolEthereum},
-	{decimal.NewFromFloat(2.33400023), &a, types.SymbolEthereum},
-	{decimal.NewFromFloat(1.33452823), &a, types.SymbolEthereum}, // 3.66852869
-	{decimal.NewFromFloat(1.33452823), &b, types.SymbolBitcoin},
-	{decimal.NewFromFloat(5.89238922), &b, types.SymbolBitcoin},
-	{decimal.NewFromFloat(0.00002823), &b, types.SymbolBitcoin},
-	{decimal.NewFromFloat(0.00000023), &b, types.SymbolEthereum},
-	{decimal.NewFromFloat(2.33400023), &b, types.SymbolEthereum},
-	{decimal.NewFromFloat(1.33452823), &b, types.SymbolEthereum},
-	{decimal.NewFromFloat(1.33452823), &c, types.SymbolBitcoin},
-	{decimal.NewFromFloat(5.89238922), &c, types.SymbolBitcoin},
-	{decimal.NewFromFloat(0.00002823), &c, types.SymbolBitcoin},
-	{decimal.NewFromFloat(0.00000023), &c, types.SymbolEthereum},
-	{decimal.NewFromFloat(2.33400023), &c, types.SymbolEthereum},
-	{decimal.NewFromFloat(1.33452823), &c, types.SymbolEthereum},
+	{decimal.NewFromFloat(1.33452823), a, types.SymbolBitcoin},
+	{decimal.NewFromFloat(5.89238922), a, types.SymbolBitcoin},
+	{decimal.NewFromFloat(0.00002823), a, types.SymbolBitcoin}, // 7.22694568
+	{decimal.NewFromFloat(0.00000023), a, types.SymbolEthereum},
+	{decimal.NewFromFloat(2.33400023), a, types.SymbolEthereum},
+	{decimal.NewFromFloat(1.33452823), a, types.SymbolEthereum}, // 3.66852869
+	{decimal.NewFromFloat(1.33452823), b, types.SymbolBitcoin},
+	{decimal.NewFromFloat(5.89238922), b, types.SymbolBitcoin},
+	{decimal.NewFromFloat(0.00002823), b, types.SymbolBitcoin},
+	{decimal.NewFromFloat(0.00000023), b, types.SymbolEthereum},
+	{decimal.NewFromFloat(2.33400023), b, types.SymbolEthereum},
+	{decimal.NewFromFloat(1.33452823), b, types.SymbolEthereum},
+	{decimal.NewFromFloat(1.33452823), c, types.SymbolBitcoin},
+	{decimal.NewFromFloat(5.89238922), c, types.SymbolBitcoin},
+	{decimal.NewFromFloat(0.00002823), c, types.SymbolBitcoin},
+	{decimal.NewFromFloat(0.00000023), c, types.SymbolEthereum},
+	{decimal.NewFromFloat(2.33400023), c, types.SymbolEthereum},
+	{decimal.NewFromFloat(1.33452823), c, types.SymbolEthereum},
 }
 
-func newSeededRepo() AccountRepository {
-	repo := NewKVAccountRepository(persist.NewMockKVStore())
+func newSeededRepo() persist.AccountRepository {
+	repo := kv.NewAccountRepository(persist.NewMockKVStore())
 
 	for _, s := range seedData {
-		b := repo.Balances(s.acct, s.sym)
+		acct := &persist.Account{ID: s.acct.ID.String()}
+		b := repo.Balances(acct, s.sym)
 		bal, _ := b.GetBalance()
 		bal = bal.Add(s.amt)
 		b.UpdateBalance(bal)

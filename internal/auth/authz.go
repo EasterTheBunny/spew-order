@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
 )
@@ -40,6 +41,6 @@ type AuthorizationStore interface {
 // AuthenticationProvider ...
 type AuthenticationProvider interface {
 	Verifier() func(http.Handler) http.Handler
-	UpdateAuthz(*Authorization)
+	UpdateAuthz(*persist.Authorization)
 	Subject() string
 }

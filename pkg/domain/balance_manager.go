@@ -1,8 +1,9 @@
-package account
+package domain
 
 import (
 	"errors"
 
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
@@ -12,28 +13,37 @@ var (
 	ErrInsufficientBalanceForHold = errors.New("account balance too low for hold")
 )
 
-func NewBalanceService(repo AccountRepository) *BalanceService {
-	return &BalanceService{acct: repo}
+func NewBalanceManager(repo persist.AccountRepository) *BalanceManager {
+	return &BalanceManager{acct: repo}
 }
 
-type BalanceService struct {
-	acct AccountRepository
+type BalanceManager struct {
+	acct persist.AccountRepository
 }
 
-func (m *BalanceService) GetAccount(id string) (a *types.Account, err error) {
+func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 
 	uid, err := uuid.FromString(id)
 	if err != nil {
 		return
 	}
-	a, err = m.acct.Find(uid)
+
+	_, err = m.acct.Find(uid)
+	if err != nil {
+		return
+	}
+
+	a = NewAccount()
+	a.ID = uid
+
 	return
 }
 
 // GetAvailableBalance returns the total spendable balance for a single Symbol and includes all active holds
-func (m *BalanceService) GetAvailableBalance(a *types.Account, s types.Symbol) (balance decimal.Decimal, err error) {
+func (m *BalanceManager) GetAvailableBalance(a *Account, s types.Symbol) (balance decimal.Decimal, err error) {
 
-	r := m.acct.Balances(a, s)
+	acct := &persist.Account{ID: a.ID.String()}
+	r := m.acct.Balances(acct, s)
 	balance, err = m.GetPostedBalance(a, s)
 	if err != nil {
 		return
@@ -55,9 +65,10 @@ func (m *BalanceService) GetAvailableBalance(a *types.Account, s types.Symbol) (
 // returns both a balance and/or an error. Because multiple threads could call this
 // function at the same time, one will succeed and one will fail however a failure
 // will still return a balance but the balance may not be accurate.
-func (m *BalanceService) GetPostedBalance(a *types.Account, s types.Symbol) (balance decimal.Decimal, err error) {
+func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance decimal.Decimal, err error) {
 
-	r := m.acct.Balances(a, s)
+	acct := &persist.Account{ID: a.ID.String()}
+	r := m.acct.Balances(acct, s)
 	balance, err = r.GetBalance()
 	if err != nil {
 		return
@@ -103,11 +114,12 @@ func (m *BalanceService) GetPostedBalance(a *types.Account, s types.Symbol) (bal
 // SetHoldOnAccount places a hold on the account and Symbol specified
 // in the case of an insufficient balance, the hold will be removed and
 // an error returned.
-func (m *BalanceService) SetHoldOnAccount(a *types.Account, s types.Symbol, amt decimal.Decimal) (holdid string, err error) {
+func (m *BalanceManager) SetHoldOnAccount(a *Account, s types.Symbol, amt decimal.Decimal) (holdid string, err error) {
 
-	r := m.acct.Balances(a, s)
-	newHold := NewBalanceItem(amt)
-	err = r.CreateHold(&newHold)
+	acct := &persist.Account{ID: a.ID.String()}
+	r := m.acct.Balances(acct, s)
+	newHold := persist.NewBalanceItem(amt)
+	err = r.CreateHold(newHold)
 	if err != nil {
 		return
 	}
@@ -127,14 +139,14 @@ func (m *BalanceService) SetHoldOnAccount(a *types.Account, s types.Symbol, amt 
 
 		// only calculate holds up to the point of the new hold
 		// more holds could have been added in another thread
-		if hold.ID.String() == newHold.ID.String() {
+		if hold.ID == newHold.ID {
 			break
 		}
 	}
 
 	if balance.LessThan(decimal.NewFromInt(0)) {
 
-		err = r.DeleteHold(&newHold)
+		err = r.DeleteHold(newHold)
 		if err != nil {
 			return
 		}
@@ -143,17 +155,18 @@ func (m *BalanceService) SetHoldOnAccount(a *types.Account, s types.Symbol, amt 
 		return
 	}
 
-	holdid = newHold.ID.String()
+	holdid = newHold.ID
 	return
 }
 
 // PostToBalance places a balance change record on the account and Symbol provided
 // does not roll posting up to the balance and is a thread safe operation.
-func (m *BalanceService) PostToBalance(a *types.Account, s types.Symbol, amt decimal.Decimal) error {
+func (m *BalanceManager) PostToBalance(a *Account, s types.Symbol, amt decimal.Decimal) error {
 
-	r := m.acct.Balances(a, s)
-	newPost := NewBalanceItem(amt)
-	err := r.CreatePost(&newPost)
+	acct := &persist.Account{ID: a.ID.String()}
+	r := m.acct.Balances(acct, s)
+	newPost := persist.NewBalanceItem(amt)
+	err := r.CreatePost(newPost)
 	if err != nil {
 		return err
 	}

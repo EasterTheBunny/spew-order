@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/easterthebunny/spew-order/internal/auth"
-	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 )
 
 var (
@@ -23,18 +23,18 @@ const (
 )
 
 // AttachAuthorization ...
-func AttachAuthorization(ctx context.Context, a auth.Authorization) context.Context {
+func AttachAuthorization(ctx context.Context, a persist.Authorization) context.Context {
 	return context.WithValue(ctx, ctxAuthzKey, a)
 }
 
 // GetAuthorization ...
-func GetAuthorization(ctx context.Context) *auth.Authorization {
+func GetAuthorization(ctx context.Context) *persist.Authorization {
 	val := ctx.Value(ctxAuthzKey)
 	if val == nil {
 		return nil
 	}
 
-	auth, ok := val.(auth.Authorization)
+	auth, ok := val.(persist.Authorization)
 	if !ok {
 		return nil
 	}
@@ -43,18 +43,18 @@ func GetAuthorization(ctx context.Context) *auth.Authorization {
 }
 
 // AttachAccount ...
-func AttachAccount(ctx context.Context, a types.Account) context.Context {
+func AttachAccount(ctx context.Context, a domain.Account) context.Context {
 	return context.WithValue(ctx, ctxAccountKey, a)
 }
 
 // GetAccount ...
-func GetAccount(ctx context.Context) *types.Account {
+func GetAccount(ctx context.Context) *domain.Account {
 	val := ctx.Value(ctxAccountKey)
 	if val == nil {
 		return nil
 	}
 
-	a, ok := val.(types.Account)
+	a, ok := val.(domain.Account)
 	if !ok {
 		return nil
 	}

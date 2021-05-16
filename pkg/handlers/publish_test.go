@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/easterthebunny/spew-order/internal/account"
-	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/internal/queue"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -34,14 +34,15 @@ func TestPostOrder(t *testing.T) {
 	mps := queue.NewMockPubSub()
 	mps.Subscribe(queue.OrderTopic, subscription)
 
-	acct := types.NewAccount()
-	repo := account.NewKVAccountRepository(persist.NewMockKVStore())
-	err := repo.Save(&acct)
+	dmnAcct := domain.NewAccount()
+	pstAcct := &persist.Account{ID: dmnAcct.ID.String()}
+	repo := kv.NewAccountRepository(persist.NewMockKVStore())
+	err := repo.Save(pstAcct)
 	if err != nil {
 		t.FailNow()
 	}
-	svc := account.NewBalanceService(repo)
-	svc.PostToBalance(&acct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
+	svc := domain.NewBalanceManager(repo)
+	svc.PostToBalance(dmnAcct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
 
 	oq := queue.NewOrderQueue(mps, svc)
 
@@ -54,10 +55,10 @@ func TestPostOrder(t *testing.T) {
 
 		r := req(t, NewPost(fmt.Sprintf(data, limitType)))
 		ctx := r.Context()
-		ctx = contexts.AttachAuthorization(ctx, auth.Authorization{
+		ctx = contexts.AttachAuthorization(ctx, persist.Authorization{
 			ID: "test",
 		})
-		r = r.WithContext(contexts.AttachAccount(ctx, acct))
+		r = r.WithContext(contexts.AttachAccount(ctx, *dmnAcct))
 
 		handler.PostOrder()(w, r)
 
