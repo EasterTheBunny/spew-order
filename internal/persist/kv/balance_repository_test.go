@@ -88,7 +88,7 @@ func TestBalances(t *testing.T) {
 
 		assert.Len(t, holds, len(expected))
 
-		err = br.DeleteHold(expected[0])
+		err = br.DeleteHold(ky(expected[0].ID))
 		if err != nil {
 			assert.FailNowf(t, "Error encountered deleting hold: %s", err.Error())
 		}
@@ -144,4 +144,10 @@ func TestBalances(t *testing.T) {
 		assert.Len(t, posts, len(expected))
 	})
 
+}
+
+type ky string
+
+func (f ky) String() string {
+	return string(f)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/api"
 	"github.com/easterthebunny/spew-order/pkg/domain"
+	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/go-chi/chi"
 	uuid "github.com/satori/go.uuid"
 )
@@ -21,6 +22,21 @@ func NewAccountHandler(r persist.AccountRepository) *AccountHandler {
 	return &AccountHandler{repo: r}
 }
 
+func (h *AccountHandler) GetAccounts() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authz := contexts.GetAuthorization(r.Context())
+
+		var res []render.Renderer
+		for _, acct := range authz.Accounts {
+			res = append(res, &api.Account{
+				Id: acct,
+			})
+		}
+
+		render.Render(w, r, HTTPNewOKListResponse(res))
+	}
+}
+
 func (h *AccountHandler) GetAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		acct := contexts.GetAccount(r.Context())
@@ -30,6 +46,39 @@ func (h *AccountHandler) GetAccount() func(w http.ResponseWriter, r *http.Reques
 		}
 
 		render.Render(w, r, HTTPNewOKResponse(&res))
+	}
+}
+
+func (h *AccountHandler) GetAccountBalances(bm *domain.BalanceManager) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		acct := contexts.GetAccount(r.Context())
+
+		var err error
+		var list []render.Renderer
+
+		// set btc balance
+		btcBal := &api.BalanceItem{
+			Symbol: api.SymbolType(types.SymbolBitcoin.String())}
+		amt, err := bm.GetAvailableBalance(acct, types.SymbolBitcoin)
+		if err != nil {
+			render.Render(w, r, HTTPInternalServerError(err))
+			return
+		}
+		btcBal.Quantity = api.CurrencyValue(amt.StringFixedBank(types.SymbolBitcoin.RoundingPlace()))
+		list = append(list, btcBal)
+
+		// set eth balance
+		ethBal := &api.BalanceItem{
+			Symbol: api.SymbolType(types.SymbolEthereum.String())}
+		amt, err = bm.GetAvailableBalance(acct, types.SymbolEthereum)
+		if err != nil {
+			render.Render(w, r, HTTPInternalServerError(err))
+			return
+		}
+		ethBal.Quantity = api.CurrencyValue(amt.StringFixedBank(types.SymbolEthereum.RoundingPlace()))
+		list = append(list, ethBal)
+
+		render.Render(w, r, HTTPNewOKListResponse(list))
 	}
 }
 
@@ -71,7 +120,6 @@ func (h *AccountHandler) AccountCtx() func(http.Handler) http.Handler {
 				_, err = h.repo.Find(id)
 				if err != nil {
 					if err == persist.ErrObjectNotExist {
-						ctxAccount = domain.NewAccount()
 
 						acct := &persist.Account{ID: ctxAccount.ID.String()}
 						err = h.repo.Save(acct)

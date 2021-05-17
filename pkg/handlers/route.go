@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/internal/middleware"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/api"
@@ -15,7 +14,7 @@ import (
 type Router struct {
 	AuthStore persist.AuthorizationRepository
 	Balance   *domain.BalanceManager
-	AuthProv  auth.AuthenticationProvider
+	AuthProv  middleware.AuthenticationProvider
 	Orders    *OrderHandler
 	Accounts  *AccountHandler
 }
@@ -49,6 +48,7 @@ func (d *Router) AuthorizedRoutes() func(r chi.Router) {
 
 func (d *Router) AccountRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
+		r.Get("/", d.Accounts.GetAccounts())
 		r.Route(fmt.Sprintf("/{%s}", api.AccountPathParamName), d.AccountSubRoutes())
 	}
 }
@@ -57,6 +57,7 @@ func (d *Router) AccountSubRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(d.Accounts.AccountCtx())
 		r.Get("/", d.Accounts.GetAccount())
+		r.Get("/balance", d.Accounts.GetAccountBalances(d.Balance))
 		r.Route("/order", d.OrderRoutes())
 	}
 }
@@ -65,4 +66,21 @@ func (d *Router) OrderRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/", d.Orders.PostOrder())
 	}
+}
+
+type WebhookRouter struct {
+	Funding *FundingHandler
+}
+
+func (wr *WebhookRouter) Routes() http.Handler {
+
+	r := chi.NewRouter()
+
+	// set CORS headers early and short circuit the response loop
+	r.Use(middleware.SetCORSHeaders)
+
+	// set up routes that require authorization
+	r.Post("/funding", wr.Funding.PostFunding())
+
+	return r
 }

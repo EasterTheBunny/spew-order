@@ -1,20 +1,23 @@
 package domain
 
 import (
-	"log"
-
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/shopspring/decimal"
 )
 
 type OrderBook struct {
 	bir persist.BookRepository
+	bm  *BalanceManager
 }
 
 func NewOrderBook(br persist.BookRepository) *OrderBook {
 	return &OrderBook{bir: br}
 }
 
+// ExecuteOrInsertOrder takes an order and matches it from top down in the order
+// book. This process will create account balance updates and update/delete
+// account holds. It assumes holds exist and will return an error if they don't.
 func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 	item := persist.NewBookItem(order)
 
@@ -39,6 +42,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 			// otherwise save the request order to the book
 			if tr != nil {
 				// since a transaction exists, save it
+				// this should update balances for each applicable account and
+				// before any book items or holds are removed
 				err = ob.pairOrders(tr)
 				if err != nil {
 					return err
@@ -48,10 +53,25 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 				// determine whether it was the book order or the
 				// request order
 				if o != nil {
+
 					// if the returned order id matches the book order id
 					// the order should be saved back to the book and the
 					// matching process halted
 					if o.ID == bookOrder.ID {
+						// update the account hold for the book order to
+						// match the new order amount
+						smb, amt := o.Type.HoldAmount(o.Action, o.Base, o.Target)
+						err = ob.bm.UpdateHoldOnAccount(&Account{ID: o.Account}, smb, amt, ky(o.HoldID))
+						if err != nil {
+							return err
+						}
+
+						// remove hold on incoming order since that order is filled
+						err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, order.Base, ky(order.HoldID))
+						if err != nil {
+							return err
+						}
+
 						bi := persist.NewBookItem(*o)
 						return ob.bir.SetBookItem(&bi)
 					}
@@ -60,7 +80,23 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 					// partially filled and needs to continue through the
 					// book
 					if o.ID != bookOrder.ID {
+						// TODO: remove hold on book order
+						// TODO: update hold on incoming order
 						order = *o
+						// update the account hold for the incoming order to
+						// match the new order amount
+						smb, amt := o.Type.HoldAmount(order.Action, order.Base, order.Target)
+						err = ob.bm.UpdateHoldOnAccount(&Account{ID: order.Account}, smb, amt, ky(order.HoldID))
+						if err != nil {
+							return err
+						}
+
+						// remove hold on book order since that order is filled
+						err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, book.Order.Base, ky(book.Order.HoldID))
+						if err != nil {
+							return err
+						}
+
 						if err := ob.bir.DeleteBookItem(book); err != nil {
 							return err
 						}
@@ -71,6 +107,18 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 				// in the case that there is no order returned from resolve
 				// delete the book order because both orders were closed
 				if o == nil {
+					// remove hold on book order since that order is filled
+					err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, book.Order.Base, ky(book.Order.HoldID))
+					if err != nil {
+						return err
+					}
+
+					// remove hold on incoming order since that order is filled
+					err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, order.Base, ky(order.HoldID))
+					if err != nil {
+						return err
+					}
+
 					return ob.bir.DeleteBookItem(book)
 				}
 
@@ -86,19 +134,33 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 }
 
 func (ob *OrderBook) pairOrders(tr *types.Transaction) error {
+	var err error
 
-	// TODO: save the transaction
-	//fmt.Printf("order 1: %s %s\n", existing.Price, existing.Quantity)
-	//fmt.Printf("order 2: %s %s\n", incoming.Price, incoming.Quantity)
+	err = ob.bm.PostToBalance(&Account{ID: tr.A.AccountID}, tr.A.AddSymbol, tr.A.AddQuantity)
+	if err != nil {
+		return err
+	}
 
-	/*
-		s := NewStoredOrder(existing)
-		err := gs.store.Delete(s.Key().String())
-		if err != nil {
-			return err
-		}
-	*/
-	log.Printf("%v", tr)
+	err = ob.bm.PostToBalance(&Account{ID: tr.A.AccountID}, tr.A.SubSymbol, tr.A.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	if err != nil {
+		return err
+	}
+
+	err = ob.bm.PostToBalance(&Account{ID: tr.B.AccountID}, tr.B.AddSymbol, tr.B.AddQuantity)
+	if err != nil {
+		return err
+	}
+
+	err = ob.bm.PostToBalance(&Account{ID: tr.B.AccountID}, tr.B.SubSymbol, tr.B.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+type ky string
+
+func (f ky) String() string {
+	return string(f)
 }

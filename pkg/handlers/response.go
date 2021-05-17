@@ -1,11 +1,23 @@
 package handlers
 
 import (
+	"errors"
+	"io"
 	"net/http"
 	"reflect"
 
 	"github.com/easterthebunny/render"
 )
+
+var (
+	// limit request body to 1 KiB extend this as necessary
+	maxBodyReadLimit int64 = 1024
+)
+
+func init() {
+	render.Respond = SetDefaultResponder()
+	render.Decode = SetDefaultDecoder()
+}
 
 // HTTPNoContentResponse ...
 func HTTPNoContentResponse() *APIResponse {
@@ -123,7 +135,6 @@ type APIResponse struct {
 
 // Render implements the render.Renderer interface for use with chi-router
 func (ar *APIResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	w.WriteHeader(ar.HTTPStatusCode)
 	return nil
 }
 
@@ -153,4 +164,44 @@ func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
+}
+
+// SetDefaultResponder ...
+func SetDefaultResponder() func(w http.ResponseWriter, r *http.Request, v interface{}) {
+	return func(w http.ResponseWriter, r *http.Request, v interface{}) {
+
+		switch o := v.(type) {
+		case *APIResponse:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(o.HTTPStatusCode)
+			render.DefaultResponder(w, r, o)
+		case *APIListResponse:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(o.HTTPStatusCode)
+			render.DefaultResponder(w, r, o)
+		default:
+			panic("response body incorrectly formatted")
+		}
+	}
+}
+
+// SetDefaultDecoder ...
+func SetDefaultDecoder() func(r *http.Request, v interface{}) error {
+	return func(r *http.Request, v interface{}) error {
+		var err error
+
+		switch r.Header.Get("Content-Type") {
+		case "application/json":
+			err = render.DecodeJSON(io.LimitReader(r.Body, maxBodyReadLimit), v)
+			// in this case, there is a decode error; probably a malformed or malicious
+			// input. panic and log the incident
+			if err != nil {
+				panic(err)
+			}
+		default:
+			err = errors.New("unsupported content type")
+		}
+
+		return err
+	}
 }

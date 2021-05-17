@@ -24,7 +24,7 @@ openapi:
 	go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen && \
 	oapi-codegen --config pkg/api/config.yaml pkg/api/openapi.yaml > pkg/api/api.gen.go
 
-build:
+build: openapi
 	go build -o $(GOBIN)/$(API) ./cmd/$(API)/*.go || exit
 
 build-all: fmt test build

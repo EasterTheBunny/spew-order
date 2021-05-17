@@ -32,13 +32,38 @@ type Account struct {
 // Action type: * `BUY` - use base currency to buy target currency * `SELL` - sell target currency for base currency
 type ActionType string
 
+// BalanceItem defines model for BalanceItem.
+type BalanceItem struct {
+	Quantity CurrencyValue `json:"quantity"`
+
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	Symbol SymbolType `json:"symbol"`
+}
+
+// BalanceList defines model for BalanceList.
+type BalanceList []BalanceItem
+
 // BookOrder defines model for BookOrder.
 type BookOrder struct {
 	Guid string `json:"guid"`
 }
 
+// CallbackResponse defines model for CallbackResponse.
+type CallbackResponse struct {
+	Message string `json:"message"`
+}
+
 // CurrencyValue defines model for CurrencyValue.
 type CurrencyValue string
+
+// FundingCallback defines model for FundingCallback.
+type FundingCallback struct {
+	Account  string        `json:"account"`
+	Quantity CurrencyValue `json:"quantity"`
+
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	Symbol SymbolType `json:"symbol"`
+}
 
 // LimitOrderRequest defines model for LimitOrderRequest.
 type LimitOrderRequest struct {
@@ -101,8 +126,14 @@ type SymbolType string
 // AccountPathParam defines model for AccountPathParam.
 type AccountPathParam string
 
-// PostAccountAccountIDOrderJSONBody defines parameters for PostAccountAccountIDOrder.
-type PostAccountAccountIDOrderJSONBody OrderRequest
+// PostApiAccountAccountIDOrderJSONBody defines parameters for PostApiAccountAccountIDOrder.
+type PostApiAccountAccountIDOrderJSONBody OrderRequest
 
-// PostAccountAccountIDOrderJSONRequestBody defines body for PostAccountAccountIDOrder for application/json ContentType.
-type PostAccountAccountIDOrderJSONRequestBody PostAccountAccountIDOrderJSONBody
+// PostWebhookFundingJSONBody defines parameters for PostWebhookFunding.
+type PostWebhookFundingJSONBody FundingCallback
+
+// PostApiAccountAccountIDOrderJSONRequestBody defines body for PostApiAccountAccountIDOrder for application/json ContentType.
+type PostApiAccountAccountIDOrderJSONRequestBody PostApiAccountAccountIDOrderJSONBody
+
+// PostWebhookFundingJSONRequestBody defines body for PostWebhookFunding for application/json ContentType.
+type PostWebhookFundingJSONRequestBody PostWebhookFundingJSONBody

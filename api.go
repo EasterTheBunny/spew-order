@@ -29,8 +29,9 @@ var (
 	// client is a global Pub/Sub client, initialized once per instance.
 	orderTopic = getEnvVar(envOrderTopic)
 
-	GS     *domain.OrderBook
-	Router http.Handler
+	GS       *domain.OrderBook
+	Router   http.Handler
+	Webhooks http.Handler
 )
 
 func init() {
@@ -46,9 +47,6 @@ func init() {
 	bucket := fmt.Sprintf("%s-%s-%s-%s", conf...)
 	queue.OrderTopic = orderTopic
 
-	// register concrete types for the gob encoder/decoder
-	//gob.Register(types.LimitOrderType{})
-	//gob.Register(types.MarketOrderType{})
 	ps := handlers.NewGooglePubSub(projectID)
 
 	kv, err := handlers.NewGoogleKVStore(&bucket)
@@ -68,11 +66,18 @@ func init() {
 	}
 
 	Router = rh.Routes()
+	Webhooks = handlers.NewWebhookRouter(kv).Routes()
 }
 
 // RestAPI forwards all rest requests to the main API handler.
 func RestAPI(w http.ResponseWriter, r *http.Request) {
 	Router.ServeHTTP(w, r)
+}
+
+// FundingWebhooks includes webhook endpoints to handle funding
+// for notices for all assets
+func FundingWebhooks(w http.ResponseWriter, r *http.Request) {
+	Webhooks.ServeHTTP(w, r)
 }
 
 // OrderPubSub consumes a Pub/Sub message.

@@ -17,7 +17,7 @@ import (
 func TestPublishOrderRequest(t *testing.T) {
 
 	// set up the mocked pub sub and establish a subscription to the topic
-	subscription := make(chan []byte)
+	subscription := make(chan domain.OrderMessage)
 	mps := NewMockPubSub()
 	mps.Subscribe(OrderTopic, subscription)
 

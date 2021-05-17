@@ -109,12 +109,33 @@ func (b *BalanceRepository) CreateHold(hold *persist.BalanceItem) error {
 	return b.kvstore.Set(k, bts, &attrs)
 }
 
-func (b *BalanceRepository) DeleteHold(hold *persist.BalanceItem) error {
-	if hold == nil {
-		return fmt.Errorf("%w for hold", persist.ErrCannotSaveNilValue)
+func (b *BalanceRepository) UpdateHold(id persist.Key, amt decimal.Decimal) error {
+
+	k := holdKey(b.account.ID, b.symbol.String(), id.String())
+
+	bts, err := b.kvstore.Get(k)
+	if err != nil {
+		return err
 	}
 
-	return b.kvstore.Delete(holdKey(b.account.ID, b.symbol.String(), hold.ID))
+	attrs, err := b.kvstore.Attrs(k)
+	if err != nil {
+		return err
+	}
+
+	item := &persist.BalanceItem{}
+	enc := encodingFromStr(attrs.ContentEncoding)
+	err = item.Decode(bts, enc)
+	if err != nil {
+		return err
+	}
+
+	item.Amount = amt
+	return b.CreateHold(item)
+}
+
+func (b *BalanceRepository) DeleteHold(id persist.Key) error {
+	return b.kvstore.Delete(holdKey(b.account.ID, b.symbol.String(), id.String()))
 }
 
 func (b *BalanceRepository) FindPosts() (posts []*persist.BalanceItem, err error) {

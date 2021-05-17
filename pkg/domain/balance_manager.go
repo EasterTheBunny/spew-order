@@ -146,7 +146,7 @@ func (m *BalanceManager) SetHoldOnAccount(a *Account, s types.Symbol, amt decima
 
 	if balance.LessThan(decimal.NewFromInt(0)) {
 
-		err = r.DeleteHold(newHold)
+		err = r.DeleteHold(ky(newHold.ID))
 		if err != nil {
 			return
 		}
@@ -157,6 +157,22 @@ func (m *BalanceManager) SetHoldOnAccount(a *Account, s types.Symbol, amt decima
 
 	holdid = newHold.ID
 	return
+}
+
+func (m *BalanceManager) UpdateHoldOnAccount(a *Account, s types.Symbol, amt decimal.Decimal, id persist.Key) error {
+
+	acct := &persist.Account{ID: a.ID.String()}
+	r := m.acct.Balances(acct, s)
+
+	return r.UpdateHold(id, amt)
+}
+
+func (m *BalanceManager) RemoveHoldOnAccount(a *Account, s types.Symbol, id persist.Key) error {
+
+	acct := &persist.Account{ID: a.ID.String()}
+	r := m.acct.Balances(acct, s)
+
+	return r.DeleteHold(id)
 }
 
 // PostToBalance places a balance change record on the account and Symbol provided

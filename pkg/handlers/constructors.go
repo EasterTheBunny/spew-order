@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/internal/middleware"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/persist/kv"
@@ -22,11 +21,11 @@ func NewGooglePubSub(projectID string) queue.PubSub {
 	return queue.NewGooglePubSub(projectID)
 }
 
-func NewJWTAuth(url string) (auth.AuthenticationProvider, error) {
+func NewJWTAuth(url string) (middleware.AuthenticationProvider, error) {
 	return middleware.NewJWTAuth(url)
 }
 
-func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr auth.AuthenticationProvider) (*Router, error) {
+func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.AuthenticationProvider) (*Router, error) {
 	a := kv.NewAccountRepository(kvstore)
 	bs := domain.NewBalanceManager(a)
 
@@ -41,4 +40,9 @@ func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr auth.Authenti
 	}
 
 	return &r, nil
+}
+
+func NewWebhookRouter(kvstore persist.KVStore) *WebhookRouter {
+	a := kv.NewAccountRepository(kvstore)
+	return &WebhookRouter{Funding: NewFundingHandler(a)}
 }

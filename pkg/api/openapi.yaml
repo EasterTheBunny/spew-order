@@ -3,7 +3,23 @@ info:
   title: Cloud Exchange REST API
   version: 0.0.1
 paths:
-  /account/{accountID}:
+  /api/account:
+    get:
+      description: Retrieve all account information
+      responses:
+        200:
+          description: OK
+          content:
+            'application/json':
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Account'
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
+  /api/account/{accountID}:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
     get:
@@ -19,7 +35,23 @@ paths:
                     $ref: '#/components/schemas/Account'
                   error:
                     $ref: '#/components/schemas/ResponseError'
-  /account/{accountID}/order:
+  /api/account/{accountID}/balance:
+    parameters:
+      - $ref: '#/components/parameters/AccountPathParam'
+    get:
+      description: Retrieve account balance information
+      responses:
+        200:
+          description: OK
+          content:
+            'application/json':
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BalanceList'
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
+  /api/account/{accountID}/order:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
     post:
@@ -42,6 +74,29 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/BookOrder'
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
+  /webhook/funding:
+    post:
+      description: Adds funds to account
+      requestBody:
+        description: >
+          Funding Callback
+          Includes information for desired symbol and address
+        required: true
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/FundingCallback'
+      responses:
+        200:
+          description: OK
+          content:
+            'application/json':
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CallbackResponse'
                   error:
                     $ref: '#/components/schemas/ResponseError'
 components:
@@ -93,6 +148,20 @@ components:
       properties:
         id:
           type: string
+    BalanceList:
+      type: array
+      items:
+        $ref: '#/components/schemas/BalanceItem'
+    BalanceItem:
+      type: object
+      required:
+      - symbol
+      - quantity
+      properties:
+        symbol:
+          $ref: '#/components/schemas/SymbolType'
+        quantity:
+          $ref: '#/components/schemas/CurrencyValue'
     OrderRequest:
       type: object
       description: Request to create a new order on the order book
@@ -163,4 +232,24 @@ components:
       - guid
       properties:
         guid:
+          type: string
+    FundingCallback:
+      type: object
+      required:
+      - account
+      - symbol
+      - quantity
+      properties:
+        account:
+          type: string
+        symbol:
+          $ref: '#/components/schemas/SymbolType'
+        quantity:
+          $ref: '#/components/schemas/CurrencyValue'
+    CallbackResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
           type: string

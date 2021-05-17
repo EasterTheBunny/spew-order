@@ -30,7 +30,7 @@ func TestPostOrder(t *testing.T) {
 	log.SetOutput(&logBuf)
 
 	// set up the mocked pub sub and establish a subscription to the topic
-	subscription := make(chan []byte)
+	subscription := make(chan domain.OrderMessage)
 	mps := queue.NewMockPubSub()
 	mps.Subscribe(queue.OrderTopic, subscription)
 

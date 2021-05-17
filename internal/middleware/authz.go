@@ -3,10 +3,9 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/easterthebunny/spew-order/internal/auth"
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/internal/persist"
-	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 )
 
 type authKey string
@@ -15,17 +14,22 @@ func (a authKey) String() string {
 	return string(a)
 }
 
+// AuthenticationProvider ...
+type AuthenticationProvider interface {
+	Verifier() func(http.Handler) http.Handler
+	UpdateAuthz(*persist.Authorization)
+	Subject() string
+}
+
 // AuthorizationCtx ...
-func AuthorizationCtx(as persist.AuthorizationRepository, p auth.AuthenticationProvider) func(http.Handler) http.Handler {
+func AuthorizationCtx(as persist.AuthorizationRepository, p AuthenticationProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
 			a, err := as.GetAuthorization(authKey(p.Subject()))
 
-			if err == persist.ErrAuthzNotFound {
-				acc := types.NewAccount()
-
-				a = &persist.Authorization{
-					Accounts: []string{acc.ID.String()}}
+			if err == persist.ErrObjectNotExist {
+				acc := domain.NewAccount()
+				a = persist.NewAuthorization(persist.Account{ID: acc.ID.String()})
 
 				p.UpdateAuthz(a)
 				err = as.SetAuthorization(a)

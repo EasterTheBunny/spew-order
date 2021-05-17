@@ -61,7 +61,8 @@ type BalanceRepository interface {
 	UpdateBalance(decimal.Decimal) error
 	FindHolds() ([]*BalanceItem, error)
 	CreateHold(*BalanceItem) error
-	DeleteHold(*BalanceItem) error
+	DeleteHold(Key) error
+	UpdateHold(Key, decimal.Decimal) error
 	FindPosts() ([]*BalanceItem, error)
 	CreatePost(*BalanceItem) error
 	DeletePost(*BalanceItem) error
@@ -106,6 +107,19 @@ type Authorization struct {
 	Name     string   `json:"name"`
 	Avatar   string   `json:"avatar"`
 	Accounts []string `json:"accounts"`
+}
+
+// NewAuthorization returns a new auth with values set to defaults and a new
+// id generated.
+func NewAuthorization(accts ...Account) *Authorization {
+	var ids []string
+	for _, a := range accts {
+		ids = append(ids, a.ID)
+	}
+
+	return &Authorization{
+		ID:       uuid.NewV4().String(),
+		Accounts: ids}
 }
 
 func (a Authorization) Encode(enc EncodingType) ([]byte, error) {

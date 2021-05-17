@@ -1,6 +1,8 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // SetCORSHeaders is a middleware function that offers CORS headers for an
 // OPTION request. This should be used earliest in the base router.
