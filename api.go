@@ -4,6 +4,7 @@ package contexttip
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -83,12 +84,11 @@ func FundingWebhooks(w http.ResponseWriter, r *http.Request) {
 // OrderPubSub consumes a Pub/Sub message.
 func OrderPubSub(ctx context.Context, m domain.OrderMessage) error {
 
-	req := &types.OrderRequest{}
-	if err := req.UnmarshalJSON(m.Data); err != nil {
+	var order types.Order
+	if err := json.Unmarshal(m.Data, &order); err != nil {
 		return err
 	}
 
-	order := types.NewOrderFromRequest(*req)
 	if err := GS.ExecuteOrInsertOrder(order); err != nil {
 		return err
 	}

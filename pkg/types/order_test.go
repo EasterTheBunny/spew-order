@@ -46,14 +46,14 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.00000009828), // maker fee calculated on this amount
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.0000042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.0000042), // taker fee calculated on this amount
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.00000009828),
 			},

@@ -65,6 +65,15 @@ func (d *Router) AccountSubRoutes() func(r chi.Router) {
 func (d *Router) OrderRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/", d.Orders.PostOrder())
+		r.Get("/", d.Accounts.GetAccountOrders())
+		r.Route(fmt.Sprintf("/{%s}", api.OrderPathParamName), d.OrderSubRoutes())
+	}
+}
+
+func (d *Router) OrderSubRoutes() func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(d.Accounts.OrderCtx())
+		r.Get("/", d.Accounts.GetAccountOrder())
 	}
 }
 

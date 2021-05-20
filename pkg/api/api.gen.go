@@ -10,6 +10,17 @@ const (
 	ActionTypeSELL ActionType = "SELL"
 )
 
+// Defines values for OrderStatus.
+const (
+	OrderStatusCANCELLED OrderStatus = "CANCELLED"
+
+	OrderStatusFILLED OrderStatus = "FILLED"
+
+	OrderStatusOPEN OrderStatus = "OPEN"
+
+	OrderStatusPARTIAL OrderStatus = "PARTIAL"
+)
+
 // Defines values for OrderTypeName.
 const (
 	OrderTypeNameLIMIT OrderTypeName = "LIMIT"
@@ -46,7 +57,16 @@ type BalanceList []BalanceItem
 // BookOrder defines model for BookOrder.
 type BookOrder struct {
 	Guid string `json:"guid"`
+
+	// Request to create a new order on the order book
+	Order OrderRequest `json:"order"`
+
+	// Symbol Type: * `OPEN` - incomplete order * `PARTIAL` - partial order * `FILLED` - filled order * `CANCELLED` - cancelled order
+	Status OrderStatus `json:"status"`
 }
+
+// BookOrderList defines model for BookOrderList.
+type BookOrderList []BookOrder
 
 // CallbackResponse defines model for CallbackResponse.
 type CallbackResponse struct {
@@ -105,6 +125,9 @@ type OrderRequest struct {
 // OrderRequestType defines model for OrderRequestType.
 type OrderRequestType interface{}
 
+// Symbol Type: * `OPEN` - incomplete order * `PARTIAL` - partial order * `FILLED` - filled order * `CANCELLED` - cancelled order
+type OrderStatus string
+
 // OrderType defines model for OrderType.
 type OrderType struct {
 
@@ -125,6 +148,9 @@ type SymbolType string
 
 // AccountPathParam defines model for AccountPathParam.
 type AccountPathParam string
+
+// OrderPathParam defines model for OrderPathParam.
+type OrderPathParam string
 
 // PostApiAccountAccountIDOrderJSONBody defines parameters for PostApiAccountAccountIDOrder.
 type PostApiAccountAccountIDOrderJSONBody OrderRequest

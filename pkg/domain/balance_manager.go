@@ -189,3 +189,13 @@ func (m *BalanceManager) PostToBalance(a *Account, s types.Symbol, amt decimal.D
 
 	return nil
 }
+
+// CreateOrder inserts an order into the provided account as an open order
+func (m *BalanceManager) CreateOrder(a *Account, req types.OrderRequest) (types.Order, error) {
+	rep := m.acct.Orders(&persist.Account{ID: a.ID.String()})
+
+	order := types.NewOrderFromRequest(req)
+	err := rep.SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+
+	return order, err
+}

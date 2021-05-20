@@ -20,6 +20,7 @@ const (
 	ctxErrorKey
 	ctxAccountKey
 	ctxAccountIDKey
+	ctxOrderKey
 )
 
 // AttachAuthorization ...
@@ -82,6 +83,26 @@ func GetAccountID(ctx context.Context) (id string, err error) {
 	}
 
 	return
+}
+
+// AttachOrder ...
+func AttachOrder(ctx context.Context, a persist.Order) context.Context {
+	return context.WithValue(ctx, ctxOrderKey, a)
+}
+
+// GetOrder ...
+func GetOrder(ctx context.Context) *persist.Order {
+	val := ctx.Value(ctxOrderKey)
+	if val == nil {
+		return nil
+	}
+
+	a, ok := val.(persist.Order)
+	if !ok {
+		return nil
+	}
+
+	return &a
 }
 
 func AttachError(ctx context.Context, err error) context.Context {

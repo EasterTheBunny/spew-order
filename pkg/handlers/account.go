@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/easterthebunny/render"
@@ -79,6 +80,80 @@ func (h *AccountHandler) GetAccountBalances(bm *domain.BalanceManager) func(w ht
 		list = append(list, ethBal)
 
 		render.Render(w, r, HTTPNewOKListResponse(list))
+	}
+}
+
+func (h *AccountHandler) GetAccountOrder() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ord := contexts.GetOrder(r.Context())
+
+		res := api.BookOrder{
+			Guid:   ord.Base.ID.String(),
+			Order:  api.BuildOrderRequest(ord.Base.OrderRequest),
+			Status: api.StringOrderStatus(ord.Status),
+		}
+
+		render.Render(w, r, HTTPNewOKResponse(&res))
+	}
+}
+
+func (h *AccountHandler) GetAccountOrders() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		acct := contexts.GetAccount(r.Context())
+		or := h.repo.Orders(&persist.Account{ID: acct.ID.String()})
+
+		list, err := or.GetOrdersByStatus(persist.StatusOpen, persist.StatusPartial, persist.StatusFilled, persist.StatusCanceled)
+		if err != nil {
+			render.Render(w, r, HTTPInternalServerError(err))
+			return
+		}
+		log.Printf("order list length: %d", len(list))
+
+		var out []render.Renderer
+		for _, ord := range list {
+			o := api.BookOrder{
+				Guid:   ord.Base.ID.String(),
+				Order:  api.BuildOrderRequest(ord.Base.OrderRequest),
+				Status: api.StringOrderStatus(ord.Status),
+			}
+			out = append(out, &o)
+		}
+
+		render.Render(w, r, HTTPNewOKListResponse(out))
+	}
+}
+
+func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var ctxOrder *persist.Order
+			var err error
+			var id uuid.UUID
+
+			acct := contexts.GetAccount(r.Context())
+
+			if orderID := chi.URLParam(r, api.OrderPathParamName); orderID != "" {
+
+				id, err = uuid.FromString(orderID)
+				if err != nil {
+					render.Render(w, r, HTTPBadRequest(err))
+					return
+				}
+
+				or := h.repo.Orders(&persist.Account{ID: acct.ID.String()})
+				ctxOrder, err = or.GetOrder(id)
+				if err != nil {
+					render.Render(w, r, HTTPInternalServerError(err))
+					return
+				}
+			} else {
+				render.Render(w, r, HTTPBadRequest(errors.New("order id not found")))
+				return
+			}
+
+			ctx := contexts.AttachOrder(r.Context(), *ctxOrder)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }
 

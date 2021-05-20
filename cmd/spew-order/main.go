@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net"
 	"net/http"
@@ -66,13 +67,12 @@ func main() {
 		log.Println("starting pubsub listener")
 		for {
 			m := <-subscription
-			req := &types.OrderRequest{}
-			if err := req.UnmarshalJSON(m.Data); err != nil {
+			var order types.Order
+			if err := json.Unmarshal(m.Data, &order); err != nil {
 				log.Printf("error: %s", err)
 				continue
 			}
 
-			order := types.NewOrderFromRequest(*req)
 			if err := book.ExecuteOrInsertOrder(order); err != nil {
 				log.Printf("error: %s", err)
 				continue

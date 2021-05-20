@@ -16,8 +16,6 @@ type BalanceRepository struct {
 	symbol  types.Symbol
 }
 
-var _ persist.BalanceRepository = &BalanceRepository{}
-
 func NewBalanceRepository(kv persist.KVStore, a *persist.Account, s types.Symbol) *BalanceRepository {
 	return &BalanceRepository{
 		kvstore: kv,
@@ -28,7 +26,7 @@ func NewBalanceRepository(kv persist.KVStore, a *persist.Account, s types.Symbol
 
 func (b *BalanceRepository) GetBalance() (balance decimal.Decimal, err error) {
 
-	k := balanceKey(b.account.ID, b.symbol.String())
+	k := balanceKey(*b.account, b.symbol)
 	var byt []byte
 	byt, err = b.kvstore.Get(k)
 	if err != nil {
@@ -44,7 +42,7 @@ func (b *BalanceRepository) GetBalance() (balance decimal.Decimal, err error) {
 
 func (b *BalanceRepository) UpdateBalance(bal decimal.Decimal) error {
 
-	k := balanceKey(b.account.ID, b.symbol.String())
+	k := balanceKey(*b.account, b.symbol)
 	val, err := json.Marshal(bal)
 	if err != nil {
 		return err
@@ -61,7 +59,7 @@ func (b *BalanceRepository) UpdateBalance(bal decimal.Decimal) error {
 func (b *BalanceRepository) FindHolds() (holds []*persist.BalanceItem, err error) {
 
 	q := persist.KVStoreQuery{
-		StartOffset: holdsKey(b.account.ID, b.symbol.String()),
+		StartOffset: holdSubspace(*b.account, b.symbol).Pack(key.Tuple{}).String(),
 	}
 
 	attr, err := b.kvstore.RangeGet(&q, 0)
@@ -93,7 +91,7 @@ func (b *BalanceRepository) CreateHold(hold *persist.BalanceItem) error {
 		return fmt.Errorf("%w for hold", persist.ErrCannotSaveNilValue)
 	}
 
-	k := holdKey(b.account.ID, b.symbol.String(), hold.ID)
+	k := holdKey(*b.account, b.symbol, stringer(hold.ID))
 
 	enc := persist.JSON
 	bts, err := hold.Encode(enc)
@@ -111,7 +109,7 @@ func (b *BalanceRepository) CreateHold(hold *persist.BalanceItem) error {
 
 func (b *BalanceRepository) UpdateHold(id persist.Key, amt decimal.Decimal) error {
 
-	k := holdKey(b.account.ID, b.symbol.String(), id.String())
+	k := holdKey(*b.account, b.symbol, id)
 
 	bts, err := b.kvstore.Get(k)
 	if err != nil {
@@ -135,13 +133,13 @@ func (b *BalanceRepository) UpdateHold(id persist.Key, amt decimal.Decimal) erro
 }
 
 func (b *BalanceRepository) DeleteHold(id persist.Key) error {
-	return b.kvstore.Delete(holdKey(b.account.ID, b.symbol.String(), id.String()))
+	return b.kvstore.Delete(holdKey(*b.account, b.symbol, id))
 }
 
 func (b *BalanceRepository) FindPosts() (posts []*persist.BalanceItem, err error) {
 
 	q := persist.KVStoreQuery{
-		StartOffset: postsKey(b.account.ID, b.symbol.String()),
+		StartOffset: postSubspace(*b.account, b.symbol).Pack(key.Tuple{}).String(),
 	}
 
 	attr, err := b.kvstore.RangeGet(&q, 0)
@@ -173,7 +171,7 @@ func (b *BalanceRepository) CreatePost(post *persist.BalanceItem) error {
 		return fmt.Errorf("%w for post", persist.ErrCannotSaveNilValue)
 	}
 
-	k := postKey(b.account.ID, b.symbol.String(), post.ID)
+	k := postKey(*b.account, b.symbol, stringer(post.ID))
 
 	enc := persist.JSON
 	bts, err := post.Encode(enc)
@@ -194,30 +192,5 @@ func (b *BalanceRepository) DeletePost(post *persist.BalanceItem) error {
 		return fmt.Errorf("%w for post", persist.ErrCannotSaveNilValue)
 	}
 
-	return b.kvstore.Delete(postKey(b.account.ID, b.symbol.String(), post.ID))
-}
-
-func balanceKey(id string, sym string) string {
-	s := gsAccount.Sub(id).Sub(symbolsSub).Sub(sym)
-	return s.Pack(key.Tuple{balanceSub}).String()
-}
-
-func holdsKey(id string, sym string) string {
-	s := gsAccount.Sub(id).Sub(symbolsSub).Sub(sym)
-	return s.Pack(key.Tuple{holdSub}).String()
-}
-
-func holdKey(id string, sym string, hid string) string {
-	s := gsAccount.Sub(id).Sub(symbolsSub).Sub(sym).Sub(holdSub)
-	return s.Pack(key.Tuple{hid}).String()
-}
-
-func postsKey(id string, sym string) string {
-	s := gsAccount.Sub(id).Sub(symbolsSub).Sub(sym)
-	return s.Pack(key.Tuple{postSub}).String()
-}
-
-func postKey(id string, sym string, pid string) string {
-	s := gsAccount.Sub(id).Sub(symbolsSub).Sub(sym).Sub(postSub)
-	return s.Pack(key.Tuple{pid}).String()
+	return b.kvstore.Delete(postKey(*b.account, b.symbol, stringer(post.ID)))
 }

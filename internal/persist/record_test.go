@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/easterthebunny/spew-order/pkg/types"
+	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
@@ -93,6 +95,73 @@ func TestAuthorizationByteEncoding(t *testing.T) {
 
 		assert.Equal(t, authz.ID, dec.ID, "keys must be equal")
 	})
+}
+
+func TestOrderByteEncoding(t *testing.T) {
+
+	var b []byte
+	var err error
+	order := Order{
+		Status: StatusFilled,
+		Base: types.Order{
+			OrderRequest: types.OrderRequest{
+				Base:    types.SymbolBitcoin,
+				Target:  types.SymbolEthereum,
+				Action:  types.ActionTypeBuy,
+				HoldID:  "holdid",
+				Owner:   "ownerid",
+				Account: uuid.NewV4(),
+				Type: &types.LimitOrderType{
+					Base:     types.SymbolBitcoin,
+					Price:    decimal.NewFromInt(5),
+					Quantity: decimal.NewFromInt(3),
+				},
+			},
+			ID:        uuid.NewV4(),
+			Timestamp: time.Now(),
+		},
+	}
+
+	t.Run("EncodeWithoutError", func(t *testing.T) {
+		b, err = order.Encode(JSON)
+		if err != nil {
+			t.Fatalf("no error expected; encountered: %s", err)
+		}
+	})
+
+	t.Run("DecodeFromBytes", func(t *testing.T) {
+		dec := &Order{}
+		err := dec.Decode(b, JSON)
+		if err != nil {
+			t.Fatalf("no error expected; encountered: %s", err)
+		}
+
+		assert.Equal(t, order.Status, dec.Status, "status must be equal")
+		assert.Equal(t, order.Base.ID, dec.Base.ID, "status must be equal")
+	})
+}
+
+func TestFillStatusMarshalJSON(t *testing.T) {
+	fs := StatusCanceled
+
+	b, err := fs.MarshalJSON()
+	if err != nil {
+		t.Fatalf("no error expected; encountered: %s", err)
+	}
+
+	assert.Equal(t, "3", string(b))
+}
+
+func TestFillStatusUnmarshalJSON(t *testing.T) {
+	bts := []byte("2")
+
+	var fs FillStatus
+	err := fs.UnmarshalJSON(bts)
+	if err != nil {
+		t.Fatalf("no error expected; encountered: %s", err)
+	}
+
+	assert.Equal(t, StatusFilled, fs)
 }
 
 func TestNanoTimeMarshalJSON(t *testing.T) {

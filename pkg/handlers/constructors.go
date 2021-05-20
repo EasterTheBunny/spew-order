@@ -33,10 +33,8 @@ func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.Au
 		AuthStore: kv.NewAuthorizationRepository(kvstore),
 		Balance:   bs,
 		AuthProv:  pr,
-		Orders: &OrderHandler{
-			queue: queue.NewOrderQueue(ps, bs),
-		},
-		Accounts: &AccountHandler{repo: a},
+		Orders:    NewOrderHandler(queue.NewOrderQueue(ps, bs)),
+		Accounts:  NewAccountHandler(a),
 	}
 
 	return &r, nil

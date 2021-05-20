@@ -42,12 +42,7 @@ type OrderQueue struct {
 	balance *domain.BalanceManager
 }
 
-func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequest) (id string, err error) {
-
-	b, err := json.Marshal(or)
-	if err != nil {
-		return
-	}
+func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequest) (order types.Order, err error) {
 
 	aID, err := contexts.GetAccountID(ctx)
 	if err != nil {
@@ -73,5 +68,17 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 
 	or.HoldID = holdid
 
-	return o.client.Publish(ctx, OrderTopic, b)
+	order, err = o.balance.CreateOrder(acct, or)
+	if err != nil {
+		return
+	}
+
+	b, err := json.Marshal(order)
+	if err != nil {
+		return
+	}
+
+	_, err = o.client.Publish(ctx, OrderTopic, b)
+
+	return
 }

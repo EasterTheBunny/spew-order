@@ -3,7 +3,6 @@ package kv
 import (
 	"fmt"
 
-	"github.com/easterthebunny/spew-order/internal/key"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
@@ -16,33 +15,14 @@ func NewAccountRepository(store persist.KVStore) *AccountRepository {
 	return &AccountRepository{kvstore: store}
 }
 
-var _ persist.AccountRepository = &AccountRepository{}
-
-const (
-	bookSub int = iota
-	authzSub
-	accountSub
-	symbolsSub
-	balanceSub
-	holdSub
-	postSub
-)
-
-var (
-	gsRoot    = key.FromBytes([]byte{0xFE})
-	gsBook    = gsRoot.Sub(bookSub)
-	gsAccount = gsRoot.Sub(accountSub)
-	gsAuthz   = gsRoot.Sub(authzSub)
-)
-
 func (r *AccountRepository) Find(id persist.Key) (account *persist.Account, err error) {
 
-	b, err := r.kvstore.Get(accountKey(id.String()))
+	b, err := r.kvstore.Get(accountKey(id))
 	if err != nil {
 		return
 	}
 
-	attr, err := r.kvstore.Attrs(accountKey(id.String()))
+	attr, err := r.kvstore.Attrs(accountKey(id))
 	if err != nil {
 		return
 	}
@@ -72,38 +52,17 @@ func (r *AccountRepository) Save(account *persist.Account) error {
 		Metadata:        make(map[string]string),
 	}
 
-	return r.kvstore.Set(accountKey(account.ID), b, &attrs)
+	return r.kvstore.Set(accountKey(stringer(account.ID)), b, &attrs)
 }
 
 func (r *AccountRepository) Balances(a *persist.Account, s types.Symbol) persist.BalanceRepository {
 	return NewBalanceRepository(r.kvstore, a, s)
 }
 
-func accountKey(id string) string {
-	return gsAccount.Pack(key.Tuple{id}).String()
+func (r *AccountRepository) Transactions(a *persist.Account) persist.TransactionRepository {
+	return NewTransactionRepository(r.kvstore, a)
 }
 
-func encodingFromStr(str string) persist.EncodingType {
-	var encoding persist.EncodingType
-	switch str {
-	case persist.JSONEncodingTypeName:
-		encoding = persist.JSON
-	case persist.GOBEncodingTypeName:
-		encoding = persist.GOB
-	default:
-		encoding = persist.JSON
-	}
-
-	return encoding
-}
-
-func encodingToStr(encoding persist.EncodingType) string {
-	switch encoding {
-	case persist.JSON:
-		return persist.JSONEncodingTypeName
-	case persist.GOB:
-		return persist.GOBEncodingTypeName
-	default:
-		return persist.JSONEncodingTypeName
-	}
+func (r *AccountRepository) Orders(a *persist.Account) persist.OrderRepository {
+	return NewOrderRepository(r.kvstore, a)
 }

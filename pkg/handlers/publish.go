@@ -8,6 +8,7 @@ import (
 
 	"github.com/easterthebunny/render"
 	"github.com/easterthebunny/spew-order/internal/contexts"
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/api"
 )
@@ -54,13 +55,18 @@ func (h *OrderHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) 
 
 		// TODO: validate order request
 
-		id, err := h.queue.PublishOrderRequest(ctx, or)
+		order, err := h.queue.PublishOrderRequest(ctx, or)
 		if err != nil {
 			log.Printf("PostOrder.PublistOrderRequest: %v", err)
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
 
-		render.Render(w, r, HTTPNewOKResponse(&api.BookOrder{Guid: id}))
+		o := api.BookOrder{
+			Guid:   order.ID.String(),
+			Order:  api.BuildOrderRequest(order.OrderRequest),
+			Status: api.StringOrderStatus(persist.StatusOpen),
+		}
+		render.Render(w, r, HTTPNewOKResponse(&o))
 	}
 }

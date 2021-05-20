@@ -39,6 +39,8 @@ type AccountRepository interface {
 	Find(Key) (*Account, error)
 	Save(*Account) error
 	Balances(*Account, types.Symbol) BalanceRepository
+	Transactions(*Account) TransactionRepository
+	Orders(*Account) OrderRepository
 }
 
 // Account represents the entity object persisted to storage
@@ -168,7 +170,92 @@ func (bi *BookItem) Decode(b []byte, enc EncodingType) error {
 	return decode(b, enc, bi)
 }
 
+type OrderRepository interface {
+	GetOrder(Key) (*Order, error)
+	SetOrder(*Order) error
+	GetOrdersByStatus(...FillStatus) ([]*Order, error)
+	UpdateOrderStatus(Key, FillStatus) error
+}
+
+type Order struct {
+	Status FillStatus  `json:"status"`
+	Base   types.Order `json:"base"`
+}
+
+func (o Order) Encode(enc EncodingType) ([]byte, error) {
+	return encode(enc, o)
+}
+
+func (o *Order) Decode(b []byte, enc EncodingType) error {
+	return decode(b, enc, o)
+}
+
+type Transaction struct {
+	OrderID   string
+	Symbol    string
+	Quantity  string
+	Fee       string
+	Timestamp NanoTime
+}
+
+type TransactionRepository interface {
+	SetTransaction(*Transaction) error
+}
+
+func (t Transaction) Encode(enc EncodingType) ([]byte, error) {
+	return encode(enc, t)
+}
+
+func (t *Transaction) Decode(b []byte, enc EncodingType) error {
+	return decode(b, enc, t)
+}
+
+type FillStatus int
+
+const (
+	StatusOpen FillStatus = iota
+	StatusPartial
+	StatusFilled
+	StatusCanceled
+)
+
+func (s FillStatus) MarshalBinary() ([]byte, error) {
+	return s.MarshalJSON()
+}
+
+func (s *FillStatus) UnmarshalBinary(b []byte) error {
+	return s.UnmarshalJSON(b)
+}
+
+func (s FillStatus) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d", s)), nil
+}
+
+func (s *FillStatus) UnmarshalJSON(b []byte) error {
+	val, err := strconv.ParseInt(string(b), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	switch int(val) {
+	case 0:
+		*s = StatusOpen
+	case 1:
+		*s = StatusPartial
+	case 2:
+		*s = StatusFilled
+	case 3:
+		*s = StatusCanceled
+	}
+
+	return nil
+}
+
 type NanoTime time.Time
+
+func (t NanoTime) Value() int64 {
+	return time.Time(t).UnixNano()
+}
 
 func (t NanoTime) MarshalBinary() ([]byte, error) {
 	return t.MarshalJSON()

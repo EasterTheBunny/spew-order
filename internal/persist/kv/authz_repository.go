@@ -3,7 +3,6 @@ package kv
 import (
 	"fmt"
 
-	"github.com/easterthebunny/spew-order/internal/key"
 	"github.com/easterthebunny/spew-order/internal/persist"
 )
 
@@ -17,7 +16,7 @@ func NewAuthorizationRepository(store persist.KVStore) *AuthorizationRepository 
 
 func (a *AuthorizationRepository) GetAuthorization(id persist.Key) (authz *persist.Authorization, err error) {
 
-	k := gsAuthz.Pack(key.Tuple{id.String()}).String()
+	k := authzKey(id)
 
 	b, err := a.kvstore.Get(k)
 	if err != nil {
@@ -44,8 +43,6 @@ func (a *AuthorizationRepository) SetAuthorization(authz *persist.Authorization)
 		return fmt.Errorf("%w for authorization", persist.ErrCannotSaveNilValue)
 	}
 
-	k := gsAuthz.Pack(key.Tuple{authz.ID}).String()
-
 	enc := persist.JSON
 	b, err := authz.Encode(enc)
 	if err != nil {
@@ -57,7 +54,7 @@ func (a *AuthorizationRepository) SetAuthorization(authz *persist.Authorization)
 		Metadata:        make(map[string]string),
 	}
 
-	a.kvstore.Set(k, b, &attrs)
+	a.kvstore.Set(authzKey(stringer(authz.ID)), b, &attrs)
 
 	return nil
 }
@@ -68,7 +65,5 @@ func (a *AuthorizationRepository) DeleteAuthorization(authz *persist.Authorizati
 		return fmt.Errorf("%w for authorization", persist.ErrCannotSaveNilValue)
 	}
 
-	k := gsAuthz.Pack(key.Tuple{authz.ID}).String()
-
-	return a.kvstore.Delete(k)
+	return a.kvstore.Delete(authzKey(stringer(authz.ID)))
 }

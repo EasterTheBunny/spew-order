@@ -124,6 +124,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 
 				return nil
 			} else {
+				// TODO: not sure why this is here; should it really re-save the book item???
 				ob.bir.SetBookItem(book)
 			}
 		}

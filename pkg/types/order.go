@@ -88,8 +88,25 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 		tr.A.AccountID = o.Account
 		tr.A.Order = *o
 
+		// TODO: calculate fee schedule from order history
+		// 30 day volume	-	taker	-	maker
+		// promotion		-	0.150%	-	0.050%
+		// <  20 BTC		-	0.350%	-	0.100%
+		// >= 200 BTC		-	0.250%	-	0.100%
+		// >= 500 BTC		-	0.200%	-	0.100%
+		// >= 1500 BTC		-	0.150%	-	0.090%
+		// >= 3000 BTC		-	0.100%	-	0.075%
+
+		// calculate the maker fee using promotion amount
+		tr.A.FeeQuantity = tr.A.AddQuantity.Mul(decimal.NewFromFloat(0.0005))
+		tr.A.AddQuantity = tr.A.AddQuantity.Sub(tr.A.FeeQuantity)
+
 		tr.B.AccountID = order.Account
 		tr.B.Order = order
+
+		// calculate the taker fee using promotion amount
+		tr.B.FeeQuantity = tr.B.AddQuantity.Mul(decimal.NewFromFloat(0.0015))
+		tr.B.AddQuantity = tr.B.AddQuantity.Sub(tr.B.FeeQuantity)
 	}
 
 	// if there is a filled order, it is assumed that the requested order
@@ -122,12 +139,15 @@ type BalanceEntry struct {
 	AccountID   uuid.UUID
 	AddSymbol   Symbol
 	AddQuantity decimal.Decimal
+	FeeQuantity decimal.Decimal
 	SubSymbol   Symbol
 	SubQuantity decimal.Decimal
 }
 
 type Transaction struct {
-	A      BalanceEntry
+	// A represents the maker in the transaction
+	A BalanceEntry
+	// B represents the taker in the transaction
 	B      BalanceEntry
 	Filled []Order
 }

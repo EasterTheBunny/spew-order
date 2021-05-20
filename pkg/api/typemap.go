@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/shopspring/decimal"
 )
@@ -104,5 +105,46 @@ func OrderTypeFromMap(m map[string]interface{}) (types.OrderType, error) {
 		return &ot, nil
 	default:
 		return nil, errors.New("unemplemented")
+	}
+}
+
+func BuildOrderRequest(or types.OrderRequest) OrderRequest {
+	out := OrderRequest{
+		Action: ActionType(or.Action.String()),
+		Base:   SymbolType(or.Base.String()),
+		Target: SymbolType(or.Target.String()),
+	}
+
+	switch tp := or.Type.(type) {
+	case *types.LimitOrderType:
+		out.Type = LimitOrderRequest{
+			OrderType: OrderType{Name: OrderTypeNameLIMIT},
+			Base:      SymbolType(tp.Base.String()),
+			Price:     CurrencyValue(tp.Price.StringFixedBank(tp.Base.RoundingPlace())),
+			Quantity:  CurrencyValue(tp.Quantity.StringFixedBank(tp.Base.RoundingPlace())),
+		}
+	case *types.MarketOrderType:
+		out.Type = MarketOrderRequest{
+			OrderType: OrderType{Name: OrderTypeNameMARKET},
+			Base:      SymbolType(tp.Base.String()),
+			Quantity:  CurrencyValue(tp.Quantity.StringFixedBank(tp.Base.RoundingPlace())),
+		}
+	}
+
+	return out
+}
+
+func StringOrderStatus(f persist.FillStatus) OrderStatus {
+	switch f {
+	case persist.StatusOpen:
+		return OrderStatusOPEN
+	case persist.StatusPartial:
+		return OrderStatusPARTIAL
+	case persist.StatusFilled:
+		return OrderStatusFILLED
+	case persist.StatusCanceled:
+		return OrderStatusCANCELLED
+	default:
+		return ""
 	}
 }
