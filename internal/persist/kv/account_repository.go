@@ -19,6 +19,7 @@ func (r *AccountRepository) Find(id persist.Key) (account *persist.Account, err 
 
 	b, err := r.kvstore.Get(accountKey(id))
 	if err != nil {
+		err = fmt.Errorf("Account::Find -- %w", err)
 		return
 	}
 

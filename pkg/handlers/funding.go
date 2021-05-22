@@ -16,14 +16,12 @@ import (
 )
 
 type FundingHandler struct {
-	Account persist.AccountRepository
 	Balance *domain.BalanceManager
 }
 
-func NewFundingHandler(acct persist.AccountRepository) *FundingHandler {
+func NewFundingHandler(a persist.AccountRepository, l persist.LedgerRepository) *FundingHandler {
 	return &FundingHandler{
-		Account: acct,
-		Balance: domain.NewBalanceManager(acct)}
+		Balance: domain.NewBalanceManager(a, l)}
 }
 
 func (h *FundingHandler) PostFunding() func(w http.ResponseWriter, r *http.Request) {
@@ -55,19 +53,13 @@ func (h *FundingHandler) PostFunding() func(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		_, err = h.Account.Find(id)
-		if err != nil {
-			render.Render(w, r, HTTPBadRequest(err))
-			return
-		}
-
 		amt, err := decimal.NewFromString(string(callback.Quantity))
 		if err != nil {
 			render.Render(w, r, HTTPBadRequest(err))
 			return
 		}
 
-		err = h.Balance.PostToBalance(&domain.Account{ID: id}, sym, amt)
+		err = h.Balance.FundAccountByID(id, sym, amt)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return

@@ -36,13 +36,15 @@ func TestPostOrder(t *testing.T) {
 
 	dmnAcct := domain.NewAccount()
 	pstAcct := &persist.Account{ID: dmnAcct.ID.String()}
-	repo := kv.NewAccountRepository(persist.NewMockKVStore())
+	store := persist.NewMockKVStore()
+	repo := kv.NewAccountRepository(store)
+	l := kv.NewLedgerRepository(store)
 	err := repo.Save(pstAcct)
 	if err != nil {
 		t.FailNow()
 	}
-	svc := domain.NewBalanceManager(repo)
-	svc.PostToBalance(dmnAcct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
+	svc := domain.NewBalanceManager(repo, l)
+	svc.PostAmtToBalance(dmnAcct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
 
 	oq := queue.NewOrderQueue(mps, svc)
 

@@ -71,6 +71,7 @@ func (b *BalanceRepository) FindHolds() (holds []*persist.BalanceItem, err error
 		var bts []byte
 		bts, err = b.kvstore.Get(at.Name)
 		if err != nil {
+			err = fmt.Errorf("Balace::FindHolds -- %w", err)
 			return
 		}
 
@@ -113,6 +114,7 @@ func (b *BalanceRepository) UpdateHold(id persist.Key, amt decimal.Decimal) erro
 
 	bts, err := b.kvstore.Get(k)
 	if err != nil {
+		err = fmt.Errorf("Balace::UpdateHold -- %w", err)
 		return err
 	}
 
@@ -151,6 +153,7 @@ func (b *BalanceRepository) FindPosts() (posts []*persist.BalanceItem, err error
 		var bts []byte
 		bts, err = b.kvstore.Get(at.Name)
 		if err != nil {
+			err = fmt.Errorf("Balace::FindPosts -- %w", err)
 			return
 		}
 

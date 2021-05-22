@@ -3,7 +3,6 @@ package domain
 import (
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
-	"github.com/shopspring/decimal"
 )
 
 type OrderBook struct {
@@ -11,8 +10,8 @@ type OrderBook struct {
 	bm  *BalanceManager
 }
 
-func NewOrderBook(br persist.BookRepository) *OrderBook {
-	return &OrderBook{bir: br}
+func NewOrderBook(br persist.BookRepository, bm *BalanceManager) *OrderBook {
+	return &OrderBook{bir: br, bm: bm}
 }
 
 // ExecuteOrInsertOrder takes an order and matches it from top down in the order
@@ -135,29 +134,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 }
 
 func (ob *OrderBook) pairOrders(tr *types.Transaction) error {
-	var err error
-
-	err = ob.bm.PostToBalance(&Account{ID: tr.A.AccountID}, tr.A.AddSymbol, tr.A.AddQuantity)
-	if err != nil {
-		return err
-	}
-
-	err = ob.bm.PostToBalance(&Account{ID: tr.A.AccountID}, tr.A.SubSymbol, tr.A.SubQuantity.Mul(decimal.NewFromInt(-1)))
-	if err != nil {
-		return err
-	}
-
-	err = ob.bm.PostToBalance(&Account{ID: tr.B.AccountID}, tr.B.AddSymbol, tr.B.AddQuantity)
-	if err != nil {
-		return err
-	}
-
-	err = ob.bm.PostToBalance(&Account{ID: tr.B.AccountID}, tr.B.SubSymbol, tr.B.SubQuantity.Mul(decimal.NewFromInt(-1)))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ob.bm.PostTransactionToBalance(tr)
 }
 
 type ky string

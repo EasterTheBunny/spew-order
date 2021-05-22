@@ -73,7 +73,7 @@ func TestGetAvailableBalance(t *testing.T) {
 				continue
 			}
 		case 1:
-			err := service.PostToBalance(test.action.acct, test.action.sym, test.action.amt)
+			err := service.PostAmtToBalance(test.action.acct, test.action.sym, test.action.amt)
 			if err != nil {
 				t.Errorf("%d: post error encountered where none expected: %s", i, err)
 				continue
@@ -123,8 +123,10 @@ var seedData = []balanceTestItem{
 	{decimal.NewFromFloat(1.33452823), c, types.SymbolEthereum},
 }
 
-func newSeededRepo() persist.AccountRepository {
-	repo := kv.NewAccountRepository(persist.NewMockKVStore())
+func newSeededRepo() (persist.AccountRepository, persist.LedgerRepository) {
+	store := persist.NewMockKVStore()
+	repo := kv.NewAccountRepository(store)
+	l := kv.NewLedgerRepository(store)
 
 	for _, s := range seedData {
 		acct := &persist.Account{ID: s.acct.ID.String()}
@@ -134,5 +136,5 @@ func newSeededRepo() persist.AccountRepository {
 		b.UpdateBalance(bal)
 	}
 
-	return repo
+	return repo, l
 }

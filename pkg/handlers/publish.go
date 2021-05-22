@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/easterthebunny/render"
@@ -57,7 +56,6 @@ func (h *OrderHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) 
 
 		order, err := h.queue.PublishOrderRequest(ctx, or)
 		if err != nil {
-			log.Printf("PostOrder.PublistOrderRequest: %v", err)
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}

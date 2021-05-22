@@ -16,6 +16,7 @@ const (
 	postSub
 	orderSub
 	transactionSub
+	ledgerSub
 )
 
 var (
@@ -28,6 +29,11 @@ var _ persist.BalanceRepository = &BalanceRepository{}
 var _ persist.AuthorizationRepository = &AuthorizationRepository{}
 var _ persist.TransactionRepository = &TransactionRepository{}
 var _ persist.OrderRepository = &OrderRepository{}
+
+func ledgerSubspace() key.Subspace {
+	// /root/ledger
+	return gsRoot.Sub(ledgerSub)
+}
 
 func accountSubspace(acct *persist.Account) key.Subspace {
 	// /root/account/{accountid}

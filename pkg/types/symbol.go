@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/shopspring/decimal"
 )
 
 // Symbol ...
@@ -55,6 +57,17 @@ func (s Symbol) RoundingPlace() int32 {
 		return 18
 	default:
 		return 8
+	}
+}
+
+func (s Symbol) MinimumFee() decimal.Decimal {
+	switch s {
+	case SymbolBitcoin:
+		return decimal.NewFromFloat(0.00000001)
+	case SymbolEthereum:
+		return decimal.NewFromFloat(0.000000000000000001)
+	default:
+		return decimal.NewFromInt(0)
 	}
 }
 

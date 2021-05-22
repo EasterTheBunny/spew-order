@@ -10,7 +10,10 @@ import (
 
 func NewGoogleOrderBook(kvstore persist.KVStore) *domain.OrderBook {
 	br := kv.NewBookRepository(kvstore)
-	return domain.NewOrderBook(br)
+	a := kv.NewAccountRepository(kvstore)
+	l := kv.NewLedgerRepository(kvstore)
+	bs := domain.NewBalanceManager(a, l)
+	return domain.NewOrderBook(br, bs)
 }
 
 func NewGoogleKVStore(bucket *string) (persist.KVStore, error) {
@@ -27,7 +30,8 @@ func NewJWTAuth(url string) (middleware.AuthenticationProvider, error) {
 
 func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.AuthenticationProvider) (*Router, error) {
 	a := kv.NewAccountRepository(kvstore)
-	bs := domain.NewBalanceManager(a)
+	l := kv.NewLedgerRepository(kvstore)
+	bs := domain.NewBalanceManager(a, l)
 
 	r := Router{
 		AuthStore: kv.NewAuthorizationRepository(kvstore),
@@ -42,5 +46,6 @@ func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.Au
 
 func NewWebhookRouter(kvstore persist.KVStore) *WebhookRouter {
 	a := kv.NewAccountRepository(kvstore)
-	return &WebhookRouter{Funding: NewFundingHandler(a)}
+	l := kv.NewLedgerRepository(kvstore)
+	return &WebhookRouter{Funding: NewFundingHandler(a, l)}
 }

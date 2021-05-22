@@ -13,12 +13,13 @@ var (
 	ErrInsufficientBalanceForHold = errors.New("account balance too low for hold")
 )
 
-func NewBalanceManager(repo persist.AccountRepository) *BalanceManager {
-	return &BalanceManager{acct: repo}
+func NewBalanceManager(repo persist.AccountRepository, l persist.LedgerRepository) *BalanceManager {
+	return &BalanceManager{acct: repo, ledger: l}
 }
 
 type BalanceManager struct {
-	acct persist.AccountRepository
+	acct   persist.AccountRepository
+	ledger persist.LedgerRepository
 }
 
 func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
@@ -175,14 +176,68 @@ func (m *BalanceManager) RemoveHoldOnAccount(a *Account, s types.Symbol, id pers
 	return r.DeleteHold(id)
 }
 
-// PostToBalance places a balance change record on the account and Symbol provided
+// PostAmtToBalance places a balance change record on the account and Symbol provided
 // does not roll posting up to the balance and is a thread safe operation.
-func (m *BalanceManager) PostToBalance(a *Account, s types.Symbol, amt decimal.Decimal) error {
+func (m *BalanceManager) PostAmtToBalance(a *Account, s types.Symbol, amt decimal.Decimal) error {
 
 	acct := &persist.Account{ID: a.ID.String()}
 	r := m.acct.Balances(acct, s)
 	newPost := persist.NewBalanceItem(amt)
 	err := r.CreatePost(newPost)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decimal.Decimal) error {
+	a, err := m.acct.Find(id)
+	if err != nil {
+		return err
+	}
+
+	r := m.acct.Balances(a, s)
+	newPost := persist.NewBalanceItem(amt)
+	err = r.CreatePost(newPost)
+	if err != nil {
+		return err
+	}
+
+	err = m.ledger.RecordDeposit(s, amt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PostTransactionToBalance ...
+func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
+
+	var err error
+	a := &Account{ID: t.A.AccountID}
+	err = m.PostAmtToBalance(a, t.A.AddSymbol, t.A.AddQuantity)
+	if err != nil {
+		return err
+	}
+
+	err = m.PostAmtToBalance(a, t.A.SubSymbol, t.A.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	if err != nil {
+		return err
+	}
+
+	err = m.PostAmtToBalance(a, t.B.AddSymbol, t.B.AddQuantity)
+	if err != nil {
+		return err
+	}
+
+	err = m.PostAmtToBalance(a, t.B.SubSymbol, t.B.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	if err != nil {
+		return err
+	}
+
+	err = m.ledger.RecordFee(t.A.AddSymbol, t.A.FeeQuantity)
 	if err != nil {
 		return err
 	}

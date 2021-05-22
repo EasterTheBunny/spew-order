@@ -3,6 +3,7 @@ package kv
 import (
 	"fmt"
 
+	"github.com/easterthebunny/spew-order/internal/key"
 	"github.com/easterthebunny/spew-order/internal/persist"
 )
 
@@ -35,7 +36,7 @@ func (br *BookRepository) SetBookItem(bi *persist.BookItem) error {
 
 func (br *BookRepository) GetHeadBatch(bi *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
 	query := &persist.KVStoreQuery{
-		StartOffset: string(bookItemSubspace(*bi, &bi.ActionType).Bytes())}
+		StartOffset: bookItemSubspace(*bi, &bi.ActionType).Pack(key.Tuple{}).String()}
 	attrs, err := br.kvstore.RangeGet(query, 10)
 	if err != nil {
 		return
@@ -45,6 +46,7 @@ func (br *BookRepository) GetHeadBatch(bi *persist.BookItem, limit int) (items [
 		var data []byte
 		data, err = br.kvstore.Get(attr.Name)
 		if err != nil {
+			err = fmt.Errorf("Book::GetHeadBatch -- %w", err)
 			return
 		}
 

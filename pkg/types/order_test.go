@@ -28,34 +28,34 @@ var tests = []testFill{
 		Description: "a sell market order with a quantity limit on the order book is paired with a buy limit order request where the quantity of the market order is less than the quantity of the limit order",
 		BookOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Quantity: decimal.NewFromFloat(0.00042),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000001053),
+		ExpectedHold:       decimal.NewFromFloat(0.00003375),
 		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828), // maker fee calculated on this amount
+				AddQuantity: decimal.NewFromFloat(0.0000315), // maker fee calculated on this amount
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042), // taker fee calculated on this amount
+				AddQuantity: decimal.NewFromFloat(0.00042), // taker fee calculated on this amount
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{},
 		},
@@ -63,21 +63,23 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.00003148),
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromFloat(0.00000063),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeSell, &MarketOrderType{
 					Base:     SymbolEthereum,
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -87,39 +89,64 @@ var tests = []testFill{
 		Description: "a sell market order with a quantity limit on the order book is paired with a buy limit order request where the quantity of the market order is greater than the quantity of the limit order",
 		BookOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000048),
+			Quantity: decimal.NewFromFloat(0.00048),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000001053),
+		ExpectedHold:       decimal.NewFromFloat(0.00003375),
 		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.0000001053),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000045),
+				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000045),
+				AddQuantity: decimal.NewFromFloat(0.00045),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.0000001053),
+				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0234),
-					Quantity: decimal.NewFromFloat(0.0000045),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003373),
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.00045),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.000449325),
+				FeeQuantity: decimal.NewFromFloat(0.000000675),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.00003375),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
+					Base:     SymbolBitcoin,
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
 				}),
 			},
 		},
@@ -129,34 +156,34 @@ var tests = []testFill{
 		Description: "a buy market order with a quantity limit on the order book is paired with a sell limit order request where the quantity of the market order is less than the quantity of the limit order",
 		BookOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Quantity: decimal.NewFromFloat(0.00042),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHold:       decimal.NewFromFloat(0.00045),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{},
 		},
@@ -164,21 +191,23 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00041979),
+				FeeQuantity: decimal.NewFromFloat(0.00000021),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.00003145),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeBuy, &MarketOrderType{
 					Base:     SymbolEthereum,
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -188,39 +217,64 @@ var tests = []testFill{
 		Description: "a buy market order with a quantity limit on the order book is paired with a sell limit order request where the quantity of the market order is greater than the quantity of the limit order",
 		BookOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000048),
+			Quantity: decimal.NewFromFloat(0.00048),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHold:       decimal.NewFromFloat(0.00045),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000045),
+				AddQuantity: decimal.NewFromFloat(0.00045),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.0000001053),
+				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.0000001053),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000045),
+				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0234),
-					Quantity: decimal.NewFromFloat(0.0000045),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.000449775),
+				FeeQuantity: decimal.NewFromFloat(0.000000225),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.00003375),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003370),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.00045),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
+					Base:     SymbolBitcoin,
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
 				}),
 			},
 		},
@@ -230,34 +284,34 @@ var tests = []testFill{
 		Description: "a buy market order with a spending limit on the order book is paired with a sell limit order request where the quantity of the market order is less than the quantity of the limit order",
 		BookOrderType: &MarketOrderType{
 			Base:     SymbolBitcoin,
-			Quantity: decimal.NewFromFloat(0.00000009828),
+			Quantity: decimal.NewFromFloat(0.0000315),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHold:       decimal.NewFromFloat(0.00045),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{},
 		},
@@ -265,21 +319,23 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00041979),
+				FeeQuantity: decimal.NewFromFloat(0.00000021),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.00003145),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeBuy, &MarketOrderType{
 					Base:     SymbolBitcoin,
-					Quantity: decimal.NewFromFloat(0.00000009828),
+					Quantity: decimal.NewFromFloat(0.0000315),
 				}),
 			},
 		},
@@ -289,39 +345,64 @@ var tests = []testFill{
 		Description: "a buy market order with a spending limit on the order book is paired with a sell limit order request where the quantity of the market order is greater than the quantity of the limit order",
 		BookOrderType: &MarketOrderType{
 			Base:     SymbolBitcoin,
-			Quantity: decimal.NewFromFloat(0.00000011232),
+			Quantity: decimal.NewFromFloat(0.00004375),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHold:       decimal.NewFromFloat(0.00045),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolBitcoin,
-			Quantity: decimal.NewFromFloat(0.00000000702),
+			Quantity: decimal.NewFromFloat(0.00001),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000045),
+				AddQuantity: decimal.NewFromFloat(0.00045),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.0000001053),
+				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.0000001053),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000045),
+				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0234),
-					Quantity: decimal.NewFromFloat(0.0000045),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.000449775),
+				FeeQuantity: decimal.NewFromFloat(0.000000225),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.00003375),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003370),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.00045),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
+					Base:     SymbolBitcoin,
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
 				}),
 			},
 		},
@@ -330,40 +411,64 @@ var tests = []testFill{
 		Name:        "BuyLimitOrderA_SellMarketOrderB_AGreaterThanB_QuantityLimit",
 		Description: "a buy limit order on the order book is paired with a sell market order request with a quantity limit where the quantity of the limit order is greater than the quantity of the market order",
 		BookOrderType: &LimitOrderType{ // on the book as a buy/bid
-			Base:     SymbolBitcoin,                   // base is BTC, target is ETH
-			Price:    decimal.NewFromFloat(0.0234),    // bid price in ETH
-			Quantity: decimal.NewFromFloat(0.0000045), // quantity of ETH
+			Base:     SymbolBitcoin,                 // base is BTC, target is ETH
+			Price:    decimal.NewFromFloat(0.075),   // bid price in ETH
+			Quantity: decimal.NewFromFloat(0.00045), // quantity of ETH
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &MarketOrderType{
-			Base:     SymbolEthereum,                  // ask for ETH, no price since market order
-			Quantity: decimal.NewFromFloat(0.0000042), // selling ETH
+			Base:     SymbolEthereum,                // ask for ETH, no price since market order
+			Quantity: decimal.NewFromFloat(0.00042), // selling ETH
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000042),
+		ExpectedHold:       decimal.NewFromFloat(0.00042),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
-				AddSymbol:   SymbolEthereum,                      // add the target type
-				AddQuantity: decimal.NewFromFloat(0.0000042),     // add sell amount
-				SubSymbol:   SymbolBitcoin,                       // remove base type
-				SubQuantity: decimal.NewFromFloat(0.00000009828), // rem price * sell amount
+				AddSymbol:   SymbolEthereum,                  // add the target type
+				AddQuantity: decimal.NewFromFloat(0.00042),   // add sell amount
+				SubSymbol:   SymbolBitcoin,                   // remove base type
+				SubQuantity: decimal.NewFromFloat(0.0000315), // rem price * sell amount
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeSell, &MarketOrderType{
 					Base:     SymbolEthereum,
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Quantity: decimal.NewFromFloat(0.00042),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.00041979),
+				FeeQuantity: decimal.NewFromFloat(0.00000021),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.0000315),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003145),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.00042),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeSell, &MarketOrderType{
+					Base:     SymbolEthereum,
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -373,33 +478,33 @@ var tests = []testFill{
 		Description: "a buy limit order on the order book is paired with a sell market order request with a quantity limit where the quantity of the limit order is less than the quantity of the market order",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000048),
+			Quantity: decimal.NewFromFloat(0.00048),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000048),
+		ExpectedHold:       decimal.NewFromFloat(0.00048),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolEthereum,
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000045),
+				AddQuantity: decimal.NewFromFloat(0.00045),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.0000001053),
+				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.0000001053),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000045),
+				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			Filled: []Order{},
 		},
@@ -407,22 +512,24 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000045),
+				AddQuantity: decimal.NewFromFloat(0.000449775),
+				FeeQuantity: decimal.NewFromFloat(0.000000225),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.0000001053),
+				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.0000001053),
+				AddQuantity: decimal.NewFromFloat(0.00003370),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000045),
+				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0234),
-					Quantity: decimal.NewFromFloat(0.0000045),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
 				}),
 			},
 		},
@@ -432,33 +539,33 @@ var tests = []testFill{
 		Description: "a sell limit order on the order book is paired with a buy market order request with a spending limit where the quantity of the limit order is less than the quantity of the market order",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &MarketOrderType{
 			Base:     SymbolBitcoin,
-			Quantity: decimal.NewFromFloat(0.00000011232),
+			Quantity: decimal.NewFromFloat(0.00004375),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.00000011232),
+		ExpectedHold:       decimal.NewFromFloat(0.00004375),
 		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &MarketOrderType{
 			Base:     SymbolBitcoin,
-			Quantity: decimal.NewFromFloat(0.00000000702),
+			Quantity: decimal.NewFromFloat(0.00001),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.0000001053),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000045),
+				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000045),
+				AddQuantity: decimal.NewFromFloat(0.00045),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.0000001053),
+				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			Filled: []Order{},
 		},
@@ -466,22 +573,24 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.0000001053),
+				AddQuantity: decimal.NewFromFloat(0.00003373),
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000045),
+				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000045),
+				AddQuantity: decimal.NewFromFloat(0.000449325),
+				FeeQuantity: decimal.NewFromFloat(0.000000675),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.0000001053),
+				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeSell, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0234),
-					Quantity: decimal.NewFromFloat(0.0000045),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00045),
 				}),
 			},
 		},
@@ -491,39 +600,63 @@ var tests = []testFill{
 		Description: "a sell limit order on the order book is paired with a buy market order request with a spending limit where the quantity of the limit order is greater than the quantity of the market order",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &MarketOrderType{
 			Base:     SymbolBitcoin,
-			Quantity: decimal.NewFromFloat(0.00000009828),
+			Quantity: decimal.NewFromFloat(0.0000315),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.00000009828),
+		ExpectedHold:       decimal.NewFromFloat(0.0000315),
 		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeBuy, &MarketOrderType{
 					Base:     SymbolBitcoin,
-					Quantity: decimal.NewFromFloat(0.00000009828),
+					Quantity: decimal.NewFromFloat(0.0000315),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003148),
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.00042),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.00041937),
+				FeeQuantity: decimal.NewFromFloat(0.00000063),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.0000315),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeBuy, &MarketOrderType{
+					Base:     SymbolBitcoin,
+					Quantity: decimal.NewFromFloat(0.0000315),
 				}),
 			},
 		},
@@ -533,41 +666,66 @@ var tests = []testFill{
 		Description: "a sell limit order on the order book is paired with a buy limit order request where the quantity of A is greater than the quantity of B",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0235),
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00042),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000000987),
+		ExpectedHold:       decimal.NewFromFloat(0.0000315),
 		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315), // maker fee calculated on this amount
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042), // taker fee calculated on this amount
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0235),
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00042),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003148), // maker fee calculated on this amount
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.00042),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromFloat(0.00000063),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.0000315),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
+					Base:     SymbolBitcoin,
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -577,35 +735,35 @@ var tests = []testFill{
 		Description: "a sell limit order on the order book is paired with a buy limit order request where the quantity of A is less than the quantity of B",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00042),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0235),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.00000010575),
+		ExpectedHold:       decimal.NewFromFloat(0.00003375),
 		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0235),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{},
 		},
@@ -613,22 +771,24 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.00003148),
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromFloat(0.00000063),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeSell, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0234),
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -638,37 +798,37 @@ var tests = []testFill{
 		Description: "a sell limit order on the order book is paired with a buy limit order request where the quantity of A is equal to the quantity of B",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00042),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0235),
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00042),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000000987),
+		ExpectedHold:       decimal.NewFromFloat(0.0000315),
 		ExpectedHoldSymbol: SymbolBitcoin,
 		ExpectedOrderType:  nil,
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0235),
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -676,27 +836,29 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.00003148), // maker fee calculated on this amount
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromFloat(0.00000063),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDB, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0235),
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 				newTestRequest(accountIDA, ActionTypeSell, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0234),
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -706,41 +868,66 @@ var tests = []testFill{
 		Description: "a buy limit order on the order book is paired with a sell limit order request where the quantity of A is greater than the quantity of B",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0235),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Price:    decimal.NewFromFloat(0.074),
+			Quantity: decimal.NewFromFloat(0.00042),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000042),
+		ExpectedHold:       decimal.NewFromFloat(0.00042),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0235),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeSell, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0235),
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Price:    decimal.NewFromFloat(0.074),
+					Quantity: decimal.NewFromFloat(0.00042),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.00041979),
+				FeeQuantity: decimal.NewFromFloat(0.00000021),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.0000315),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003145),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.00042),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDA, ActionTypeSell, &LimitOrderType{
+					Base:     SymbolBitcoin,
+					Price:    decimal.NewFromFloat(0.074),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -750,35 +937,35 @@ var tests = []testFill{
 		Description: "a buy limit order on the order book is paired with a sell limit order request where the quantity of A is less than the quantity of B",
 		BookOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0235),
-			Quantity: decimal.NewFromFloat(0.0000042),
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00042),
 		},
 		RequestOrder: newTestRequest(accountIDB, ActionTypeSell, &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000045),
+			Price:    decimal.NewFromFloat(0.074),
+			Quantity: decimal.NewFromFloat(0.00045),
 		}),
-		ExpectedHold:       decimal.NewFromFloat(0.0000045),
+		ExpectedHold:       decimal.NewFromFloat(0.00045),
 		ExpectedHoldSymbol: SymbolEthereum,
 		ExpectedOrderType: &LimitOrderType{
 			Base:     SymbolBitcoin,
-			Price:    decimal.NewFromFloat(0.0234),
-			Quantity: decimal.NewFromFloat(0.0000003),
+			Price:    decimal.NewFromFloat(0.074),
+			Quantity: decimal.NewFromFloat(0.00003),
 		},
 		ExpectedTransaction: Transaction{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00042),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{},
 		},
@@ -786,22 +973,24 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0000042),
+				AddQuantity: decimal.NewFromFloat(0.00041979),
+				FeeQuantity: decimal.NewFromFloat(0.00000021),
 				SubSymbol:   SymbolBitcoin,
-				SubQuantity: decimal.NewFromFloat(0.00000009828),
+				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00000009828),
+				AddQuantity: decimal.NewFromFloat(0.00003145),
+				FeeQuantity: decimal.NewFromFloat(0.00000005),
 				SubSymbol:   SymbolEthereum,
-				SubQuantity: decimal.NewFromFloat(0.0000042),
+				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			Filled: []Order{
 				newTestRequest(accountIDA, ActionTypeBuy, &LimitOrderType{
 					Base:     SymbolBitcoin,
-					Price:    decimal.NewFromFloat(0.0235),
-					Quantity: decimal.NewFromFloat(0.0000042),
+					Price:    decimal.NewFromFloat(0.075),
+					Quantity: decimal.NewFromFloat(0.00042),
 				}),
 			},
 		},
@@ -880,6 +1069,7 @@ func TestMarshalOrder(t *testing.T) {
 		Owner:   uuid.NewV4().String(),
 		Account: uuid.NewV4(),
 		Base:    SymbolBitcoin,
+		HoldID:  uuid.NewV4().String(),
 		Target:  SymbolEthereum,
 		Action:  ActionTypeBuy,
 		Type: &MarketOrderType{
@@ -891,8 +1081,8 @@ func TestMarshalOrder(t *testing.T) {
 	b, err := json.Marshal(order)
 	assert.NoError(t, err)
 
-	e := `{"account":"%s","action":"BUY","base":"BTC","id":"%s","owner":"%s","target":"ETH","timestamp":%d,"type":{"base":"BTC","name":"MARKET","quantity":"0.001"}}`
-	expected := fmt.Sprintf(e, order.Account, order.ID, order.Owner, order.Timestamp.Unix())
+	e := `{"account":"%s","action":"BUY","base":"BTC","holdID":"%s","id":"%s","owner":"%s","target":"ETH","timestamp":%d,"type":{"base":"BTC","name":"MARKET","quantity":"0.001"}}`
+	expected := fmt.Sprintf(e, order.Account, order.HoldID, order.ID, order.Owner, order.Timestamp.Unix())
 
 	assert.Equal(t, expected, string(b))
 }
@@ -959,12 +1149,14 @@ func assertTransaction(t *testing.T, expected Transaction, actual Transaction, a
 
 	assert.Equal(t, expected.A.AddSymbol.String(), actual.A.AddSymbol.String(), "transaction symbol entry A must match expected")
 	assertDecimal(t, expected.A.AddQuantity, actual.A.AddQuantity, expected.A.AddSymbol.RoundingPlace(), "transaction add balance entry A must match expected")
+	assertDecimal(t, expected.A.FeeQuantity, actual.A.FeeQuantity, expected.A.AddSymbol.RoundingPlace(), "transaction fee entry A must match expected")
 
 	assert.Equal(t, expected.A.SubSymbol.String(), actual.A.SubSymbol.String(), "transaction symbol entry A must match expected")
 	assertDecimal(t, expected.A.SubQuantity, actual.A.SubQuantity, expected.A.SubSymbol.RoundingPlace(), "transaction sub balance entry A must match expected")
 
 	assert.Equal(t, expected.B.AddSymbol.String(), actual.B.AddSymbol.String(), "transaction symbol entry B must match expected")
 	assertDecimal(t, expected.B.AddQuantity, actual.B.AddQuantity, expected.B.AddSymbol.RoundingPlace(), "transaction add balance entry B must match expected")
+	assertDecimal(t, expected.B.FeeQuantity, actual.B.FeeQuantity, expected.B.AddSymbol.RoundingPlace(), "transaction fee entry B must match expected")
 
 	assert.Equal(t, expected.B.SubSymbol.String(), actual.B.SubSymbol.String(), "transaction symbol entry B must match expected")
 	assertDecimal(t, expected.B.SubQuantity, actual.B.SubQuantity, expected.B.SubSymbol.RoundingPlace(), "transaction sub balance entry B must match expected")

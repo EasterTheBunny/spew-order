@@ -210,6 +210,26 @@ func (t *Transaction) Decode(b []byte, enc EncodingType) error {
 	return decode(b, enc, t)
 }
 
+type LedgerEntry struct {
+	Symbol    types.Symbol    `json:"symbol"`
+	Amount    decimal.Decimal `json:"amount"`
+	Timestamp NanoTime        `json:"timestamp"`
+}
+
+func (e LedgerEntry) Encode(enc EncodingType) ([]byte, error) {
+	return encode(enc, e)
+}
+
+func (e *LedgerEntry) Decode(b []byte, enc EncodingType) error {
+	return decode(b, enc, e)
+}
+
+type LedgerRepository interface {
+	RecordDeposit(types.Symbol, decimal.Decimal) error
+	RecordTransfer(types.Symbol, decimal.Decimal) error
+	RecordFee(types.Symbol, decimal.Decimal) error
+}
+
 type FillStatus int
 
 const (

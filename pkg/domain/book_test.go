@@ -72,16 +72,38 @@ func TestExecuteOrInsertOrder_EmptyBook(t *testing.T) {
 }
 
 func TestExecuteOrInsertOrder(t *testing.T) {
+	// isolate the book repo from others
 	st := persist.NewMockKVStore()
+	// other repo to run tests only on book repo
+	st1 := persist.NewMockKVStore()
+
 	br := kv.NewBookRepository(st)
-	s := &OrderBook{bir: br}
+	ar := kv.NewAccountRepository(st1)
+	lr := kv.NewLedgerRepository(st1)
+
+	bm := NewBalanceManager(ar, lr)
+	s := NewOrderBook(br, bm)
 
 	// setup the data set for the later match
 	base := newOrderBook(times, buyPrices, types.ActionTypeBuy)
 	base = append(base, newOrderBook(times, sellPrices, types.ActionTypeSell)...)
 	for _, b := range base {
+		smb, amt := b.Type.HoldAmount(b.Action, b.Base, b.Target)
+
+		err := bm.PostAmtToBalance(&Account{ID: b.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		id, err := bm.SetHoldOnAccount(&Account{ID: b.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		b.HoldID = id
+
 		bitem := persist.NewBookItem(b)
-		err := br.SetBookItem(&bitem)
+		err = br.SetBookItem(&bitem)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
@@ -93,7 +115,21 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		// the expectation of this new order is to do a partial match of one item from the order book
 
 		order := newMarketBookOrder(12700, 0.01, types.ActionTypeSell)
-		err := s.ExecuteOrInsertOrder(order)
+
+		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
+		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.HoldID = id
+
+		err = s.ExecuteOrInsertOrder(order)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
@@ -105,6 +141,20 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		expected = expected - 2
 
 		order := newMarketBookOrder(12700, 1.2, types.ActionTypeBuy)
+
+		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
+		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.HoldID = id
+
 		s.ExecuteOrInsertOrder(order)
 
 		assert.Equal(t, expected, st.Len())
@@ -114,6 +164,20 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		expected = expected + 1
 
 		order := newLimitBookOrder(12700, 0.47, 1.2, types.ActionTypeSell)
+
+		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
+		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.HoldID = id
+
 		s.ExecuteOrInsertOrder(order)
 
 		assert.Equal(t, expected, st.Len())
@@ -123,6 +187,20 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		expected = expected + 1
 
 		order := newLimitBookOrder(12700, 0.33, 1.2, types.ActionTypeBuy)
+
+		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
+		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.HoldID = id
+
 		s.ExecuteOrInsertOrder(order)
 
 		assert.Equal(t, expected, st.Len())

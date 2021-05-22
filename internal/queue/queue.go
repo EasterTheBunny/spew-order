@@ -22,7 +22,8 @@ func NewGoogleOrderQueue(projectID string, bucket string) (*OrderQueue, error) {
 		return nil, err
 	}
 	r := kv.NewAccountRepository(s)
-	bs := domain.NewBalanceManager(r)
+	l := kv.NewLedgerRepository(s)
+	bs := domain.NewBalanceManager(r, l)
 
 	oq := OrderQueue{
 		client:  q,

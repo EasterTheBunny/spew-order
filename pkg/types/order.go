@@ -14,7 +14,11 @@ import (
 // SortSwitch is a magic number for swapping the key sort of buy orders;
 // does not work for math.MaxInt64 and could pose a problem for orders with
 // a price larger than this current value
-const SortSwitch = math.MaxInt32
+const (
+	SortSwitch = math.MaxInt32
+	MakerFee   = 0.0005
+	TakerFee   = 0.0015
+)
 
 // Order is the complete order representation. Built by composition of the Request.
 type Order struct {
@@ -34,7 +38,8 @@ func (o Order) MarshalJSON() ([]byte, error) {
 
 	or["id"] = o.ID.String()
 	or["owner"] = o.Owner
-	or["account"] = o.Account.String()
+	or["holdID"] = o.HoldID
+	or["account"] = o.OrderRequest.Account.String()
 	or["timestamp"] = o.Timestamp.Unix()
 
 	for k, v := range o.OrderRequest.MarshalMap() {
@@ -54,6 +59,7 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 	tp := struct {
 		ID        uuid.UUID `json:"id"`
 		Owner     string    `json:"owner"`
+		HoldID    string    `json:"holdID"`
 		Account   uuid.UUID `json:"account"`
 		Timestamp int64     `json:"timestamp"`
 	}{}
@@ -62,6 +68,9 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 	}
 
 	o.OrderRequest = req
+	o.OrderRequest.Account = tp.Account
+	o.OrderRequest.Owner = tp.Owner
+	o.OrderRequest.HoldID = tp.HoldID
 	o.ID = tp.ID
 	o.Timestamp = time.Unix(tp.Timestamp, 0)
 
@@ -98,15 +107,31 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 		// >= 3000 BTC		-	0.100%	-	0.075%
 
 		// calculate the maker fee using promotion amount
-		tr.A.FeeQuantity = tr.A.AddQuantity.Mul(decimal.NewFromFloat(0.0005))
-		tr.A.AddQuantity = tr.A.AddQuantity.Sub(tr.A.FeeQuantity)
+		tr.A.FeeQuantity = tr.A.AddQuantity.Mul(decimal.NewFromFloat(MakerFee))
+		if tr.A.FeeQuantity.LessThan(tr.A.AddSymbol.MinimumFee()) {
+			tr.A.FeeQuantity = tr.A.AddSymbol.MinimumFee()
+		}
+
+		if tr.A.AddQuantity.LessThan(tr.A.FeeQuantity) {
+			tr.A.AddQuantity = decimal.NewFromInt(0)
+		} else {
+			tr.A.AddQuantity = tr.A.AddQuantity.Sub(tr.A.FeeQuantity)
+		}
 
 		tr.B.AccountID = order.Account
 		tr.B.Order = order
 
 		// calculate the taker fee using promotion amount
-		tr.B.FeeQuantity = tr.B.AddQuantity.Mul(decimal.NewFromFloat(0.0015))
-		tr.B.AddQuantity = tr.B.AddQuantity.Sub(tr.B.FeeQuantity)
+		tr.B.FeeQuantity = tr.B.AddQuantity.Mul(decimal.NewFromFloat(TakerFee))
+		if tr.B.FeeQuantity.LessThan(tr.B.AddSymbol.MinimumFee()) {
+			tr.B.FeeQuantity = tr.B.AddSymbol.MinimumFee()
+		}
+
+		if tr.B.AddQuantity.LessThan(tr.B.FeeQuantity) {
+			tr.B.AddQuantity = decimal.NewFromInt(0)
+		} else {
+			tr.B.AddQuantity = tr.B.AddQuantity.Sub(tr.B.FeeQuantity)
+		}
 	}
 
 	// if there is a filled order, it is assumed that the requested order
@@ -332,7 +357,9 @@ func (m *MarketOrderType) UnmarshalJSON(b []byte) error {
 
 // LimitOrderType ...
 type LimitOrderType struct {
-	Base     Symbol          `json:"base"`
+	// Base is the symbol on which the price is calculated
+	Base Symbol `json:"base"`
+	// Price is defined as the Base
 	Price    decimal.Decimal `json:"price"`
 	Quantity decimal.Decimal `json:"quantity"`
 }

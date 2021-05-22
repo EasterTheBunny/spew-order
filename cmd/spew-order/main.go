@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
-	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
@@ -21,7 +20,7 @@ func main() {
 
 	log.Println("starting service")
 	kvstore := persist.NewMockKVStore()
-	book := domain.NewOrderBook(kv.NewBookRepository(kvstore))
+	book := handlers.NewGoogleOrderBook(kvstore)
 	ps := queue.NewMockPubSub()
 	jwt := &mockJWTAuth{}
 	subscription := make(chan domain.OrderMessage)

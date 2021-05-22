@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/easterthebunny/render"
@@ -107,7 +106,6 @@ func (h *AccountHandler) GetAccountOrders() func(w http.ResponseWriter, r *http.
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
-		log.Printf("order list length: %d", len(list))
 
 		var out []render.Renderer
 		for _, ord := range list {
@@ -194,7 +192,7 @@ func (h *AccountHandler) AccountCtx() func(http.Handler) http.Handler {
 				// look for the account in storage and create the account if it doesn't exist
 				_, err = h.repo.Find(id)
 				if err != nil {
-					if err == persist.ErrObjectNotExist {
+					if errors.Is(err, persist.ErrObjectNotExist) {
 
 						acct := &persist.Account{ID: ctxAccount.ID.String()}
 						err = h.repo.Save(acct)
