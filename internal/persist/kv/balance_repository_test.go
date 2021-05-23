@@ -65,11 +65,12 @@ func TestBalances(t *testing.T) {
 	t.Run("InsertAndDeleteHolds", func(t *testing.T) {
 
 		var expected []*persist.BalanceItem
+		ids := []string{"a", "b", "d", "c"}
 
-		for x := 1; x < 4; x++ {
+		for x := 0; x < 4; x++ {
 			amt := decimal.NewFromInt(int64(x))
 			hold := persist.BalanceItem{
-				ID:        uuid.NewV4().String(),
+				ID:        ids[x],
 				Timestamp: persist.NanoTime(time.Now()),
 				Amount:    amt,
 			}
@@ -84,6 +85,12 @@ func TestBalances(t *testing.T) {
 		holds, err := br.FindHolds()
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting holds: %s", err.Error())
+		}
+
+		// holds should be in time order and not ID order
+		// first one in is at the top of the list
+		for x, hold := range holds {
+			assert.Equal(t, ids[x], hold.ID)
 		}
 
 		assert.Len(t, holds, len(expected))

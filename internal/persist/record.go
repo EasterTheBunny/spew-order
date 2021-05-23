@@ -277,6 +277,10 @@ func (t NanoTime) Value() int64 {
 	return time.Time(t).UnixNano()
 }
 
+func (t NanoTime) String() string {
+	return strconv.FormatInt(time.Time(t).UnixNano(), 10)
+}
+
 func (t NanoTime) MarshalBinary() ([]byte, error) {
 	return t.MarshalJSON()
 }

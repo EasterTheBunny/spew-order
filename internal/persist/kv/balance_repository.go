@@ -87,12 +87,13 @@ func (b *BalanceRepository) FindHolds() (holds []*persist.BalanceItem, err error
 	return
 }
 
+// CreateHold stores a new hold in a time sorted list
 func (b *BalanceRepository) CreateHold(hold *persist.BalanceItem) error {
 	if hold == nil {
 		return fmt.Errorf("%w for hold", persist.ErrCannotSaveNilValue)
 	}
 
-	k := holdKey(*b.account, b.symbol, stringer(hold.ID))
+	k := holdKey(*b.account, b.symbol, hold.Timestamp)
 
 	enc := persist.JSON
 	bts, err := hold.Encode(enc)
@@ -110,32 +111,35 @@ func (b *BalanceRepository) CreateHold(hold *persist.BalanceItem) error {
 
 func (b *BalanceRepository) UpdateHold(id persist.Key, amt decimal.Decimal) error {
 
-	k := holdKey(*b.account, b.symbol, id)
-
-	bts, err := b.kvstore.Get(k)
-	if err != nil {
-		err = fmt.Errorf("Balace::UpdateHold -- %w", err)
-		return err
-	}
-
-	attrs, err := b.kvstore.Attrs(k)
+	holds, err := b.FindHolds()
 	if err != nil {
 		return err
 	}
 
-	item := &persist.BalanceItem{}
-	enc := encodingFromStr(attrs.ContentEncoding)
-	err = item.Decode(bts, enc)
-	if err != nil {
-		return err
+	for _, hold := range holds {
+		if hold.ID == id.String() {
+			hold.Amount = amt
+			return b.CreateHold(hold)
+		}
 	}
 
-	item.Amount = amt
-	return b.CreateHold(item)
+	return persist.ErrObjectNotExist
 }
 
 func (b *BalanceRepository) DeleteHold(id persist.Key) error {
-	return b.kvstore.Delete(holdKey(*b.account, b.symbol, id))
+
+	holds, err := b.FindHolds()
+	if err != nil {
+		return err
+	}
+
+	for _, hold := range holds {
+		if hold.ID == id.String() {
+			return b.kvstore.Delete(holdKey(*b.account, b.symbol, hold.Timestamp))
+		}
+	}
+
+	return persist.ErrObjectNotExist
 }
 
 func (b *BalanceRepository) FindPosts() (posts []*persist.BalanceItem, err error) {

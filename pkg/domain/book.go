@@ -66,7 +66,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 						}
 
 						// remove hold on incoming order since that order is filled
-						err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, order.Base, ky(order.HoldID))
+						smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
+						err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, smb, ky(order.HoldID))
 						if err != nil {
 							return err
 						}
@@ -91,7 +92,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 						}
 
 						// remove hold on book order since that order is filled
-						err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, book.Order.Base, ky(book.Order.HoldID))
+						smb, _ = book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
+						err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 						if err != nil {
 							return err
 						}
@@ -107,13 +109,15 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 				// delete the book order because both orders were closed
 				if o == nil {
 					// remove hold on book order since that order is filled
-					err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, book.Order.Base, ky(book.Order.HoldID))
+					smb, _ := book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
+					err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 					if err != nil {
 						return err
 					}
 
 					// remove hold on incoming order since that order is filled
-					err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, order.Base, ky(order.HoldID))
+					smb, _ = o.Type.HoldAmount(order.Action, order.Base, order.Target)
+					err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, smb, ky(order.HoldID))
 					if err != nil {
 						return err
 					}

@@ -30,7 +30,6 @@ func TestPublishOrderRequest(t *testing.T) {
 		t.FailNow()
 	}
 	svc := domain.NewBalanceManager(repo, l)
-	svc.PostAmtToBalance(acct, types.SymbolBitcoin, decimal.NewFromFloat(2.0))
 
 	// account is required in the context
 	ctx := contexts.AttachAccountID(context.Background(), acct.ID.String())
@@ -63,6 +62,9 @@ func TestPublishOrderRequest(t *testing.T) {
 
 	// PublishOrder should place hold on account, publish to pubsub, and return an id
 	t.Run("Success", func(t *testing.T) {
+		// set an initial amount in the account that is equal to the next order
+		svc.PostAmtToBalance(acct, types.SymbolBitcoin, decimal.NewFromFloat(1.0))
+
 		or := types.OrderRequest{
 			Base:   types.SymbolBitcoin,
 			Target: types.SymbolEthereum,
@@ -79,7 +81,7 @@ func TestPublishOrderRequest(t *testing.T) {
 		// the new order should be published to the order queue within the
 		// handler. wait for the posting and fail if not found
 		select {
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(500 * time.Millisecond):
 			t.Errorf("no data found on the queue subscription")
 		case <-subscription:
 			// happy case
@@ -90,7 +92,10 @@ func TestPublishOrderRequest(t *testing.T) {
 
 	// PublishOrder should place hold on account, generate an error, and release the hold
 	// the hold from the previous run should still be active and register this run as an error
-	t.Run("InsuffientFunds", func(t *testing.T) {
+	t.Run("InsufficientFunds", func(t *testing.T) {
+		// set an initial amount in the account that is less than the next order
+		svc.PostAmtToBalance(acct, types.SymbolBitcoin, decimal.NewFromFloat(1.0))
+
 		or := types.OrderRequest{
 			Base:   types.SymbolBitcoin,
 			Target: types.SymbolEthereum,
@@ -105,7 +110,7 @@ func TestPublishOrderRequest(t *testing.T) {
 
 		// nothing should be sent to pubsub
 		select {
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(500 * time.Millisecond):
 			return
 		case <-subscription:
 			t.Errorf("data found on the queue subscription")
