@@ -23,8 +23,8 @@ jobs:
       - run: gcloud config set project $ProjectID
       - run: gcloud config list project
       - run: gcloud auth activate-service-account --key-file=./key.json
-      - run: gcloud functions deploy order-api-$ENVIRONMENT-$LOCATION --entry-point RestAPI --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic",COINBASE_RSA_PUBLIC_KEY=$COINBASE_RSA_PUBLIC_KEY --runtime go113 --trigger-http --allow-unauthenticated
-      - run: gcloud functions deploy order-book-$ENVIRONMENT-$LOCATION --entry-point OrderPubSub --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic",COINBASE_RSA_PUBLIC_KEY=$COINBASE_RSA_PUBLIC_KEY --trigger-topic TestTopic --runtime go113
+      - run: gcloud functions deploy order-api-$ENVIRONMENT-$LOCATION --entry-point RestAPI --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY" --runtime go113 --trigger-http --allow-unauthenticated
+      - run: gcloud functions deploy order-book-$ENVIRONMENT-$LOCATION --entry-point OrderPubSub --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY" --trigger-topic TestTopic --runtime go113
 workflows:
   version: 2
   test-release:
