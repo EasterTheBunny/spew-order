@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"io"
+	"log"
+
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/middleware"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/persist/kv"
@@ -44,8 +48,10 @@ func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.Au
 	return &r, nil
 }
 
-func NewWebhookRouter(kvstore persist.KVStore) *WebhookRouter {
+func NewWebhookRouter(kvstore persist.KVStore, pubkey io.Reader) *WebhookRouter {
 	a := kv.NewAccountRepository(kvstore)
 	l := kv.NewLedgerRepository(kvstore)
-	return &WebhookRouter{Funding: NewFundingHandler(a, l)}
+
+	src := funding.NewCoinbaseSource(log.Writer(), pubkey)
+	return &WebhookRouter{Funding: NewFundingHandler(a, l, src)}
 }

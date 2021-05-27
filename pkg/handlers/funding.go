@@ -1,70 +1,43 @@
 package handlers
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/easterthebunny/render"
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
-	"github.com/easterthebunny/spew-order/pkg/api"
 	"github.com/easterthebunny/spew-order/pkg/domain"
-	"github.com/easterthebunny/spew-order/pkg/types"
-	uuid "github.com/satori/go.uuid"
-	"github.com/shopspring/decimal"
 )
 
 type FundingHandler struct {
 	Balance *domain.BalanceManager
+	Source  funding.Source
 }
 
-func NewFundingHandler(a persist.AccountRepository, l persist.LedgerRepository) *FundingHandler {
+func NewFundingHandler(a persist.AccountRepository, l persist.LedgerRepository, s funding.Source) *FundingHandler {
 	return &FundingHandler{
-		Balance: domain.NewBalanceManager(a, l)}
+		Balance: domain.NewBalanceManager(a, l),
+		Source:  s}
 }
 
 func (h *FundingHandler) PostFunding() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			render.Render(w, r, HTTPBadRequest(err))
+		tr, cerr := funding.TransactionFromContext(r.Context())
+		if cerr != nil {
+			log.Println(cerr.Err)
+			render.Render(w, r, HTTPStatusError(cerr.Status, cerr.Err))
 			return
 		}
 
-		var callback api.FundingCallback
-		err = json.Unmarshal(b, &callback)
+		err := h.Balance.FundAccountByAddress(tr.Address, tr.Symbol, tr.Amount)
 		if err != nil {
-			render.Render(w, r, HTTPBadRequest(err))
-			return
-		}
-
-		var sym types.Symbol
-		err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, string(callback.Symbol))), &sym)
-		if err != nil {
-			render.Render(w, r, HTTPBadRequest(err))
-			return
-		}
-
-		id, err := uuid.FromString(callback.Account)
-		if err != nil {
-			render.Render(w, r, HTTPBadRequest(err))
-			return
-		}
-
-		amt, err := decimal.NewFromString(string(callback.Quantity))
-		if err != nil {
-			render.Render(w, r, HTTPBadRequest(err))
-			return
-		}
-
-		err = h.Balance.FundAccountByID(id, sym, amt)
-		if err != nil {
+			log.Println(err)
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
 
-		render.Render(w, r, HTTPNewOKResponse(&api.CallbackResponse{Message: "ok"}))
+		w.WriteHeader(h.Source.OKResponse())
 	}
 }

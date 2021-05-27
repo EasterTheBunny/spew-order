@@ -106,29 +106,6 @@ paths:
                     $ref: '#/components/schemas/BookOrder'
                   error:
                     $ref: '#/components/schemas/ResponseError'
-  /webhook/funding:
-    post:
-      description: Adds funds to account
-      requestBody:
-        description: >
-          Funding Callback
-          Includes information for desired symbol and address
-        required: true
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/FundingCallback'
-      responses:
-        200:
-          description: OK
-          content:
-            'application/json':
-              schema:
-                properties:
-                  data:
-                    $ref: '#/components/schemas/CallbackResponse'
-                  error:
-                    $ref: '#/components/schemas/ResponseError'
 components:
   parameters:
     AccountPathParam:
@@ -293,23 +270,3 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/BookOrder'
-    FundingCallback:
-      type: object
-      required:
-      - account
-      - symbol
-      - quantity
-      properties:
-        account:
-          type: string
-        symbol:
-          $ref: '#/components/schemas/SymbolType'
-        quantity:
-          $ref: '#/components/schemas/CurrencyValue'
-    CallbackResponse:
-      type: object
-      required:
-      - message
-      properties:
-        message:
-          type: string

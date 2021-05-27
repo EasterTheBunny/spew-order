@@ -212,6 +212,27 @@ func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decim
 	return nil
 }
 
+func (m *BalanceManager) FundAccountByAddress(hash string, s types.Symbol, amt decimal.Decimal) error {
+	a, err := m.acct.FindByAddress(hash, s)
+	if err != nil {
+		return err
+	}
+
+	r := m.acct.Balances(a, s)
+	newPost := persist.NewBalanceItem(amt)
+	err = r.CreatePost(newPost)
+	if err != nil {
+		return err
+	}
+
+	err = m.ledger.RecordDeposit(s, amt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // PostTransactionToBalance ...
 func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
 

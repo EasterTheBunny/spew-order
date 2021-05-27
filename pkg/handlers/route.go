@@ -87,8 +87,8 @@ func (wr *WebhookRouter) Routes() http.Handler {
 
 	// set CORS headers early and short circuit the response loop
 	r.Use(middleware.SetCORSHeaders)
+	r.Use(wr.Funding.Source.Callback())
 
-	// set up routes that require authorization
 	r.Post("/funding", wr.Funding.PostFunding())
 
 	return r

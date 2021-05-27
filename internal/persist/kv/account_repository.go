@@ -37,9 +37,31 @@ func (r *AccountRepository) Find(id persist.Key) (account *persist.Account, err 
 	return
 }
 
+func (r *AccountRepository) FindByAddress(addr string, sym types.Symbol) (acct *persist.Account, err error) {
+
+	b, err := r.kvstore.Get(addressKey(addr, sym))
+	if err != nil {
+		err = fmt.Errorf("Account::Address::Find -- %w", err)
+		return
+	}
+
+	return r.Find(stringer(string(b)))
+}
+
 func (r *AccountRepository) Save(account *persist.Account) error {
 	if account == nil {
 		return fmt.Errorf("%w for account", persist.ErrCannotSaveNilValue)
+	}
+
+	for _, addr := range account.Addresses {
+		ky := addressKey(addr.Address, addr.Symbol)
+		err := r.kvstore.Set(ky, []byte(account.ID), &persist.KVStoreObjectAttrsToUpdate{
+			ContentEncoding: "text/plain",
+			Metadata:        make(map[string]string),
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	enc := persist.JSON

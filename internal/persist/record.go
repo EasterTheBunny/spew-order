@@ -37,6 +37,7 @@ const (
 
 type AccountRepository interface {
 	Find(Key) (*Account, error)
+	FindByAddress(string, types.Symbol) (*Account, error)
 	Save(*Account) error
 	Balances(*Account, types.Symbol) BalanceRepository
 	Transactions(*Account) TransactionRepository
@@ -45,7 +46,13 @@ type AccountRepository interface {
 
 // Account represents the entity object persisted to storage
 type Account struct {
-	ID string `json:"id"`
+	ID        string           `json:"id"`
+	Addresses []FundingAddress `json:"addresses"`
+}
+
+type FundingAddress struct {
+	Symbol  types.Symbol `json:"symbol"`
+	Address string       `json:"address"`
 }
 
 // Encode marshals Account to bytes based on selected encoding type; defaults to JSON

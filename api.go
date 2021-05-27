@@ -18,12 +18,13 @@ import (
 )
 
 const (
-	envIdentityURI = "IDENTITY_PROVIDER" // identity provider as a URI path
-	envProjectID   = "GOOGLE_CLOUD_PROJECT"
-	envOrderTopic  = "ORDER_TOPIC"
-	envAppName     = "APP_NAME"       // application name used as prefix for named resources
-	envRuntimeEnv  = "DEPLOYMENT_ENV" // deployment environment; CI, QA, PROD
-	envLocation    = "LOCATION"       // resources location for this function instanc
+	envIdentityURI    = "IDENTITY_PROVIDER" // identity provider as a URI path
+	envProjectID      = "GOOGLE_CLOUD_PROJECT"
+	envOrderTopic     = "ORDER_TOPIC"
+	envAppName        = "APP_NAME"                // application name used as prefix for named resources
+	envRuntimeEnv     = "DEPLOYMENT_ENV"          // deployment environment; CI, QA, PROD
+	envLocation       = "LOCATION"                // resources location for this function instanc
+	envCoinbasePubKey = "COINBASE_RSA_PUBLIC_KEY" // rsa public key for verifying signature of coinbase notifications
 )
 
 var (
@@ -66,8 +67,10 @@ func init() {
 		log.Fatal(err.Error())
 	}
 
+	pubKey := strings.NewReader(getEnvVar(envCoinbasePubKey))
+
 	Router = rh.Routes()
-	Webhooks = handlers.NewWebhookRouter(kv).Routes()
+	Webhooks = handlers.NewWebhookRouter(kv, pubKey).Routes()
 }
 
 // RestAPI forwards all rest requests to the main API handler.

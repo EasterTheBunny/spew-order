@@ -17,6 +17,7 @@ const (
 	orderSub
 	transactionSub
 	ledgerSub
+	addressSub
 )
 
 var (
@@ -33,6 +34,14 @@ var _ persist.OrderRepository = &OrderRepository{}
 func ledgerSubspace() key.Subspace {
 	// /root/ledger
 	return gsRoot.Sub(ledgerSub)
+}
+
+func addressKey(addr string, sym types.Symbol) string {
+	// /root/addresses/{symbol}/{addr}
+	return gsRoot.Sub(accountSub).
+		Sub(addressSub).
+		Sub(sym.String()).
+		Pack(key.Tuple{addr}).String()
 }
 
 func accountSubspace(acct *persist.Account) key.Subspace {

@@ -74,6 +74,14 @@ func HTTPUnauthorized(err error) *APIResponse {
 		Error:          NewErrorResponseSet(err)}
 }
 
+// HTTPStatusError ...
+func HTTPStatusError(stat int, err error) *APIResponse {
+	return &APIResponse{
+		HTTPStatusCode: stat,
+		StatusText:     http.StatusText(stat),
+		Error:          NewErrorResponseSet(err)}
+}
+
 // NewDataResponse ...
 func NewDataResponse(d render.Renderer) *APIResponse {
 	return &APIResponse{Data: d}

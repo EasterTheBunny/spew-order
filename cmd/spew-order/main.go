@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,7 +32,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	wh := handlers.NewWebhookRouter(kvstore)
+	wh := handlers.NewWebhookRouter(kvstore, strings.NewReader("invalid rsa public key"))
 
 	wg := new(sync.WaitGroup)
 
