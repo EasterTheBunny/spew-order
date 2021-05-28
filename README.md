@@ -1,0 +1,1 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/bfa51a4c-7883-4f24-86c2-1f58a79ae0c9/deploy-status)](https://app.netlify.com/sites/ciphermtn/deploys)
