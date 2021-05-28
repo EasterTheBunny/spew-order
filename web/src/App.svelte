@@ -1,30 +1,18 @@
 <script lang="ts">
-	export let name: string;
+	import Root from "./views/Root.svelte"
+	import Router from "./views/Router.svelte"
+  import oidc from "./oidc"
+
+  export let client_id: string = "0qx7yV52wFZyuVOcXHbSkXF3OckMApXx"
+  export let authority: string = "https://dev-xfscxtiv.us.auth0.com"
+
+  oidc({
+    client_id: client_id,
+    authority: authority,
+  })
+
 </script>
 
-<main>
-	<h1>Hello {name}!</h1>
-	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
-</main>
-
-<style>
-	main {
-		text-align: center;
-		padding: 1em;
-		max-width: 240px;
-		margin: 0 auto;
-	}
-
-	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 4em;
-		font-weight: 100;
-	}
-
-	@media (min-width: 640px) {
-		main {
-			max-width: none;
-		}
-	}
-</style>
+<Root>
+	<Router url="" />
+</Root>
