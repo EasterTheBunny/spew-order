@@ -1,7 +1,9 @@
 package funding
 
 import (
+	"bytes"
 	"crypto"
+	"crypto/hmac"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -14,6 +16,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,36 +31,29 @@ var (
 
 // CoinbasePublicKeyURL = "https://www.coinbase.com/coinbase.pub"
 
-func NewCoinbaseSource(audit io.Writer, src io.Reader) Source {
+// NewCoinbaseSource returns an implementation of the Source interface with a
+// connection to Coinbase
+func NewCoinbaseSource(config SourceConfig) Source {
 	return &coinbaseSource{
-		baseURL:   "https://api.coinbase.com/v2",
-		pubkeySrc: src,
+		baseURL:   "https://api.coinbase.com",
+		pubkeySrc: config.PublicKey,
 		accounts:  make(map[string]string),
 		client: &http.Client{
 			Timeout: time.Second * 3},
-		auditLog: audit}
+		auditLog:  config.CallbackAudit,
+		apikey:    config.APIKey,
+		apisecret: config.APISecret}
 }
 
 type coinbaseSource struct {
 	baseURL   string
 	accounts  map[string]string
-	bearer    string
+	apikey    string
+	apisecret string
 	client    *http.Client
 	pubkeySrc io.Reader
 	pubkey    *rsa.PublicKey
 	auditLog  io.Writer
-}
-
-type coinbaseResponsePayloadV2 struct {
-	Data json.RawMessage `json:"data"`
-}
-
-type coinbaseNotificationPayloadV2 struct {
-	ID             string               `json:"id"`
-	Type           coinbaseCallbackType `json:"type"`
-	Data           json.RawMessage      `json:"data"`
-	Attempts       int                  `json:"delivery_attempts"`
-	AdditionalData json.RawMessage      `json:"additional_data"`
 }
 
 func (s *coinbaseSource) Name() string {
@@ -73,48 +69,7 @@ func (s *coinbaseSource) Supports(sym types.Symbol) bool {
 	}
 }
 
-type coinbaseResourceType string
-
-const (
-	cbAddressResource     coinbaseResourceType = "address"
-	cbAccountResource     coinbaseResourceType = "account"
-	cbTransactionResource coinbaseResourceType = "transaction"
-)
-
-type coinbaseAddressResourceV2 struct {
-	ID        string               `json:"id"`
-	Address   string               `json:"address"`
-	Name      string               `json:"name"`
-	CreatedAt string               `json:"created_at"`
-	UpdatedAt string               `json:"updated_at"`
-	Network   string               `json:"network"`
-	Resource  coinbaseResourceType `json:"resource"`
-	Path      string               `json:"resource_path"`
-}
-
-type coinbaseNewPaymentResourceV2 struct {
-	Hash        string                        `json:"hash"`
-	Amount      coinbaseMoneyResourceV2       `json:"amount"`
-	Transaction coinbaseTransactionResourceV2 `json:"transaction"`
-}
-
-type coinbaseTransactionResourceV2 struct {
-	ID       string               `json:"id"`
-	Resource coinbaseResourceType `json:"resource"`
-	Path     string               `json:"resource_path"`
-}
-
-func (s *coinbaseSource) request(method string, url string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", s.bearer))
-
-	return s.client.Do(req)
-}
-
+// CreateAddress returns a new address for the given symbol
 func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err error) {
 
 	acct, ok := s.accounts[sym.String()]
@@ -131,7 +86,7 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 		}
 	}
 
-	url := fmt.Sprintf("%s/account/%s/addresses", s.baseURL, acct)
+	url := fmt.Sprintf("/v2/account/%s/addresses", acct)
 
 	str := fmt.Sprintf(`{"name": "%s"}`, uuid.NewV4())
 	resp, err := s.request("POST", url, strings.NewReader(str))
@@ -159,16 +114,19 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 }
 
 func (s *coinbaseSource) getSignaturePublicKey() (*rsa.PublicKey, error) {
-
-	if s.pubkey != nil {
-		return s.pubkey, nil
-	}
-
 	var err error
 
-	b, err := ioutil.ReadAll(s.pubkeySrc)
+	b, err := readPubKey(s.pubkeySrc)
 	if err != nil {
 		return nil, errors.New("public key source not available")
+	}
+
+	// check the reader for new content; if there is no new content
+	// and a public key exists, return the existing public key
+	// if there is content in the reader, attempt to create a public
+	// key from it
+	if len(b) == 0 && s.pubkey != nil {
+		return s.pubkey, nil
 	}
 
 	pubPem, _ := pem.Decode(b)
@@ -189,6 +147,57 @@ func (s *coinbaseSource) getSignaturePublicKey() (*rsa.PublicKey, error) {
 
 	s.pubkey = pubKey
 	return pubKey, nil
+}
+
+func (s *coinbaseSource) Withdraw(*Transaction) error {
+	return errors.New("not implemented")
+}
+
+func (s *coinbaseSource) OKResponse() int {
+	return http.StatusOK
+}
+
+func (s *coinbaseSource) request(method string, path string, data interface{}) (*http.Response, error) {
+
+	var body io.Reader
+	var bodyBytes []byte
+	var err error
+
+	if data != nil {
+		bodyBytes, err = json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+
+		body = bytes.NewReader(bodyBytes)
+	}
+
+	tm, err := s.getTime()
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s%s", s.baseURL, path)
+
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := hmac.New(sha256.New, []byte(s.apisecret))
+	_, err = io.WriteString(hash, fmt.Sprintf("%d%s%s%s", tm, method, path, string(bodyBytes)))
+	if err != nil {
+		return nil, err
+	}
+	encoded := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("CB-VERSION", "2021-05-27")
+	req.Header.Add("CB-ACCESS-KEY", s.apikey)
+	req.Header.Add("CB-ACCESS-SIGN", encoded)
+	req.Header.Add("CB-ACCESS-TIMESTAMP", strconv.FormatInt(tm, 10))
+
+	return s.client.Do(req)
 }
 
 func (s *coinbaseSource) verifyRequest(k *rsa.PublicKey, signature string, message []byte) error {
@@ -299,14 +308,6 @@ func (s *coinbaseSource) Callback() func(http.Handler) http.Handler {
 	}
 }
 
-func (s *coinbaseSource) Withdraw(*Transaction) error {
-	return errors.New("not implemented")
-}
-
-func (s *coinbaseSource) OKResponse() int {
-	return http.StatusOK
-}
-
 func (s *coinbaseSource) extractNotificationPayload(r io.Reader) (*coinbaseNotificationPayloadV2, error) {
 
 	callback := &coinbaseNotificationPayloadV2{}
@@ -325,6 +326,107 @@ func (s *coinbaseSource) extractResponsePayload(r io.Reader) (*coinbaseResponseP
 	}
 
 	return data, nil
+}
+
+func (s *coinbaseSource) getAccounts() error {
+	url := "/v2/accounts"
+
+	resp, err := s.request("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	payload, err := s.extractResponsePayload(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var accts []coinbaseAccountResourceV2
+	err = json.Unmarshal(payload.Data, &accts)
+	if err != nil {
+		return err
+	}
+
+	for _, acct := range accts {
+		s.accounts[string(acct.Currency)] = acct.ID
+	}
+
+	return nil
+}
+
+func (s *coinbaseSource) getTime() (t int64, err error) {
+	url := "/v2/time"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	payload, err := s.extractResponsePayload(resp.Body)
+	if err != nil {
+		return
+	}
+
+	var e tm
+	err = json.Unmarshal(payload.Data, &e)
+	if err != nil {
+		return
+	}
+
+	t = e.Epoch
+
+	return
+}
+
+type coinbaseResourceType string
+
+const (
+	cbAddressResource     coinbaseResourceType = "address"
+	cbAccountResource     coinbaseResourceType = "account"
+	cbTransactionResource coinbaseResourceType = "transaction"
+)
+
+type coinbaseAddressResourceV2 struct {
+	ID        string               `json:"id"`
+	Address   string               `json:"address"`
+	Name      string               `json:"name"`
+	CreatedAt string               `json:"created_at"`
+	UpdatedAt string               `json:"updated_at"`
+	Network   string               `json:"network"`
+	Resource  coinbaseResourceType `json:"resource"`
+	Path      string               `json:"resource_path"`
+}
+
+type coinbaseNewPaymentResourceV2 struct {
+	Hash        string                        `json:"hash"`
+	Amount      coinbaseMoneyResourceV2       `json:"amount"`
+	Transaction coinbaseTransactionResourceV2 `json:"transaction"`
+}
+
+type coinbaseTransactionResourceV2 struct {
+	ID       string               `json:"id"`
+	Resource coinbaseResourceType `json:"resource"`
+	Path     string               `json:"resource_path"`
+}
+
+type coinbaseResponsePayloadV2 struct {
+	Data json.RawMessage `json:"data"`
+}
+
+type coinbaseNotificationPayloadV2 struct {
+	ID             string               `json:"id"`
+	Type           coinbaseCallbackType `json:"type"`
+	Data           json.RawMessage      `json:"data"`
+	Attempts       int                  `json:"delivery_attempts"`
+	AdditionalData json.RawMessage      `json:"additional_data"`
 }
 
 type coinbaseCallbackType string
@@ -363,32 +465,9 @@ const (
 	cbBitcoinCurrency coinbaseCurrencyType = "BTC"
 )
 
-func (s *coinbaseSource) getAccounts() error {
-	url := fmt.Sprintf("%s/accounts", s.baseURL)
-
-	str := fmt.Sprintf(`{"name": "%s"}`, uuid.NewV4())
-	resp, err := s.request("POST", url, strings.NewReader(str))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	payload, err := s.extractResponsePayload(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	var accts []coinbaseAccountResourceV2
-	err = json.Unmarshal(payload.Data, &accts)
-	if err != nil {
-		return err
-	}
-
-	for _, acct := range accts {
-		s.accounts[string(acct.Currency)] = acct.ID
-	}
-
-	return nil
+type tm struct {
+	ISO   string `json:"iso"`
+	Epoch int64  `json:"epoch"`
 }
 
 func coinbaseSymbol(s string) types.Symbol {
@@ -400,4 +479,29 @@ func coinbaseSymbol(s string) types.Symbol {
 	default:
 		return types.SymbolBitcoin
 	}
+}
+
+func readPubKey(r io.Reader) ([]byte, error) {
+	output := []byte{}
+
+	buf := make([]byte, 0, 1024)
+	for {
+		n, err := r.Read(buf[:cap(buf)])
+		buf = buf[:n]
+		if n == 0 {
+			if err == nil {
+				continue
+			}
+			if err == io.EOF {
+				break
+			}
+			log.Fatal(err)
+		}
+
+		output = append(output, buf...)
+		if err != nil && err != io.EOF {
+			return output, err
+		}
+	}
+	return output, nil
 }

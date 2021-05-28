@@ -9,7 +9,6 @@ import (
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/api"
 	"github.com/easterthebunny/spew-order/pkg/domain"
-	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/go-chi/chi"
 	uuid "github.com/satori/go.uuid"
 )
@@ -45,40 +44,22 @@ func (h *AccountHandler) GetAccount() func(w http.ResponseWriter, r *http.Reques
 			Id: acct.ID.String(),
 		}
 
+		items := []api.BalanceItem{}
+		for _, s := range acct.ActiveSymbols() {
+			i := api.BalanceItem{}
+			if hash, ok := acct.Addresses[s]; ok {
+				i.Funding = hash
+			}
+			if bal, ok := acct.Balances[s]; ok {
+				i.Quantity = api.CurrencyValue(bal.StringFixedBank(s.RoundingPlace()))
+			}
+			i.Symbol = api.SymbolType(s.String())
+			items = append(items, i)
+		}
+		bl := api.BalanceList(items)
+		res.Balances = &bl
+
 		render.Render(w, r, HTTPNewOKResponse(&res))
-	}
-}
-
-func (h *AccountHandler) GetAccountBalances(bm *domain.BalanceManager) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		acct := contexts.GetAccount(r.Context())
-
-		var err error
-		var list []render.Renderer
-
-		// set btc balance
-		btcBal := &api.BalanceItem{
-			Symbol: api.SymbolType(types.SymbolBitcoin.String())}
-		amt, err := bm.GetAvailableBalance(acct, types.SymbolBitcoin)
-		if err != nil {
-			render.Render(w, r, HTTPInternalServerError(err))
-			return
-		}
-		btcBal.Quantity = api.CurrencyValue(amt.StringFixedBank(types.SymbolBitcoin.RoundingPlace()))
-		list = append(list, btcBal)
-
-		// set eth balance
-		ethBal := &api.BalanceItem{
-			Symbol: api.SymbolType(types.SymbolEthereum.String())}
-		amt, err = bm.GetAvailableBalance(acct, types.SymbolEthereum)
-		if err != nil {
-			render.Render(w, r, HTTPInternalServerError(err))
-			return
-		}
-		ethBal.Quantity = api.CurrencyValue(amt.StringFixedBank(types.SymbolEthereum.RoundingPlace()))
-		list = append(list, ethBal)
-
-		render.Render(w, r, HTTPNewOKListResponse(list))
 	}
 }
 
@@ -155,12 +136,11 @@ func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
 	}
 }
 
-func (h *AccountHandler) AccountCtx() func(http.Handler) http.Handler {
+func (h *AccountHandler) AccountCtx(bm *domain.BalanceManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var ctxAccount *domain.Account
 			var err error
-			var id uuid.UUID
 
 			authz := contexts.GetAuthorization(r.Context())
 
@@ -180,30 +160,11 @@ func (h *AccountHandler) AccountCtx() func(http.Handler) http.Handler {
 					return
 				}
 
-				id, err = uuid.FromString(accountID)
-				if err != nil {
-					render.Render(w, r, HTTPBadRequest(err))
-					return
-				}
-
-				ctxAccount = domain.NewAccount()
-				ctxAccount.ID = id
-
 				// look for the account in storage and create the account if it doesn't exist
-				_, err = h.repo.Find(id)
+				ctxAccount, err = bm.GetAccount(accountID)
 				if err != nil {
-					if errors.Is(err, persist.ErrObjectNotExist) {
-
-						acct := &persist.Account{ID: ctxAccount.ID.String()}
-						err = h.repo.Save(acct)
-						if err != nil {
-							render.Render(w, r, HTTPInternalServerError(err))
-							return
-						}
-					} else {
-						render.Render(w, r, HTTPInternalServerError(err))
-						return
-					}
+					render.Render(w, r, HTTPInternalServerError(err))
+					return
 				}
 			} else {
 				render.Render(w, r, HTTPBadRequest(errors.New("account id not found")))

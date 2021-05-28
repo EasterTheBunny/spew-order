@@ -35,22 +35,6 @@ paths:
                     $ref: '#/components/schemas/Account'
                   error:
                     $ref: '#/components/schemas/ResponseError'
-  /api/account/{accountID}/balance:
-    parameters:
-      - $ref: '#/components/parameters/AccountPathParam'
-    get:
-      description: Retrieve account balance information
-      responses:
-        200:
-          description: OK
-          content:
-            'application/json':
-              schema:
-                properties:
-                  data:
-                    $ref: '#/components/schemas/BalanceList'
-                  error:
-                    $ref: '#/components/schemas/ResponseError'
   /api/account/{accountID}/order:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
@@ -175,6 +159,8 @@ components:
       properties:
         id:
           type: string
+        balances:
+          $ref: '#/components/schemas/BalanceList'
     BalanceList:
       type: array
       items:
@@ -184,11 +170,15 @@ components:
       required:
       - symbol
       - quantity
+      - funding
       properties:
         symbol:
           $ref: '#/components/schemas/SymbolType'
         quantity:
           $ref: '#/components/schemas/CurrencyValue'
+        funding:
+          type: string
+          description: Address hash for funding this balance
     OrderRequest:
       type: object
       description: Request to create a new order on the order book

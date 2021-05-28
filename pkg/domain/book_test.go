@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/pkg/types"
@@ -80,8 +81,9 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 	br := kv.NewBookRepository(st)
 	ar := kv.NewAccountRepository(st1)
 	lr := kv.NewLedgerRepository(st1)
+	f := funding.NewMockSource()
 
-	bm := NewBalanceManager(ar, lr)
+	bm := NewBalanceManager(ar, lr, f)
 	s := NewOrderBook(br, bm)
 
 	// setup the data set for the later match

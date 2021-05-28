@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -21,18 +20,19 @@ func main() {
 
 	log.Println("starting service")
 	kvstore := persist.NewMockKVStore()
-	book := handlers.NewGoogleOrderBook(kvstore)
+	f := handlers.NewFundingSource("MOCK", nil, nil, nil, nil)
+	book := handlers.NewGoogleOrderBook(kvstore, f)
 	ps := queue.NewMockPubSub()
 	jwt := &mockJWTAuth{}
 	subscription := make(chan domain.OrderMessage)
 	ps.Subscribe(queue.OrderTopic, subscription)
 
-	rh, err := handlers.NewDefaultRouter(kvstore, ps, jwt)
+	rh, err := handlers.NewDefaultRouter(kvstore, ps, jwt, f)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	wh := handlers.NewWebhookRouter(kvstore, strings.NewReader("invalid rsa public key"))
+	wh := handlers.NewWebhookRouter(kvstore, f)
 
 	wg := new(sync.WaitGroup)
 
@@ -41,7 +41,7 @@ func main() {
 		defer wg.Done()
 		wg.Add(1)
 
-		host := "0.0.0.0:9999"
+		host := "0.0.0.0:8080"
 		log.Printf("starting api listener on %s", host)
 
 		uni := func(api http.Handler, webhook http.Handler) http.Handler {

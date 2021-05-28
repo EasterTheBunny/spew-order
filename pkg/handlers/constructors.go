@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"io"
-	"log"
 
 	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/middleware"
@@ -12,11 +11,11 @@ import (
 	"github.com/easterthebunny/spew-order/pkg/domain"
 )
 
-func NewGoogleOrderBook(kvstore persist.KVStore) *domain.OrderBook {
+func NewGoogleOrderBook(kvstore persist.KVStore, f funding.Source) *domain.OrderBook {
 	br := kv.NewBookRepository(kvstore)
 	a := kv.NewAccountRepository(kvstore)
 	l := kv.NewLedgerRepository(kvstore)
-	bs := domain.NewBalanceManager(a, l)
+	bs := domain.NewBalanceManager(a, l, f)
 	return domain.NewOrderBook(br, bs)
 }
 
@@ -32,10 +31,32 @@ func NewJWTAuth(url string) (middleware.AuthenticationProvider, error) {
 	return middleware.NewJWTAuth(url)
 }
 
-func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.AuthenticationProvider) (*Router, error) {
+func NewFundingSource(t string, apiKey, apiSecret *string, audit io.Writer, pubkey io.Reader) funding.Source {
+	switch t {
+	case "COINBASE":
+		if apiKey == nil || apiSecret == nil {
+			return nil
+		}
+
+		if *apiKey == "" || *apiSecret == "" {
+			return nil
+		}
+
+		return funding.NewCoinbaseSource(funding.SourceConfig{
+			CallbackAudit: audit,
+			PublicKey:     pubkey,
+			APIKey:        *apiKey,
+			APISecret:     *apiSecret,
+		})
+	default:
+		return funding.NewMockSource()
+	}
+}
+
+func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.AuthenticationProvider, f funding.Source) (*Router, error) {
 	a := kv.NewAccountRepository(kvstore)
 	l := kv.NewLedgerRepository(kvstore)
-	bs := domain.NewBalanceManager(a, l)
+	bs := domain.NewBalanceManager(a, l, f)
 
 	r := Router{
 		AuthStore: kv.NewAuthorizationRepository(kvstore),
@@ -48,10 +69,9 @@ func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.Au
 	return &r, nil
 }
 
-func NewWebhookRouter(kvstore persist.KVStore, pubkey io.Reader) *WebhookRouter {
+func NewWebhookRouter(kvstore persist.KVStore, f funding.Source) *WebhookRouter {
 	a := kv.NewAccountRepository(kvstore)
 	l := kv.NewLedgerRepository(kvstore)
 
-	src := funding.NewCoinbaseSource(log.Writer(), pubkey)
-	return &WebhookRouter{Funding: NewFundingHandler(a, l, src)}
+	return &WebhookRouter{Funding: NewFundingHandler(a, l, f)}
 }

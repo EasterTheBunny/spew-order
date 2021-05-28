@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/pubsub v1.10.1
 	cloud.google.com/go/storage v1.14.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/deepmap/oapi-codegen v1.6.2 // indirect
+	github.com/deepmap/oapi-codegen v1.7.0 // indirect
 	github.com/easterthebunny/render v1.0.2
 	github.com/go-chi/chi v1.5.4
 	github.com/google/go-cmp v0.5.5 // indirect

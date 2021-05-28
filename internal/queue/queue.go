@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/easterthebunny/spew-order/internal/contexts"
-	"github.com/easterthebunny/spew-order/internal/persist"
-	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
@@ -15,19 +13,11 @@ var (
 	OrderTopic = "OrderRequests"
 )
 
-func NewGoogleOrderQueue(projectID string, bucket string) (*OrderQueue, error) {
+func NewGoogleOrderQueue(projectID string, manager *domain.BalanceManager) (*OrderQueue, error) {
 	q := NewGooglePubSub(projectID)
-	s, err := persist.NewGoogleKVStore(&bucket)
-	if err != nil {
-		return nil, err
-	}
-	r := kv.NewAccountRepository(s)
-	l := kv.NewLedgerRepository(s)
-	bs := domain.NewBalanceManager(r, l)
-
 	oq := OrderQueue{
 		client:  q,
-		balance: bs}
+		balance: manager}
 
 	return &oq, nil
 }

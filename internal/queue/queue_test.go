@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/easterthebunny/spew-order/internal/contexts"
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/pkg/domain"
@@ -29,7 +30,8 @@ func TestPublishOrderRequest(t *testing.T) {
 	if err != nil {
 		t.FailNow()
 	}
-	svc := domain.NewBalanceManager(repo, l)
+	f := funding.NewMockSource()
+	svc := domain.NewBalanceManager(repo, l, f)
 
 	// account is required in the context
 	ctx := contexts.AttachAccountID(context.Background(), acct.ID.String())

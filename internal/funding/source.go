@@ -3,6 +3,7 @@ package funding
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/easterthebunny/spew-order/pkg/types"
@@ -49,6 +50,13 @@ type Source interface {
 	OKResponse() int
 }
 
+type SourceConfig struct {
+	CallbackAudit io.Writer
+	PublicKey     io.Reader
+	APIKey        string
+	APISecret     string
+}
+
 func attachToContext(ctx context.Context, data interface{}, err *CallbackError) context.Context {
 	if err != nil {
 		val := ctx.Value(ctxErrorKey)
@@ -60,7 +68,7 @@ func attachToContext(ctx context.Context, data interface{}, err *CallbackError) 
 	if data != nil {
 		val := ctx.Value(ctxDataKey)
 		if val == nil {
-			ctx = context.WithValue(ctx, ctxDataKey, err)
+			ctx = context.WithValue(ctx, ctxDataKey, data)
 		}
 	}
 

@@ -12,13 +12,21 @@ type OrderMessage struct {
 
 // Account ...
 type Account struct {
-	ID       uuid.UUID
-	Balances map[types.Symbol]decimal.Decimal
+	ID        uuid.UUID
+	Balances  map[types.Symbol]decimal.Decimal
+	Addresses map[types.Symbol]string
+}
+
+func (Account) ActiveSymbols() []types.Symbol {
+	return []types.Symbol{types.SymbolBitcoin, types.SymbolEthereum}
 }
 
 // NewAccount ...
 func NewAccount() *Account {
+	// should get deposit addresses
+
 	return &Account{
-		ID:       uuid.NewV4(),
-		Balances: make(map[types.Symbol]decimal.Decimal)}
+		ID:        uuid.NewV4(),
+		Balances:  make(map[types.Symbol]decimal.Decimal),
+		Addresses: make(map[types.Symbol]string)}
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/easterthebunny/spew-order/internal/contexts"
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/internal/queue"
@@ -43,7 +44,8 @@ func TestPostOrder(t *testing.T) {
 	if err != nil {
 		t.FailNow()
 	}
-	svc := domain.NewBalanceManager(repo, l)
+	f := funding.NewMockSource()
+	svc := domain.NewBalanceManager(repo, l, f)
 	svc.PostAmtToBalance(dmnAcct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
 
 	oq := queue.NewOrderQueue(mps, svc)

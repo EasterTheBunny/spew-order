@@ -55,9 +55,8 @@ func (d *Router) AccountRoutes() func(r chi.Router) {
 
 func (d *Router) AccountSubRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Use(d.Accounts.AccountCtx())
+		r.Use(d.Accounts.AccountCtx(d.Balance))
 		r.Get("/", d.Accounts.GetAccount())
-		r.Get("/balance", d.Accounts.GetAccountBalances(d.Balance))
 		r.Route("/order", d.OrderRoutes())
 	}
 }

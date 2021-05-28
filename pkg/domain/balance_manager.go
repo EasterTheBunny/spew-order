@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
@@ -13,29 +14,71 @@ var (
 	ErrInsufficientBalanceForHold = errors.New("account balance too low for hold")
 )
 
-func NewBalanceManager(repo persist.AccountRepository, l persist.LedgerRepository) *BalanceManager {
-	return &BalanceManager{acct: repo, ledger: l}
+func NewBalanceManager(repo persist.AccountRepository, l persist.LedgerRepository, f funding.Source) *BalanceManager {
+	return &BalanceManager{acct: repo, ledger: l, funding: f}
 }
 
 type BalanceManager struct {
-	acct   persist.AccountRepository
-	ledger persist.LedgerRepository
+	acct    persist.AccountRepository
+	ledger  persist.LedgerRepository
+	funding funding.Source
 }
 
+// GetAccount searches the persistance layer for an account. If one doesn't
+// exist, it creates one.
 func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 
+	a = NewAccount()
 	uid, err := uuid.FromString(id)
 	if err != nil {
 		return
 	}
+	a.ID = uid
 
-	_, err = m.acct.Find(uid)
+	dirty := false
+	p, err := m.acct.Find(a.ID)
 	if err != nil {
-		return
+		if errors.Is(err, persist.ErrObjectNotExist) {
+			p = &persist.Account{ID: a.ID.String()}
+			err = m.acct.Save(p)
+			if err != nil {
+				return
+			}
+		} else {
+			return
+		}
 	}
 
-	a = NewAccount()
-	a.ID = uid
+	for _, k := range p.Addresses {
+		a.Addresses[k.Symbol] = k.Address
+	}
+
+	// TODO: very inefficient method of collecting account balances; refactor
+	for _, s := range a.ActiveSymbols() {
+		bal, err := m.GetAvailableBalance(a, s)
+		if err != nil {
+			return nil, err
+		}
+
+		a.Balances[s] = bal
+
+		// check for funding address
+		if _, ok := a.Addresses[s]; !ok {
+			addr, err := m.funding.CreateAddress(s)
+			if err == nil {
+				dirty = true
+				a.Addresses[s] = addr.Hash
+				p.Addresses = append(p.Addresses, persist.FundingAddress{Symbol: s, Address: addr.Hash})
+			}
+		}
+	}
+
+	if dirty {
+		err := m.acct.Save(p)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return
 }

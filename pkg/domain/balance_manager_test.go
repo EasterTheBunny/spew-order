@@ -3,6 +3,7 @@ package domain
 import (
 	"testing"
 
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/pkg/types"
@@ -123,10 +124,11 @@ var seedData = []balanceTestItem{
 	{decimal.NewFromFloat(1.33452823), c, types.SymbolEthereum},
 }
 
-func newSeededRepo() (persist.AccountRepository, persist.LedgerRepository) {
+func newSeededRepo() (persist.AccountRepository, persist.LedgerRepository, funding.Source) {
 	store := persist.NewMockKVStore()
 	repo := kv.NewAccountRepository(store)
 	l := kv.NewLedgerRepository(store)
+	f := funding.NewMockSource()
 
 	for _, s := range seedData {
 		acct := &persist.Account{ID: s.acct.ID.String()}
@@ -136,5 +138,5 @@ func newSeededRepo() (persist.AccountRepository, persist.LedgerRepository) {
 		b.UpdateBalance(bal)
 	}
 
-	return repo, l
+	return repo, l, f
 }
