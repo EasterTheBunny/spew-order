@@ -7,14 +7,16 @@
   } from "@smui/top-app-bar";
   import IconButton from "@smui/icon-button";
   import Button, { Label } from '@smui/button';
+  import { navigate } from "svelte-routing"
   import { getOidc } from "../oidc";
+  import { getLocalization } from '../i18n';
   
   let topAppBar;
   let dense = true;
   let prominent = false;
-  let clicked = 0;
 
   const { oidc, loggedIn } = getOidc()
+  const {t} = getLocalization()
 </script>
 
 <TopAppBar bind:this={topAppBar} {dense} {prominent} >
@@ -25,15 +27,15 @@
     </Section>
     <Section align="end" toolbar>
       {#if $loggedIn}
-      <Button color="secondary" on:click={() => clicked++} variant="outlined">
-        <Label>Exchange</Label>
+      <Button on:click={() => navigate("/dashboard", { replace: true })} color="secondary" variant="outlined">
+        <Label>{$t('Exchange')}</Label>
       </Button>
       {:else}
       <Button on:click={() => oidc.signIn()} variant="unelevated">
-        <Label>Login</Label>
+        <Label>{$t('Login')}</Label>
       </Button>
-      <Button color="secondary" on:click={() => clicked++} variant="unelevated">
-        <Label>Signup</Label>
+      <Button on:click={() => oidc.signIn()} color="secondary" variant="unelevated">
+        <Label>{$t('Signup')}</Label>
       </Button>
       {/if}
     </Section>

@@ -1,5 +1,6 @@
 import { getContext, setContext } from "svelte"
-import type { UserManagerSettings } from "oidc-client"
+import type { Readable } from "svelte/store"
+import type { User, UserManagerSettings } from "oidc-client"
 import OidcService from "./oidc-service"
 import UserService from "./user-service"
 import Oidc from "oidc-client"
@@ -8,7 +9,7 @@ Oidc.Log.logger = console
 
 const CONTEXT_KEY = {}
 
-const initOidcContext: (config: UserManagerSettings) => void = (config) => {
+const initOidcContext: (config: UserManagerSettings) => Readable<User> = (config) => {
   // Initialize our services
   const oidc = new OidcService(config)
   const service = new UserService(oidc)
@@ -19,6 +20,8 @@ const initOidcContext: (config: UserManagerSettings) => void = (config) => {
     user: service.user,
     loggedIn: service.loggedIn,
   })
+
+  return service.user
 }
 
 export const setOidc: (context: OidcContext) => void = (context) => {

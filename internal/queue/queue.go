@@ -3,10 +3,12 @@ package queue
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/easterthebunny/spew-order/internal/contexts"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -52,6 +54,11 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 
 	// place hold on account
 	symbol, hold := or.Type.HoldAmount(or.Action, or.Base, or.Target)
+	if hold.LessThanOrEqual(decimal.NewFromInt(0)) {
+		err = errors.New("order type not supported")
+		return
+	}
+
 	holdid, err := o.balance.SetHoldOnAccount(acct, symbol, hold)
 	if err != nil {
 		return
