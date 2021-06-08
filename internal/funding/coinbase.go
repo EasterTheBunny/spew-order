@@ -76,12 +76,13 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 	if !ok {
 		err = s.getAccounts()
 		if err != nil {
+			err = fmt.Errorf("CreateAddress::%w", err)
 			return
 		}
 
 		acct, ok = s.accounts[sym.String()]
 		if !ok {
-			err = errors.New("account not found")
+			err = errors.New("CreateAddress: account not found")
 			return
 		}
 	}
@@ -91,18 +92,21 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 	str := fmt.Sprintf(`{"name": "%s"}`, uuid.NewV4())
 	resp, err := s.request("POST", path, strings.NewReader(str))
 	if err != nil {
+		err = fmt.Errorf("CreateAddress::%w", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	data, err := s.extractResponsePayload(resp.Body)
 	if err != nil {
+		err = fmt.Errorf("CreateAddress::%w", err)
 		return
 	}
 
 	var obj coinbaseAddressResourceV2
 	err = json.Unmarshal(data.Data, &obj)
 	if err != nil {
+		err = fmt.Errorf("CreateAddress (unmarshal address resource): %w", err)
 		return
 	}
 
@@ -166,6 +170,7 @@ func (s *coinbaseSource) request(method string, path string, data interface{}) (
 	if data != nil {
 		bodyBytes, err = json.Marshal(data)
 		if err != nil {
+			err = fmt.Errorf("request (marshal post body): %w", err)
 			return nil, err
 		}
 
@@ -174,6 +179,7 @@ func (s *coinbaseSource) request(method string, path string, data interface{}) (
 
 	tm, err := s.getTime()
 	if err != nil {
+		err = fmt.Errorf("request::%w", err)
 		return nil, err
 	}
 
@@ -181,12 +187,14 @@ func (s *coinbaseSource) request(method string, path string, data interface{}) (
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
+		err = fmt.Errorf("request (http %s request to %s): %w", method, url, err)
 		return nil, err
 	}
 
 	hash := hmac.New(sha256.New, []byte(s.apisecret))
 	_, err = io.WriteString(hash, fmt.Sprintf("%d%s%s%s", tm, method, path, string(bodyBytes)))
 	if err != nil {
+		err = fmt.Errorf("request (write hash error): %w", err)
 		return nil, err
 	}
 	encoded := base64.StdEncoding.EncodeToString(hash.Sum(nil))
@@ -322,6 +330,7 @@ func (s *coinbaseSource) extractResponsePayload(r io.Reader) (*coinbaseResponseP
 
 	data := &coinbaseResponsePayloadV2{}
 	if err := json.NewDecoder(r).Decode(data); err != nil {
+		err = fmt.Errorf("extractResponsePayload (response decode error): %w", err)
 		return nil, err
 	}
 
@@ -333,18 +342,21 @@ func (s *coinbaseSource) getAccounts() error {
 
 	resp, err := s.request("GET", path, nil)
 	if err != nil {
+		err = fmt.Errorf("getAccounts::%w", err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	payload, err := s.extractResponsePayload(resp.Body)
 	if err != nil {
+		err = fmt.Errorf("getAccounts::%w", err)
 		return err
 	}
 
 	var accts []coinbaseAccountResourceV2
 	err = json.Unmarshal(payload.Data, &accts)
 	if err != nil {
+		err = fmt.Errorf("getAccounts (unmarshal error): %w", err)
 		return err
 	}
 

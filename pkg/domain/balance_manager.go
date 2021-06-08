@@ -75,7 +75,7 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 
 			// log errors instead of bubbling them up
 			if err != nil {
-				log.Printf("BalanceManager::GetAccount::funding.CreateAddress: %s", err)
+				log.Printf("BalanceManager::GetAccount::%s", err)
 			}
 		}
 	}
