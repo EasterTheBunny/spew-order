@@ -13,6 +13,10 @@ const initDataContext: (subscribedUser: Readable<User>) => void = (subscribedUse
   const url: string = process.env.API_URL;
   const api = new ExchangeAPI(url)
 
+  subscribedUser.subscribe((u) => {
+    api.setBearerToken(u.id_token)
+  })
+
   const price = PriceWritable()
   const account = AccountWritable(api.getActiveAccountFunc(), subscribedUser)
   const orders = OrderWritable(api.getOrderFunc(), account, price)

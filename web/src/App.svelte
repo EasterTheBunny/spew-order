@@ -8,8 +8,6 @@
   export let client_id: string = process.env.AUTH0_CLIENTID;
   export let authority: string = process.env.AUTH0_DOMAIN;
 
-  console.log(client_id)
-
   initLocalizationContext()
   const user = oidc({
     client_id: client_id,
