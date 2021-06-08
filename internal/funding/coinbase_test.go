@@ -63,3 +63,13 @@ version: 1`)
 		assert.NoError(t, err)
 	})
 }
+
+func TestCoinbaseGetTime(t *testing.T) {
+	s := &coinbaseSource{
+		baseURL: "https://api.coinbase.com",
+		client: &http.Client{
+			Timeout: time.Second * 3}}
+
+	_, err := s.getTime()
+	assert.NoError(t, err)
+}

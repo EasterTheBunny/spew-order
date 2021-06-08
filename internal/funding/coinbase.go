@@ -86,10 +86,10 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 		}
 	}
 
-	url := fmt.Sprintf("/v2/account/%s/addresses", acct)
+	path := fmt.Sprintf("/v2/account/%s/addresses", acct)
 
 	str := fmt.Sprintf(`{"name": "%s"}`, uuid.NewV4())
-	resp, err := s.request("POST", url, strings.NewReader(str))
+	resp, err := s.request("POST", path, strings.NewReader(str))
 	if err != nil {
 		return
 	}
@@ -329,9 +329,9 @@ func (s *coinbaseSource) extractResponsePayload(r io.Reader) (*coinbaseResponseP
 }
 
 func (s *coinbaseSource) getAccounts() error {
-	url := "/v2/accounts"
+	path := "/v2/accounts"
 
-	resp, err := s.request("GET", url, nil)
+	resp, err := s.request("GET", path, nil)
 	if err != nil {
 		return err
 	}
@@ -356,7 +356,7 @@ func (s *coinbaseSource) getAccounts() error {
 }
 
 func (s *coinbaseSource) getTime() (t int64, err error) {
-	url := "/v2/time"
+	url := fmt.Sprintf("%s/v2/time", s.baseURL)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
