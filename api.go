@@ -63,7 +63,7 @@ func init() {
 	}
 	GS = handlers.NewGoogleOrderBook(kv, f)
 
-	jwt, err := handlers.NewJWTAuth(envIdentityURI)
+	jwt, err := handlers.NewJWTAuth(getEnvVar(envIdentityURI))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
