@@ -5,8 +5,10 @@
   import initExchangeAPI from "./exchange"
   import { initLocalizationContext } from './i18n';
 
-  export let client_id: string = "DcMwCcm9VNE3xMz6Sxtde8FqdXH8Berq"
-  export let authority: string = "https://dev-xfscxtiv.us.auth0.com"
+  export let client_id: string = process.env.AUTH0_CLIENTID;
+  export let authority: string = process.env.AUTH0_DOMAIN;
+
+  console.log(client_id)
 
   initLocalizationContext()
   const user = oidc({

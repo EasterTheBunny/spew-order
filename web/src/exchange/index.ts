@@ -10,7 +10,8 @@ const CONTEXT_KEY = {}
 
 const initDataContext: (subscribedUser: Readable<User>) => void = (subscribedUser) => {
 
-  const api = new ExchangeAPI("http://localhost:8080/api")
+  const url: string = process.env.API_URL;
+  const api = new ExchangeAPI(url)
 
   const price = PriceWritable()
   const account = AccountWritable(api.getActiveAccountFunc(), subscribedUser)

@@ -6,8 +6,12 @@ import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
+import replace from '@rollup/plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
+const AUTH0_CLIENTID = process.env.AUTH0_CLIENTID;
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+const API_URL = process.env.API_URL;
 
 function serve() {
 	let server;
@@ -39,6 +43,11 @@ export default {
 		file: 'public/build/bundle.js'
 	},
 	plugins: [
+		replace({
+			'process.env.AUTH0_CLIENTID': JSON.stringify(AUTH0_CLIENTID ? AUTH0_CLIENTID : "DcMwCcm9VNE3xMz6Sxtde8FqdXH8Berq"),
+			'process.env.AUTH0_DOMAIN': JSON.stringify(AUTH0_DOMAIN ? AUTH0_DOMAIN : "https://dev-xfscxtiv.us.auth0.com"),
+			'process.env.API_URL': JSON.stringify(API_URL ? API_URL : "http://localhost:8080/api"),
+		}),
 		svelte({
 			preprocess: sveltePreprocess({ sourceMap: !production }),
 			compilerOptions: {
