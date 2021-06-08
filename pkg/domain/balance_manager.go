@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"log"
 
 	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -62,13 +63,19 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 
 		a.Balances[s] = bal
 
-		// check for funding address
-		if _, ok := a.Addresses[s]; !ok {
+		// check for funding address; if it doesn't exist of that symbol or it
+		// is blank, create a new one
+		if x, ok := a.Addresses[s]; !ok || x == "" {
 			addr, err := m.funding.CreateAddress(s)
 			if err == nil {
 				dirty = true
 				a.Addresses[s] = addr.Hash
 				p.Addresses = append(p.Addresses, persist.FundingAddress{Symbol: s, Address: addr.Hash})
+			}
+
+			// log errors instead of bubbling them up
+			if err != nil {
+				log.Printf("%s", err)
 			}
 		}
 	}
