@@ -5,7 +5,7 @@
   import initExchangeAPI from "./exchange"
   import { initLocalizationContext } from './i18n';
 
-  export let client_id: string = "0qx7yV52wFZyuVOcXHbSkXF3OckMApXx"
+  export let client_id: string = "DcMwCcm9VNE3xMz6Sxtde8FqdXH8Berq"
   export let authority: string = "https://dev-xfscxtiv.us.auth0.com"
 
   initLocalizationContext()

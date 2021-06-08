@@ -107,7 +107,9 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 		// >= 3000 BTC		-	0.100%	-	0.075%
 
 		// calculate the maker fee using promotion amount
-		tr.A.FeeQuantity = tr.A.AddQuantity.Mul(decimal.NewFromFloat(MakerFee))
+		feeA := tr.A.AddQuantity.Mul(decimal.NewFromFloat(MakerFee)).StringFixedBank(tr.A.AddSymbol.RoundingPlace())
+		// TODO: the following error is being ignored. this is probably dangerous
+		tr.A.FeeQuantity, _ = decimal.NewFromString(feeA)
 		if tr.A.FeeQuantity.LessThan(tr.A.AddSymbol.MinimumFee()) {
 			tr.A.FeeQuantity = tr.A.AddSymbol.MinimumFee()
 		}
@@ -122,7 +124,8 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 		tr.B.Order = order
 
 		// calculate the taker fee using promotion amount
-		tr.B.FeeQuantity = tr.B.AddQuantity.Mul(decimal.NewFromFloat(TakerFee))
+		feeB := tr.B.AddQuantity.Mul(decimal.NewFromFloat(TakerFee)).StringFixedBank(tr.B.AddSymbol.RoundingPlace())
+		tr.B.FeeQuantity, _ = decimal.NewFromString(feeB)
 		if tr.B.FeeQuantity.LessThan(tr.B.AddSymbol.MinimumFee()) {
 			tr.B.FeeQuantity = tr.B.AddSymbol.MinimumFee()
 		}
@@ -335,8 +338,28 @@ func (m MarketOrderType) KeyTuple(t ActionType) key.Tuple {
 
 // HoldAmount ...
 func (m MarketOrderType) HoldAmount(t ActionType, base Symbol, target Symbol) (symb Symbol, amt decimal.Decimal) {
-	amt = m.Quantity
-	symb = m.Base
+
+	if t == ActionTypeBuy {
+		symb = base
+		// quantity limit needs the current price for a hold amount
+		// this is not yet supported
+		// TODO: set hold amount for quantity limit
+		if m.Base != base {
+			amt = decimal.NewFromInt(0)
+		} else {
+			amt = m.Quantity
+		}
+	} else {
+		symb = target
+		// quantity limit needs the current price for a hold amount
+		// this is not yet supported
+		// TODO: set hold amount for quantity limit
+		if m.Base != target {
+			amt = decimal.NewFromInt(0)
+		} else {
+			amt = m.Quantity
+		}
+	}
 
 	return
 }

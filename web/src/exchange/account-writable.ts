@@ -1,9 +1,7 @@
-import type { Readable } from "svelte/store"
+import type { Writable, Readable } from "svelte/store"
 import type { User } from "oidc-client"
 
-const AccountWritable = (loader: (path: string) => Promise<IfcAccountResource>, subscribedUser: Readable<User>) => {
-
-  const path = "/account"
+const AccountWritable = (loader: (accountID: string) => Promise<IfcAccountResource>, subscribedUser: Readable<User>): Writable<IfcAccountResource | IfcBalanceResource> => {
 
   let store: IfcAccountCache = {
     data: null,
@@ -18,7 +16,7 @@ const AccountWritable = (loader: (path: string) => Promise<IfcAccountResource>, 
       store.data = null
     } else {
       store.loading = true
-      loader("/account").then((value) => {
+      loader(null).then((value) => {
         store.loading = false
         store.data = value
         subs.forEach(sub => sub(store.data)) 
@@ -39,12 +37,27 @@ const AccountWritable = (loader: (path: string) => Promise<IfcAccountResource>, 
   }
 
   const set = (new_value: IfcAccountResource) => {
-    if (store.data === new_value) return         // same value, exit
     store.data = new_value                       // update value
     subs.forEach(sub => sub(store.data))         // update subscribers
   }
 
-  const update = (fn: (r: IfcAccountResource) => IfcAccountResource) => set(fn(store.data))   // update function
+  const update = (fn: (r: IfcBalanceResource) => IfcBalanceResource) => {
+    for (let x = 0; x < store.data.balances.length; x++) {
+      store.data.balances[x] = fn(store.data.balances[x])
+    }
+
+    store.loading = true
+    set(store.data)   // update function
+
+    // the value is allowed to be updated from other functions on the page
+    // allowing for a more dynamic interface. but to ensure data consistency
+    // the balances need to be pulled from the data source.
+    loader(store.data.id).then((value: IfcAccountResource) => {
+      store.loading = false
+      store.data = value
+      set(store.data)
+    })
+  }
 
   return { subscribe, set, update }       // store contract
 }

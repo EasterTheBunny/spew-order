@@ -2,14 +2,14 @@
   import SegmentedButton, { Segment } from "@smui/segmented-button";
   import { Label } from "@smui/common";
 
-  import { orderActionBuy, orderActionSell } from "../constants"
+  import { ActionType } from "../constants"
 
-  export let selected = orderActionBuy;
+  export let selected: ActionType = ActionType.Buy;
 
-  const actionTypes = [orderActionBuy, orderActionSell]
+  const actionTypes = [ActionType.Buy, ActionType.Sell]
   const actionTypeLabels = {
-    [orderActionBuy]: "Buy",
-    [orderActionSell]: "Sell",
+    [ActionType.Buy]: "Buy",
+    [ActionType.Sell]: "Sell",
   }
 </script>
 

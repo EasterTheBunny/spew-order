@@ -4,6 +4,7 @@
   import LayoutGrid, { Cell } from "@smui/layout-grid";
   import List, { Item, Text, PrimaryText, SecondaryText } from "@smui/list";
   import OrderForm from "../components/OrderForm.svelte"
+  import OrderList from "../components/OrderList.svelte"
   import { getOidc } from "../oidc"
   import { getDataCtx } from "../exchange";
 
@@ -15,8 +16,10 @@
   const { loggedIn } = getOidc()
   const {
     account,
+    orders,
   }: {
     account: Readable<IfcAccountResource>
+    orders: Readable<IfcOrderResource[]>
   } = getDataCtx()
 
   const fullName = (symbol: string): string => {
@@ -57,7 +60,7 @@
     <Paper transition {elevation} {color} class="paper-demo">
       <Title>{clicked} Order List</Title>
       <Content>
-
+        <OrderList orders={$orders} />
       </Content>
     </Paper>
   </Cell>

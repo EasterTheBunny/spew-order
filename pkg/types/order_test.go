@@ -662,6 +662,72 @@ var tests = []testFill{
 		},
 	},
 	{
+		Name:        "SellLimitOrderA_BuyMarketOrderB_AGreaterThanB_QuantityLimit",
+		Description: "a sell limit order on the order book is paired with a buy market order request with a quantity limit where the quantity of the limit order is greater than the quantity of the market order",
+		BookOrderType: &LimitOrderType{
+			Base:     SymbolBitcoin,
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00045),
+		},
+		RequestOrder: newTestRequest(accountIDB, ActionTypeBuy, &MarketOrderType{
+			Base:     SymbolEthereum,
+			Quantity: decimal.NewFromFloat(0.0004),
+		}),
+		ExpectedHold:       decimal.NewFromInt(0),
+		ExpectedHoldSymbol: SymbolBitcoin,
+		ExpectedOrderType: &LimitOrderType{
+			Base:     SymbolBitcoin,
+			Price:    decimal.NewFromFloat(0.075),
+			Quantity: decimal.NewFromFloat(0.00005),
+		},
+		ExpectedTransaction: Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00003),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.0004),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.0004),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.00003),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeBuy, &MarketOrderType{
+					Base:     SymbolEthereum,
+					Quantity: decimal.NewFromFloat(0.0004),
+				}),
+			},
+		},
+		ExpectedOrderTransaction: &Transaction{
+			A: BalanceEntry{
+				AccountID:   accountIDA,
+				AddSymbol:   SymbolBitcoin,
+				AddQuantity: decimal.NewFromFloat(0.00002998),
+				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				SubSymbol:   SymbolEthereum,
+				SubQuantity: decimal.NewFromFloat(0.0004),
+			},
+			B: BalanceEntry{
+				AccountID:   accountIDB,
+				AddSymbol:   SymbolEthereum,
+				AddQuantity: decimal.NewFromFloat(0.0003994),
+				FeeQuantity: decimal.NewFromFloat(0.0000006),
+				SubSymbol:   SymbolBitcoin,
+				SubQuantity: decimal.NewFromFloat(0.00003),
+			},
+			Filled: []Order{
+				newTestRequest(accountIDB, ActionTypeBuy, &MarketOrderType{
+					Base:     SymbolEthereum,
+					Quantity: decimal.NewFromFloat(0.0004),
+				}),
+			},
+		},
+	},
+	{
 		Name:        "SellLimitOrderA_BuyLimitOrderB_QuantityAGreaterThanB_PriceBGreaterThanA",
 		Description: "a sell limit order on the order book is paired with a buy limit order request where the quantity of A is greater than the quantity of B",
 		BookOrderType: &LimitOrderType{

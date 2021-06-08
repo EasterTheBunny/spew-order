@@ -2,15 +2,15 @@
   import Select, { Option } from '@smui/select';
   import { createEventDispatcher } from 'svelte';
 
-  import { orderTypeMarket, orderTypeLimit } from "../constants"
+  import { OrderType } from "../constants"
   
-  export let value = orderTypeMarket;
+  export let value: OrderType = OrderType.Market;
 
   let orderTypes = [{
-    value: orderTypeMarket,
+    value: OrderType.Market,
     label: 'Market Order',
   }, {
-    value: orderTypeLimit,
+    value: OrderType.Limit,
     label: 'Limit Order'
   }]
   

@@ -12,22 +12,48 @@ export default class ExchangeAPI {
   }
 
   private static ACCOUNT_PATH: string = "/account"
+  private static ORDER_PATH: string = "/order"
 
   constructor(url: string) {
     this.options = Object.assign({}, this.options, { baseURL: url })
     this.api = axios.create(this.options)
   }
 
-  public getActiveAccountFunc(): (str: string) => Promise<IfcAccountResource> {
-    const f: (inst: AxiosInstance) => (str: string) => Promise<IfcAccountResource> = (inst) => {
-      return async (str) => {
-        return inst.get(ExchangeAPI.ACCOUNT_PATH)
-                      .then((x) => {
-                        let y = this.dataResponse<IfcAccountResource[]>(x)
-                        return inst.get(ExchangeAPI.ACCOUNT_PATH+"/"+y[0].id).then((r) => {
-                          return this.dataResponse<IfcAccountResource>(r)
+  public getActiveAccountFunc(): (accountID: string) => Promise<IfcAccountResource> {
+    const f: (inst: AxiosInstance) => (accountID: string) => Promise<IfcAccountResource> = (inst) => {
+      return async (accountID) => {
+        if (accountID !== null && accountID !== "") {
+          return inst.get(ExchangeAPI.ACCOUNT_PATH+"/"+accountID).then((x) => this.dataResponse<IfcAccountResource>(x))
+        } else {
+          return inst.get(ExchangeAPI.ACCOUNT_PATH)
+                        .then((x) => {
+                          let y = this.dataResponse<IfcAccountResource[]>(x)
+                          return inst.get(ExchangeAPI.ACCOUNT_PATH+"/"+y[0].id).then((r) => {
+                            return this.dataResponse<IfcAccountResource>(r)
+                          })
                         })
-                      })
+        }
+      }
+    }
+
+    return f(this.api)
+  }
+
+  public getOrderFunc(): (accountID: string, data: IfcOrderResource) => Promise<IfcOrderResource[] | IfcOrderResource> {
+    const f: (inst: AxiosInstance) => (accountID: string, data: IfcOrderResource) => Promise<IfcOrderResource[] |IfcOrderResource> = (inst) => {
+      return async (accountID, data) => {
+        const path = ExchangeAPI.ACCOUNT_PATH+"/"+accountID+ExchangeAPI.ORDER_PATH
+
+        if (data !== null && data.id === "") {
+          // post new
+          return inst.post(path, data.order).then((x) => this.dataResponse<IfcOrderResource[]>(x))
+        } else if (data !== null && data.id !== "") {
+          // get by id
+          return inst.get(path+"/"+data.id).then((x) => this.dataResponse<IfcOrderResource[]>(x))
+        } else {
+          // get all values
+          return inst.get(path).then((x) => this.dataResponse<IfcOrderResource[]>(x))
+        }
       }
     }
 

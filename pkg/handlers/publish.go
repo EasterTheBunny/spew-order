@@ -10,6 +10,7 @@ import (
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/api"
+	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
 var (
@@ -51,6 +52,14 @@ func (h *OrderHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) 
 
 		or.Account = acct.ID
 		or.Owner = authz.ID
+
+		switch t := or.Type.(type) {
+		case *types.MarketOrderType:
+			if (or.Action == types.ActionTypeBuy && t.Base != or.Base) || (or.Action == types.ActionTypeSell && t.Base != or.Target) {
+				render.Render(w, r, HTTPBadRequest(errors.New("quantity based market orders not supported")))
+				return
+			}
+		}
 
 		// TODO: validate order request
 
