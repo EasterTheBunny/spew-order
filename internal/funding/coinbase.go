@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -16,6 +17,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -87,7 +89,7 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 		}
 	}
 
-	path := fmt.Sprintf("/v2/account/%s/addresses", acct)
+	path := fmt.Sprintf("/v2/accounts/%s/addresses", acct)
 
 	str := fmt.Sprintf(`{"name": "%s"}`, uuid.NewV4())
 	resp, err := s.request("POST", path, strings.NewReader(str))
@@ -96,6 +98,11 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 		return
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		err = fmt.Errorf("CreateAddress: unexpected response code '%d'", resp.StatusCode)
+		return
+	}
 
 	data, err := s.extractResponsePayload(resp.Body)
 	if err != nil {
@@ -167,14 +174,16 @@ func (s *coinbaseSource) request(method string, path string, data interface{}) (
 	var bodyBytes []byte
 	var err error
 
-	if data != nil {
+	switch v := reflect.ValueOf(data); v.Kind() {
+	case reflect.Struct:
 		bodyBytes, err = json.Marshal(data)
 		if err != nil {
 			err = fmt.Errorf("request (marshal post body): %w", err)
 			return nil, err
 		}
-
 		body = bytes.NewReader(bodyBytes)
+	case reflect.String:
+		body = strings.NewReader(v.String())
 	}
 
 	tm, err := s.getTime()
@@ -192,12 +201,13 @@ func (s *coinbaseSource) request(method string, path string, data interface{}) (
 	}
 
 	hash := hmac.New(sha256.New, []byte(s.apisecret))
-	_, err = io.WriteString(hash, fmt.Sprintf("%d%s%s%s", tm, method, path, string(bodyBytes)))
+	msg := fmt.Sprintf("%s%s%s%s", strconv.FormatInt(tm, 10), strings.ToUpper(method), path, string(bodyBytes))
+	_, err = io.WriteString(hash, msg)
 	if err != nil {
 		err = fmt.Errorf("request (write hash error): %w", err)
 		return nil, err
 	}
-	encoded := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+	encoded := hex.EncodeToString(hash.Sum(nil))
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("CB-VERSION", "2021-05-27")
@@ -361,7 +371,7 @@ func (s *coinbaseSource) getAccounts() error {
 	}
 
 	for _, acct := range accts {
-		s.accounts[string(acct.Currency)] = acct.ID
+		s.accounts[string(acct.Currency.Code)] = acct.ID
 	}
 
 	return nil
@@ -448,16 +458,28 @@ const (
 )
 
 type coinbaseAccountResourceV2 struct {
-	ID        string                  `json:"id"`
-	Name      string                  `json:"name"`
-	Primary   bool                    `json:"primary"`
-	Type      coinbaseAccountType     `json:"type"`
-	Currency  coinbaseCurrencyType    `json:"currency"`
-	Balance   coinbaseMoneyResourceV2 `json:"balance"`
-	CreatedAt string                  `json:"created_at"`
-	UpdatedAt string                  `json:"updated_at"`
-	Resource  coinbaseResourceType    `json:"resource"`
-	Path      string                  `json:"resource_path"`
+	ID        string                     `json:"id"`
+	Name      string                     `json:"name"`
+	Primary   bool                       `json:"primary"`
+	Type      coinbaseAccountType        `json:"type"`
+	Currency  coinbaseCurrencyResourceV2 `json:"currency"`
+	Balance   coinbaseMoneyResourceV2    `json:"balance"`
+	CreatedAt string                     `json:"created_at"`
+	UpdatedAt string                     `json:"updated_at"`
+	Resource  coinbaseResourceType       `json:"resource"`
+	Path      string                     `json:"resource_path"`
+}
+
+type coinbaseCurrencyResourceV2 struct {
+	Code         coinbaseCurrencyType `json:"code"`
+	Name         string               `json:"name"`
+	Color        string               `json:"color"`
+	SortIndex    int                  `json:"sort_index"`
+	Exponent     int                  `json:"exponent"`
+	Type         string               `json:"type"`
+	AddressRegex string               `json:"address_regex"`
+	AssetId      string               `json:"asset_id"`
+	Slug         string               `json:"slug"`
 }
 
 type coinbaseMoneyResourceV2 struct {

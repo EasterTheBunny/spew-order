@@ -1,6 +1,6 @@
 <main>
   <h1>Cipher Mountain</h1>
-  <p>Find the cryptocurrecy explorer in you!</p>
+  <p>Find the adventurer in you!</p>
 </main>
   
 <style>
