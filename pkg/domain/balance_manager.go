@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/easterthebunny/spew-order/internal/funding"
@@ -43,9 +44,11 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 			p = &persist.Account{ID: a.ID.String()}
 			err = m.acct.Save(p)
 			if err != nil {
+				err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 				return
 			}
 		} else {
+			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return
 		}
 	}
@@ -58,6 +61,7 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 	for _, s := range a.ActiveSymbols() {
 		bal, err := m.GetAvailableBalance(a, s)
 		if err != nil {
+			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return nil, err
 		}
 
@@ -83,6 +87,7 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 	if dirty {
 		err := m.acct.Save(p)
 		if err != nil {
+			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return nil, err
 		}
 	}
@@ -97,6 +102,7 @@ func (m *BalanceManager) GetAvailableBalance(a *Account, s types.Symbol) (balanc
 	r := m.acct.Balances(acct, s)
 	balance, err = m.GetPostedBalance(a, s)
 	if err != nil {
+		err = fmt.Errorf("BalanceManager::GetAvailableBalance::%w", err)
 		return
 	}
 
