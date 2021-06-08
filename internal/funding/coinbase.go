@@ -84,7 +84,11 @@ func (s *coinbaseSource) CreateAddress(sym types.Symbol) (address *Address, err 
 
 		acct, ok = s.accounts[sym.String()]
 		if !ok {
-			err = fmt.Errorf("CreateAddress: account not found '%s'", sym.String())
+			keys := []string{}
+			for k, _ := range s.accounts {
+				keys = append(keys, k)
+			}
+			err = fmt.Errorf("CreateAddress: account not found '%s' -> %v", sym.String(), keys)
 			return
 		}
 	}
