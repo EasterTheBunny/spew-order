@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -108,6 +109,7 @@ func (m *BalanceManager) GetAvailableBalance(a *Account, s types.Symbol) (balanc
 
 	h, err := r.FindHolds()
 	if err != nil {
+		err = fmt.Errorf("BalanceManager::GetAvailableBalance::%w", err)
 		return
 	}
 
@@ -128,11 +130,13 @@ func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance d
 	r := m.acct.Balances(acct, s)
 	balance, err = r.GetBalance()
 	if err != nil {
+		err = fmt.Errorf("BalanceManager.GetPostedBalance::%w", err)
 		return
 	}
 
 	p, err := r.FindPosts()
 	if err != nil {
+		err = fmt.Errorf("BalanceManager.GetPostedBalance::%w", err)
 		return
 	}
 
@@ -260,6 +264,18 @@ func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decim
 		return err
 	}
 
+	var tm = persist.NanoTime(time.Now())
+	trepo := m.acct.Transactions(a)
+	err = trepo.SetTransaction(&persist.Transaction{
+		Type:      persist.DepositTransactionType,
+		Symbol:    s.String(),
+		Quantity:  amt.StringFixedBank(s.RoundingPlace()),
+		Timestamp: tm,
+	})
+	if err != nil {
+		return err
+	}
+
 	err = m.ledger.RecordDeposit(s, amt)
 	if err != nil {
 		return err
@@ -268,7 +284,7 @@ func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decim
 	return nil
 }
 
-func (m *BalanceManager) FundAccountByAddress(hash string, s types.Symbol, amt decimal.Decimal) error {
+func (m *BalanceManager) FundAccountByAddress(hash string, transaction string, s types.Symbol, amt decimal.Decimal) error {
 	a, err := m.acct.FindByAddress(hash, s)
 	if err != nil {
 		return err
@@ -281,6 +297,20 @@ func (m *BalanceManager) FundAccountByAddress(hash string, s types.Symbol, amt d
 		return err
 	}
 
+	var tm = persist.NanoTime(time.Now())
+	trepo := m.acct.Transactions(a)
+	err = trepo.SetTransaction(&persist.Transaction{
+		Type:            persist.DepositTransactionType,
+		TransactionHash: transaction,
+		AddressHash:     hash,
+		Symbol:          s.String(),
+		Quantity:        amt.StringFixedBank(s.RoundingPlace()),
+		Timestamp:       tm,
+	})
+	if err != nil {
+		return err
+	}
+
 	err = m.ledger.RecordDeposit(s, amt)
 	if err != nil {
 		return err
@@ -289,32 +319,101 @@ func (m *BalanceManager) FundAccountByAddress(hash string, s types.Symbol, amt d
 	return nil
 }
 
-// PostTransactionToBalance ...
+// PostTransactionToBalance creates balance updates and transaction records in the appropriate
+// accounts and adds fee payments to the general ledger
 func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
 
 	var err error
-	a := &Account{ID: t.A.AccountID}
-	err = m.PostAmtToBalance(a, t.A.AddSymbol, t.A.AddQuantity)
+	var tm = time.Now()
+	var filled bool
+
+	// post amounts to balance and transactions list for account a
+	for _, order := range t.Filled {
+		if order.ID.String() == t.A.Order.ID.String() {
+			filled = true
+		}
+	}
+	err = m.makeOrderRecords(t.A, tm, filled)
 	if err != nil {
 		return err
 	}
 
-	err = m.PostAmtToBalance(a, t.A.SubSymbol, t.A.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	filled = false
+	// post amounts to balance and transactions list for account b
+	for _, order := range t.Filled {
+		if order.ID.String() == t.A.Order.ID.String() {
+			filled = true
+		}
+	}
+	err = m.makeOrderRecords(t.B, tm, filled)
 	if err != nil {
 		return err
 	}
 
-	err = m.PostAmtToBalance(a, t.B.AddSymbol, t.B.AddQuantity)
+	return nil
+}
+
+func (m *BalanceManager) makeOrderRecords(entry types.BalanceEntry, t time.Time, filled bool) error {
+
+	var err error
+	var tm = persist.NanoTime(t)
+
+	// post amounts to balance and transactions list for account a
+	a := &Account{ID: entry.AccountID}
+	err = m.PostAmtToBalance(a, entry.AddSymbol, entry.AddQuantity)
 	if err != nil {
 		return err
 	}
 
-	err = m.PostAmtToBalance(a, t.B.SubSymbol, t.B.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	qFee := entry.FeeQuantity.StringFixedBank(entry.AddSymbol.RoundingPlace())
+	qAdd := entry.AddQuantity.StringFixedBank(entry.AddSymbol.RoundingPlace())
+	qSub := entry.SubQuantity.Mul(decimal.NewFromInt(-1)).StringFixedBank(entry.SubSymbol.RoundingPlace())
+
+	acct := &persist.Account{ID: a.ID.String()}
+	trepo := m.acct.Transactions(acct)
+	err = trepo.SetTransaction(&persist.Transaction{
+		Type:      persist.OrderTransactionType,
+		OrderID:   entry.Order.ID.String(),
+		Symbol:    entry.AddSymbol.String(),
+		Quantity:  qAdd,
+		Fee:       qFee,
+		Timestamp: persist.NanoTime(time.Now()),
+	})
 	if err != nil {
 		return err
 	}
 
-	err = m.ledger.RecordFee(t.A.AddSymbol, t.A.FeeQuantity)
+	err = m.PostAmtToBalance(a, entry.SubSymbol, entry.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	if err != nil {
+		return err
+	}
+
+	err = trepo.SetTransaction(&persist.Transaction{
+		Type:      persist.OrderTransactionType,
+		OrderID:   entry.Order.ID.String(),
+		Symbol:    entry.SubSymbol.String(),
+		Quantity:  qSub,
+		Fee:       "",
+		Timestamp: persist.NanoTime(time.Now()),
+	})
+	if err != nil {
+		return err
+	}
+
+	err = m.ledger.RecordFee(entry.AddSymbol, entry.FeeQuantity)
+	if err != nil {
+		return err
+	}
+
+	// update the order status and transaction list
+	orepo := m.acct.Orders(acct)
+
+	stat := persist.StatusPartial
+	if filled {
+		stat = persist.StatusFilled
+	}
+
+	err = orepo.UpdateOrderStatus(entry.Order.ID, stat, []string{tm.String(), qFee, qAdd, qSub})
 	if err != nil {
 		return err
 	}

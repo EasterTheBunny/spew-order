@@ -63,10 +63,14 @@ func authzKey(id persist.Key) string {
 	return gsRoot.Sub(authzSub).Pack(key.Tuple{id.String()}).String()
 }
 
+func transactionSubspace(acct persist.Account) key.Subspace {
+	// /root/account/{accountid}/transaction
+	return accountSubspace(&acct).Sub(transactionSub)
+}
+
 func transactionKey(acct persist.Account, t persist.Transaction) string {
 	// /root/account/{accountid}/transaction/{timestamp}
-	return accountSubspace(&acct).
-		Sub(transactionSub).
+	return transactionSubspace(acct).
 		Pack(key.Tuple{t.Timestamp.Value()}).String()
 }
 

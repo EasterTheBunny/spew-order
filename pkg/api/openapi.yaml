@@ -3,7 +3,7 @@ info:
   title: Cloud Exchange REST API
   version: 0.0.1
 paths:
-  /api/account:
+  /api/accounts:
     get:
       description: Retrieve all account information
       responses:
@@ -19,7 +19,7 @@ paths:
                       $ref: '#/components/schemas/Account'
                   error:
                     $ref: '#/components/schemas/ResponseError'
-  /api/account/{accountID}:
+  /api/accounts/{accountID}:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
     get:
@@ -35,7 +35,23 @@ paths:
                     $ref: '#/components/schemas/Account'
                   error:
                     $ref: '#/components/schemas/ResponseError'
-  /api/account/{accountID}/order:
+  /api/accounts/{accountID}/transactions:
+    parameters:
+      - $ref: '#/components/parameters/AccountPathParam'
+    get:
+      description: Retrieve account transactions
+      responses:
+        200:
+          description: OK
+          content:
+            'application/json':
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TransactionList'
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
+  /api/accounts/{accountID}/orders:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
     post:
@@ -58,6 +74,12 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/BookOrder'
+        409:
+          description: Insufficient account balance
+          content:
+            'application/json':
+              schema:
+                properties:
                   error:
                     $ref: '#/components/schemas/ResponseError'
     get:
@@ -73,7 +95,7 @@ paths:
                     $ref: '#/components/schemas/BookOrderList'
                   error:
                     $ref: '#/components/schemas/ResponseError'
-  /api/account/{accountID}/order/{orderID}:
+  /api/accounts/{accountID}/orders/{orderID}:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
       - $ref: '#/components/parameters/OrderPathParam'
@@ -136,6 +158,17 @@ components:
         Symbol Type:
         * `BTC` - bitcoin currency identifier
         * `ETH` - ethereum currency identifier
+    TransactionType:
+      type: string
+      enum:
+      - ORDER
+      - DEPOSIT
+      - TRANSFER
+      description: >
+        Transaction Type:
+        * `ORDER` - transaction resulting from a match on the order book
+        * `DEPOSIT` - transaction resulting from a funding deposit
+        * `TRANSFER` - transaction resulting from a funding withdrawal
     OrderStatus:
       type: string
       enum:
@@ -161,6 +194,31 @@ components:
           type: string
         balances:
           $ref: '#/components/schemas/BalanceList'
+    TransactionList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Transaction'
+    Transaction:
+      type: object
+      description: Account balance change
+      required:
+      - type
+      - symbol
+      - quantity
+      - fee
+      - timestamp
+      properties:
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        symbol:
+          $ref: '#/components/schemas/SymbolType'
+        quantity:
+          $ref: '#/components/schemas/CurrencyValue'
+        fee:
+          $ref: '#/components/schemas/CurrencyValue'
+        timestamp:
+          type: integer
+          format: int64
     BalanceList:
       type: array
       items:

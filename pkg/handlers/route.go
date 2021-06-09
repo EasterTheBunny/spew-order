@@ -42,7 +42,7 @@ func (d *Router) AuthorizedRoutes() func(r chi.Router) {
 		// put the authorization in the context
 		r.Use(middleware.AuthorizationCtx(d.AuthStore, d.AuthProv))
 
-		r.Route("/account", d.AccountRoutes())
+		r.Route("/accounts", d.AccountRoutes())
 	}
 }
 
@@ -57,7 +57,14 @@ func (d *Router) AccountSubRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(d.Accounts.AccountCtx(d.Balance))
 		r.Get("/", d.Accounts.GetAccount())
-		r.Route("/order", d.OrderRoutes())
+		r.Route("/orders", d.OrderRoutes())
+		r.Route("/transactions", d.TransactionRoutes())
+	}
+}
+
+func (d *Router) TransactionRoutes() func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Get("/", d.Accounts.GetAccountTransactions())
 	}
 }
 

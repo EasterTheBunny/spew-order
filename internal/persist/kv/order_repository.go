@@ -89,7 +89,7 @@ func (or *OrderRepository) GetOrdersByStatus(s ...persist.FillStatus) (orders []
 	return
 }
 
-func (or *OrderRepository) UpdateOrderStatus(k persist.Key, s persist.FillStatus) error {
+func (or *OrderRepository) UpdateOrderStatus(k persist.Key, s persist.FillStatus, tr []string) error {
 
 	order, err := or.GetOrder(k)
 	if err != nil {
@@ -97,5 +97,8 @@ func (or *OrderRepository) UpdateOrderStatus(k persist.Key, s persist.FillStatus
 	}
 
 	order.Status = s
+	if len(tr) > 0 {
+		order.Transactions = append(order.Transactions, tr)
+	}
 	return or.SetOrder(order)
 }

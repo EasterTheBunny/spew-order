@@ -50,6 +50,14 @@ func HTTPBadRequest(err error) *APIResponse {
 		Error:          NewErrorResponseSet(err)}
 }
 
+// HTTPConflict ...
+func HTTPConflict(err error) *APIResponse {
+	return &APIResponse{
+		HTTPStatusCode: http.StatusConflict,
+		StatusText:     http.StatusText(http.StatusConflict),
+		Error:          NewErrorResponseSet(err)}
+}
+
 // HTTPInternalServerError ...
 func HTTPInternalServerError(err error) *APIResponse {
 	return &APIResponse{

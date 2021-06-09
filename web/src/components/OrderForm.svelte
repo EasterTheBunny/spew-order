@@ -1,5 +1,6 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
+  import { Link } from "svelte-routing"
   import OrderSelectAction from "./OrderSelectAction.svelte"
   import OrderSelectType from "./OrderSelectType.svelte"
   import { OrderType, ActionType } from "../constants"
@@ -40,6 +41,7 @@
     {#each $account.balances as balance}
     <div class="mdc-typography--caption"><small><b>{balance.symbol}</b>: {balance.quantity} {balance.symbol}</small></div>
     {/each}
+    <Link to="funding">Add Funds</Link>
   </div>
 
   <div class="form-section">

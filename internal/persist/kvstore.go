@@ -138,7 +138,7 @@ func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrs
 	return nil
 }
 
-// RangeGet ...
+// RangeGet returns a set of size `limit`. Set `limit` to 0 for no limit.
 func (gs *GoogleKVStore) RangeGet(q *KVStoreQuery, limit int) ([]*KVStoreObjectAttrs, error) {
 	// bucket := "bucket-name"
 	ctx := context.Background()

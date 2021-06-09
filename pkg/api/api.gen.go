@@ -35,6 +35,15 @@ const (
 	SymbolTypeETH SymbolType = "ETH"
 )
 
+// Defines values for TransactionType.
+const (
+	TransactionTypeDEPOSIT TransactionType = "DEPOSIT"
+
+	TransactionTypeORDER TransactionType = "ORDER"
+
+	TransactionTypeTRANSFER TransactionType = "TRANSFER"
+)
+
 // Balances account
 type Account struct {
 	Balances *BalanceList `json:"balances,omitempty"`
@@ -136,14 +145,33 @@ type ResponseError struct {
 // Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
 type SymbolType string
 
+// Account balance change
+type Transaction struct {
+	Fee      CurrencyValue `json:"fee"`
+	Quantity CurrencyValue `json:"quantity"`
+
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	Symbol    SymbolType `json:"symbol"`
+	Timestamp int64      `json:"timestamp"`
+
+	// Transaction Type: * `ORDER` - transaction resulting from a match on the order book * `DEPOSIT` - transaction resulting from a funding deposit * `TRANSFER` - transaction resulting from a funding withdrawal
+	Type TransactionType `json:"type"`
+}
+
+// TransactionList defines model for TransactionList.
+type TransactionList []Transaction
+
+// Transaction Type: * `ORDER` - transaction resulting from a match on the order book * `DEPOSIT` - transaction resulting from a funding deposit * `TRANSFER` - transaction resulting from a funding withdrawal
+type TransactionType string
+
 // AccountPathParam defines model for AccountPathParam.
 type AccountPathParam string
 
 // OrderPathParam defines model for OrderPathParam.
 type OrderPathParam string
 
-// PostApiAccountAccountIDOrderJSONBody defines parameters for PostApiAccountAccountIDOrder.
-type PostApiAccountAccountIDOrderJSONBody OrderRequest
+// PostApiAccountsAccountIDOrdersJSONBody defines parameters for PostApiAccountsAccountIDOrders.
+type PostApiAccountsAccountIDOrdersJSONBody OrderRequest
 
-// PostApiAccountAccountIDOrderJSONRequestBody defines body for PostApiAccountAccountIDOrder for application/json ContentType.
-type PostApiAccountAccountIDOrderJSONRequestBody PostApiAccountAccountIDOrderJSONBody
+// PostApiAccountsAccountIDOrdersJSONRequestBody defines body for PostApiAccountsAccountIDOrders for application/json ContentType.
+type PostApiAccountsAccountIDOrdersJSONRequestBody PostApiAccountsAccountIDOrdersJSONBody

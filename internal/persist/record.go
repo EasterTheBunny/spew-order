@@ -181,12 +181,13 @@ type OrderRepository interface {
 	GetOrder(Key) (*Order, error)
 	SetOrder(*Order) error
 	GetOrdersByStatus(...FillStatus) ([]*Order, error)
-	UpdateOrderStatus(Key, FillStatus) error
+	UpdateOrderStatus(Key, FillStatus, []string) error
 }
 
 type Order struct {
-	Status FillStatus  `json:"status"`
-	Base   types.Order `json:"base"`
+	Status       FillStatus  `json:"status"`
+	Transactions [][]string  `json:"transactions"`
+	Base         types.Order `json:"base"`
 }
 
 func (o Order) Encode(enc EncodingType) ([]byte, error) {
@@ -198,15 +199,27 @@ func (o *Order) Decode(b []byte, enc EncodingType) error {
 }
 
 type Transaction struct {
-	OrderID   string
-	Symbol    string
-	Quantity  string
-	Fee       string
-	Timestamp NanoTime
+	Type            TransactionType
+	AddressHash     string
+	TransactionHash string
+	OrderID         string
+	Symbol          string
+	Quantity        string
+	Fee             string
+	Timestamp       NanoTime
 }
+
+type TransactionType string
+
+const (
+	OrderTransactionType    = "order"
+	DepositTransactionType  = "deposit"
+	TransferTransactionType = "transfer"
+)
 
 type TransactionRepository interface {
 	SetTransaction(*Transaction) error
+	GetTransactions() ([]*Transaction, error)
 }
 
 func (t Transaction) Encode(enc EncodingType) ([]byte, error) {
@@ -232,8 +245,11 @@ func (e *LedgerEntry) Decode(b []byte, enc EncodingType) error {
 }
 
 type LedgerRepository interface {
+	// RecordDeposit saves a transfer to the exchange in the main ledger
 	RecordDeposit(types.Symbol, decimal.Decimal) error
+	// RecordTransfer saves a transfer from the exchange in the main ledger
 	RecordTransfer(types.Symbol, decimal.Decimal) error
+	// RecordFee saves a fee paid from a completed order in the main ledger
 	RecordFee(types.Symbol, decimal.Decimal) error
 }
 

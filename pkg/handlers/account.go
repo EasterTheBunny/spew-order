@@ -102,6 +102,33 @@ func (h *AccountHandler) GetAccountOrders() func(w http.ResponseWriter, r *http.
 	}
 }
 
+func (h *AccountHandler) GetAccountTransactions() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		acct := contexts.GetAccount(r.Context())
+		tr := h.repo.Transactions(&persist.Account{ID: acct.ID.String()})
+
+		list, err := tr.GetTransactions()
+		if err != nil {
+			render.Render(w, r, HTTPInternalServerError(err))
+			return
+		}
+
+		var out []render.Renderer
+		for _, trans := range list {
+			t := api.Transaction{
+				Type:      api.StringTransactionType(trans.Type),
+				Symbol:    api.SymbolType(trans.Symbol),
+				Quantity:  api.CurrencyValue(trans.Quantity),
+				Fee:       api.CurrencyValue(trans.Fee),
+				Timestamp: trans.Timestamp.Value(),
+			}
+			out = append(out, &t)
+		}
+
+		render.Render(w, r, HTTPNewOKListResponse(out))
+	}
+}
+
 func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

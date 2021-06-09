@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -10,7 +11,9 @@ import (
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/api"
+	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -53,18 +56,49 @@ func (h *OrderHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) 
 		or.Account = acct.ID
 		or.Owner = authz.ID
 
+		if !validPair(or.Base, or.Target) {
+			render.Render(w, r, HTTPBadRequest(errors.New("invalid trade pair")))
+			return
+		}
+
 		switch t := or.Type.(type) {
 		case *types.MarketOrderType:
 			if (or.Action == types.ActionTypeBuy && t.Base != or.Base) || (or.Action == types.ActionTypeSell && t.Base != or.Target) {
 				render.Render(w, r, HTTPBadRequest(errors.New("quantity based market orders not supported")))
 				return
 			}
-		}
 
-		// TODO: validate order request
+			if t.Quantity.LessThanOrEqual(decimal.NewFromInt(0)) {
+				render.Render(w, r, HTTPBadRequest(errors.New("quantity must be greater than 0")))
+				return
+			}
+		case *types.LimitOrderType:
+			if t.Base != or.Base {
+				render.Render(w, r, HTTPBadRequest(errors.New("incorrect base value for limit order")))
+				return
+			}
+
+			if t.Price.LessThanOrEqual(decimal.NewFromInt(0)) {
+				render.Render(w, r, HTTPBadRequest(errors.New("price must be greater than 0")))
+				return
+			}
+
+			if t.Quantity.LessThanOrEqual(decimal.NewFromInt(0)) {
+				render.Render(w, r, HTTPBadRequest(errors.New("quantity must be greater than 0")))
+				return
+			}
+		default:
+			render.Render(w, r, HTTPBadRequest(errors.New("incorrect order type")))
+			return
+		}
 
 		order, err := h.queue.PublishOrderRequest(ctx, or)
 		if err != nil {
+			if errors.Is(domain.ErrInsufficientBalanceForHold, err) {
+				render.Render(w, r, HTTPConflict(err))
+				return
+			}
+
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
@@ -76,4 +110,16 @@ func (h *OrderHandler) PostOrder() func(w http.ResponseWriter, r *http.Request) 
 		}
 		render.Render(w, r, HTTPNewOKResponse(&o))
 	}
+}
+
+func validPair(a, b types.Symbol) bool {
+
+	pair := fmt.Sprintf("%s%s", a, b)
+	for _, p := range types.ValidPairs {
+		if p == pair {
+			return true
+		}
+	}
+
+	return false
 }

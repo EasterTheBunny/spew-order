@@ -44,6 +44,7 @@ export default {
 	},
 	plugins: [
 		replace({
+			preventAssignment: true,
 			'process.env.AUTH0_CLIENTID': JSON.stringify(AUTH0_CLIENTID ? AUTH0_CLIENTID : "DcMwCcm9VNE3xMz6Sxtde8FqdXH8Berq"),
 			'process.env.AUTH0_DOMAIN': JSON.stringify(AUTH0_DOMAIN ? AUTH0_DOMAIN : "https://dev-xfscxtiv.us.auth0.com"),
 			'process.env.API_URL': JSON.stringify(API_URL ? API_URL : "http://localhost:8080/api"),

@@ -29,6 +29,9 @@ var (
 	// ErrSymbolUnrecognized describes an error state where a provided Symbol
 	// is not in the list of options provided by this package.
 	ErrSymbolUnrecognized = errors.New("unrecognized symbol")
+	ValidPairs            = []string{
+		fmt.Sprintf("%s%s", symbolBitcoinName, symbolEthereumName),
+	}
 )
 
 // String provides a string representation to an Symbol value. Defaults to

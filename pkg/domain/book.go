@@ -116,7 +116,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 					}
 
 					// remove hold on incoming order since that order is filled
-					smb, _ = o.Type.HoldAmount(order.Action, order.Base, order.Target)
+					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 					err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, smb, ky(order.HoldID))
 					if err != nil {
 						return err

@@ -104,6 +104,12 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		b.HoldID = id
 
+		err = ar.Orders(&persist.Account{ID: b.Account.String()}).
+			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: b})
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		bitem := persist.NewBookItem(b)
 		err = br.SetBookItem(&bitem)
 		if err != nil {
@@ -118,8 +124,14 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order := newMarketBookOrder(12700, 0.01, types.ActionTypeSell)
 
+		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
+			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
@@ -144,8 +156,14 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order := newMarketBookOrder(12700, 1.2, types.ActionTypeBuy)
 
+		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
+			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
@@ -167,8 +185,14 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order := newLimitBookOrder(12700, 0.47, 1.2, types.ActionTypeSell)
 
+		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
+			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
@@ -190,8 +214,14 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order := newLimitBookOrder(12700, 0.33, 1.2, types.ActionTypeBuy)
 
+		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
+			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err := bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}

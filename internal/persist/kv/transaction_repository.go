@@ -3,6 +3,7 @@ package kv
 import (
 	"fmt"
 
+	"github.com/easterthebunny/spew-order/internal/key"
 	"github.com/easterthebunny/spew-order/internal/persist"
 )
 
@@ -32,4 +33,33 @@ func (tr *TransactionRepository) SetTransaction(t *persist.Transaction) error {
 	}
 
 	return tr.kvstore.Set(transactionKey(*tr.account, *t), b, &attrs)
+}
+
+func (tr *TransactionRepository) GetTransactions() (t []*persist.Transaction, err error) {
+
+	q := persist.KVStoreQuery{
+		StartOffset: transactionSubspace(*tr.account).Pack(key.Tuple{}).String()}
+
+	attrs, err := tr.kvstore.RangeGet(&q, 0)
+	if err != nil {
+		return
+	}
+
+	for _, attr := range attrs {
+		var bts []byte
+		bts, err = tr.kvstore.Get(attr.Name)
+		if err != nil {
+			return
+		}
+
+		ord := &persist.Transaction{}
+		err = ord.Decode(bts, encodingFromStr(attr.ContentEncoding))
+		if err != nil {
+			return
+		}
+
+		t = append(t, ord)
+	}
+
+	return
 }

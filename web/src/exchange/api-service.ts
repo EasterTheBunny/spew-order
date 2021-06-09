@@ -11,8 +11,8 @@ export default class ExchangeAPI {
     }
   }
 
-  private static ACCOUNT_PATH: string = "/account"
-  private static ORDER_PATH: string = "/order"
+  private static ACCOUNT_PATH: string = "/accounts"
+  private static ORDER_PATH: string = "/orders"
 
   constructor(url: string) {
     this.options = Object.assign({}, this.options, { baseURL: url })

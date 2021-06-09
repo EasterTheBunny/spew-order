@@ -141,7 +141,7 @@ func TestOrders(t *testing.T) {
 	})
 
 	t.Run("Update", func(t *testing.T) {
-		err := or.UpdateOrderStatus(inserts[len(inserts)-1].Base.ID, persist.StatusOpen)
+		err := or.UpdateOrderStatus(inserts[len(inserts)-1].Base.ID, persist.StatusOpen, []string{})
 		assert.NoError(t, err)
 	})
 

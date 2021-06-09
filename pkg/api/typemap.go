@@ -104,7 +104,7 @@ func OrderTypeFromMap(m map[string]interface{}) (types.OrderType, error) {
 		}
 		return &ot, nil
 	default:
-		return nil, errors.New("unemplemented")
+		return nil, errors.New("unknown order type")
 	}
 }
 
@@ -144,6 +144,19 @@ func StringOrderStatus(f persist.FillStatus) OrderStatus {
 		return OrderStatusFILLED
 	case persist.StatusCanceled:
 		return OrderStatusCANCELLED
+	default:
+		return ""
+	}
+}
+
+func StringTransactionType(t persist.TransactionType) TransactionType {
+	switch t {
+	case persist.DepositTransactionType:
+		return TransactionTypeDEPOSIT
+	case persist.OrderTransactionType:
+		return TransactionTypeORDER
+	case persist.TransferTransactionType:
+		return TransactionTypeTRANSFER
 	default:
 		return ""
 	}

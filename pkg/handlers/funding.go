@@ -39,7 +39,7 @@ func (h *FundingHandler) PostFunding() func(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		err := h.Balance.FundAccountByAddress(tr.Address, tr.Symbol, tr.Amount)
+		err := h.Balance.FundAccountByAddress(tr.Address, tr.TransactionHash, tr.Symbol, tr.Amount)
 		if err != nil {
 			log.Println(err)
 			render.Render(w, r, HTTPInternalServerError(err))

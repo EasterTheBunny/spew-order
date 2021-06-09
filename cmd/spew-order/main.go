@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -85,18 +86,21 @@ func main() {
 	wg.Wait()
 }
 
-type mockJWTAuth struct{}
+type mockJWTAuth struct {
+	subject string
+}
 
 func (j *mockJWTAuth) Verifier() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			j.subject = tokenFromHeader(r)
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
 func (j *mockJWTAuth) Subject() string {
-	return "test_subject"
+	return j.subject
 }
 
 func (j *mockJWTAuth) UpdateAuthz(a *persist.Authorization) {
@@ -105,4 +109,13 @@ func (j *mockJWTAuth) UpdateAuthz(a *persist.Authorization) {
 	a.Avatar = "picture/path"
 	a.Name = "Test Person"
 	a.Username = "username"
+}
+
+func tokenFromHeader(r *http.Request) string {
+	// Get token from authorization header.
+	bearer := r.Header.Get("Authorization")
+	if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "BEARER" {
+		return bearer[7:]
+	}
+	return ""
 }
