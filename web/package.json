@@ -36,6 +36,7 @@
     "axios": "^0.21.1",
     "cypress": "^7.4.0",
     "cypress-svelte-unit-test": "^3.3.1",
+    "dayjs": "^1.10.5",
     "dotenv": "^10.0.0",
     "i18next": "^20.3.1",
     "i18next-browser-languagedetector": "^6.1.1",

@@ -9,6 +9,7 @@
   import LayoutGrid, { Cell } from '@smui/layout-grid';
   import { Currency } from '../constants';
   import CopyClipBoard from '../components/CopyClipBoard.svelte'
+  import TransactionList from '../components/TransactionList.svelte'
   import { getOidc } from "../oidc"
   import { getDataCtx } from "../exchange";
 
@@ -103,6 +104,14 @@
         {/if}
 
 
+      </Content>
+    </Paper>
+  </div>
+
+  <div class="paper-container">
+    <Paper class="paper-demo">
+      <Content>
+        <TransactionList />
       </Content>
     </Paper>
   </div>

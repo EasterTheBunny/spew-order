@@ -148,11 +148,12 @@ type SymbolType string
 // Account balance change
 type Transaction struct {
 	Fee      CurrencyValue `json:"fee"`
+	Orderid  string        `json:"orderid"`
 	Quantity CurrencyValue `json:"quantity"`
 
 	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
 	Symbol    SymbolType `json:"symbol"`
-	Timestamp int64      `json:"timestamp"`
+	Timestamp string     `json:"timestamp"`
 
 	// Transaction Type: * `ORDER` - transaction resulting from a match on the order book * `DEPOSIT` - transaction resulting from a funding deposit * `TRANSFER` - transaction resulting from a funding withdrawal
 	Type TransactionType `json:"type"`

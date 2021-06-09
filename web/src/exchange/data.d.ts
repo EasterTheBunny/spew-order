@@ -45,6 +45,12 @@ interface IfcOrderCache {
   lastUpdate: number
 }
 
+interface IfcTransactionCache {
+  data: IfcTransactionResource[]
+  loading: boolean
+  lastUpdate: number
+}
+
 interface IfcBalanceResource {
   symbol: Currency
   quantity: string
@@ -56,6 +62,7 @@ interface IfcDataContext {
   account: AccountWritable
   orders: OrderWritable
   price: PriceWritable
+  transactions: TransactionReadable
 }
 
 interface IfcMarketOrderRequest {
@@ -67,4 +74,13 @@ interface IfcMarketOrderRequest {
 interface IfcBookProductSpread {
   ask: string
   bid: string
+}
+
+interface IfcTransactionResource {
+  type: TransactionType
+  symbol: Currency
+  quantity: string
+  fee: string
+  orderid: string
+  timestamp: string
 }

@@ -2,6 +2,8 @@ import type { Writable, Readable } from "svelte/store"
 import { ActionType, Currency, OrderType } from "../constants"
 import { calcTotal, roundingPlace } from "../util"
 
+const reloadWait = 5000
+
 const OrderWritable = (
   loader: (accountID: string, data: IfcOrderResource) => Promise<IfcOrderResource[] | IfcOrderResource>,
   account: Writable<IfcAccountResource | IfcBalanceResource>,
@@ -19,10 +21,25 @@ const OrderWritable = (
     ask: "0.000",
     bid: "0.000",
   }
+  let tick = null
 
   price.subscribe((p: IfcBookProductSpread) => {
     currentPrice = p
   })
+
+  const loadRecords = () => {
+    loader(accountID, null).then((value: IfcOrderResource[]) => {
+      store.loading = false
+      if (value !== null) {
+        store.data = value
+      } else {
+        store.data = []
+      }
+
+      tick = setTimeout(loadRecords, reloadWait)
+      subs.forEach(sub => sub(store.data))
+    })
+  }
 
   // for any change in account
   account.subscribe((acc: IfcAccountResource) => {
@@ -30,18 +47,13 @@ const OrderWritable = (
       accountID = acc.id
       store.loading = true
       store.data = []
-      loader(accountID, null).then((value: IfcOrderResource[]) => {
-        store.loading = false
-        if (value !== null) {
-          store.data = value
-        } else {
-          store.data = []
-        }
-        subs.forEach(sub => sub(store.data)) 
-      })
+      loadRecords()
     } else if (acc === null) {
       store.data = []
       accountID = ""
+      if (tick !== null) {
+        clearTimeout(tick)
+      }
     }
 
     subs.forEach(sub => sub(store.data))

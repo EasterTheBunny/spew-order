@@ -19,3 +19,9 @@ export enum OrderStatus {
   Filled = "FILLED",
   Cancelled = "CANCELLED",
 }
+
+export enum TransactionType {
+  Order = "ORDER",
+  Deposit = "DEPOSIT",
+  Transfer = "TRANSFER",
+}

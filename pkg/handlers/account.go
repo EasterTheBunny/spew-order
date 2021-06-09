@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/easterthebunny/render"
 	"github.com/easterthebunny/spew-order/internal/contexts"
@@ -120,7 +121,8 @@ func (h *AccountHandler) GetAccountTransactions() func(w http.ResponseWriter, r 
 				Symbol:    api.SymbolType(trans.Symbol),
 				Quantity:  api.CurrencyValue(trans.Quantity),
 				Fee:       api.CurrencyValue(trans.Fee),
-				Timestamp: trans.Timestamp.Value(),
+				Orderid:   trans.OrderID,
+				Timestamp: time.Time(trans.Timestamp).Format(time.RFC3339),
 			}
 			out = append(out, &t)
 		}

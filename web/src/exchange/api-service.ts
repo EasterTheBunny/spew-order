@@ -13,6 +13,7 @@ export default class ExchangeAPI {
 
   private static ACCOUNT_PATH: string = "/accounts"
   private static ORDER_PATH: string = "/orders"
+  private static TRANSACTION_PATH: string = "/transactions"
 
   constructor(url: string) {
     this.options = Object.assign({}, this.options, { baseURL: url })
@@ -54,6 +55,19 @@ export default class ExchangeAPI {
           // get all values
           return inst.get(path).then((x) => this.dataResponse<IfcOrderResource[]>(x))
         }
+      }
+    }
+
+    return f(this.api)
+  }
+
+  public getTransactionFunc(): (accountID: string) => Promise<IfcTransactionResource[]> {
+    const f: (inst: AxiosInstance) => (accountID: string) => Promise<IfcTransactionResource[]> = (inst) => {
+      return async (accountID) => {
+        const path = ExchangeAPI.ACCOUNT_PATH+"/"+accountID+ExchangeAPI.TRANSACTION_PATH
+
+        // get all values
+        return inst.get(path).then((x) => this.dataResponse<IfcTransactionResource[]>(x))
       }
     }
 
