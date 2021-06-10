@@ -152,8 +152,9 @@ type Transaction struct {
 	Quantity CurrencyValue `json:"quantity"`
 
 	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
-	Symbol    SymbolType `json:"symbol"`
-	Timestamp string     `json:"timestamp"`
+	Symbol          SymbolType `json:"symbol"`
+	Timestamp       string     `json:"timestamp"`
+	TransactionHash string     `json:"transactionHash"`
 
 	// Transaction Type: * `ORDER` - transaction resulting from a match on the order book * `DEPOSIT` - transaction resulting from a funding deposit * `TRANSFER` - transaction resulting from a funding withdrawal
 	Type TransactionType `json:"type"`
@@ -161,6 +162,15 @@ type Transaction struct {
 
 // TransactionList defines model for TransactionList.
 type TransactionList []Transaction
+
+// withdrawal request
+type TransactionRequest struct {
+	Address  string        `json:"address"`
+	Quantity CurrencyValue `json:"quantity"`
+
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	Symbol SymbolType `json:"symbol"`
+}
 
 // Transaction Type: * `ORDER` - transaction resulting from a match on the order book * `DEPOSIT` - transaction resulting from a funding deposit * `TRANSFER` - transaction resulting from a funding withdrawal
 type TransactionType string
@@ -174,5 +184,11 @@ type OrderPathParam string
 // PostApiAccountsAccountIDOrdersJSONBody defines parameters for PostApiAccountsAccountIDOrders.
 type PostApiAccountsAccountIDOrdersJSONBody OrderRequest
 
+// PostApiAccountsAccountIDTransactionsJSONBody defines parameters for PostApiAccountsAccountIDTransactions.
+type PostApiAccountsAccountIDTransactionsJSONBody TransactionRequest
+
 // PostApiAccountsAccountIDOrdersJSONRequestBody defines body for PostApiAccountsAccountIDOrders for application/json ContentType.
 type PostApiAccountsAccountIDOrdersJSONRequestBody PostApiAccountsAccountIDOrdersJSONBody
+
+// PostApiAccountsAccountIDTransactionsJSONRequestBody defines body for PostApiAccountsAccountIDTransactions for application/json ContentType.
+type PostApiAccountsAccountIDTransactionsJSONRequestBody PostApiAccountsAccountIDTransactionsJSONBody

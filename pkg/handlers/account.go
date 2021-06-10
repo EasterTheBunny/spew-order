@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,8 +12,10 @@ import (
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/api"
 	"github.com/easterthebunny/spew-order/pkg/domain"
+	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/go-chi/chi"
 	uuid "github.com/satori/go.uuid"
+	"github.com/shopspring/decimal"
 )
 
 type AccountHandler struct {
@@ -103,6 +107,74 @@ func (h *AccountHandler) GetAccountOrders() func(w http.ResponseWriter, r *http.
 	}
 }
 
+// PostTransaction ...
+func (h *AccountHandler) PostTransaction(b *domain.BalanceManager) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		acct := contexts.GetAccount(r.Context())
+
+		if acct == nil {
+			render.Render(w, r, HTTPInternalServerError(errors.New("incorrect route structure")))
+			return
+		}
+
+		var in api.TransactionRequest
+		err := json.NewDecoder(r.Body).Decode(&in)
+		if err != nil {
+			render.Render(w, r, HTTPBadRequest(err))
+			return
+		}
+
+		amt, err := decimal.NewFromString(string(in.Quantity))
+		if err != nil {
+			render.Render(w, r, HTTPBadRequest(err))
+			return
+		}
+
+		if amt.LessThanOrEqual(decimal.NewFromInt(0)) {
+			render.Render(w, r, HTTPBadRequest(errors.New("quantity must be greater than 0")))
+			return
+		}
+
+		var smb types.Symbol
+		err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, string(in.Symbol))), &smb)
+		if err != nil {
+			render.Render(w, r, HTTPBadRequest(err))
+			return
+		}
+
+		if len(in.Address) == 0 || !smb.ValidateAddress(in.Address) {
+			render.Render(w, r, HTTPBadRequest(errors.New("invalid address")))
+			return
+		}
+
+		tr, err := b.WithdrawFunds(acct, smb, amt, in.Address)
+		if err != nil {
+			if errors.Is(domain.ErrInsufficientBalanceForHold, err) {
+				render.Render(w, r, HTTPConflict(err))
+				return
+			}
+			render.Render(w, r, HTTPInternalServerError(err))
+			return
+		}
+
+		if tr == nil {
+			render.Render(w, r, HTTPInternalServerError(errors.New("unexpected state")))
+			return
+		}
+
+		o := api.Transaction{
+			Type:            api.TransactionTypeTRANSFER,
+			Symbol:          api.SymbolType(tr.Symbol),
+			Quantity:        api.CurrencyValue(tr.Quantity),
+			Fee:             "",
+			Orderid:         "",
+			Timestamp:       time.Time(tr.Timestamp).Format(time.RFC3339),
+			TransactionHash: tr.TransactionHash,
+		}
+		render.Render(w, r, HTTPNewOKResponse(&o))
+	}
+}
+
 func (h *AccountHandler) GetAccountTransactions() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		acct := contexts.GetAccount(r.Context())
@@ -117,12 +189,13 @@ func (h *AccountHandler) GetAccountTransactions() func(w http.ResponseWriter, r 
 		var out []render.Renderer
 		for _, trans := range list {
 			t := api.Transaction{
-				Type:      api.StringTransactionType(trans.Type),
-				Symbol:    api.SymbolType(trans.Symbol),
-				Quantity:  api.CurrencyValue(trans.Quantity),
-				Fee:       api.CurrencyValue(trans.Fee),
-				Orderid:   trans.OrderID,
-				Timestamp: time.Time(trans.Timestamp).Format(time.RFC3339),
+				Type:            api.StringTransactionType(trans.Type),
+				Symbol:          api.SymbolType(trans.Symbol),
+				Quantity:        api.CurrencyValue(trans.Quantity),
+				Fee:             api.CurrencyValue(trans.Fee),
+				Orderid:         trans.OrderID,
+				Timestamp:       time.Time(trans.Timestamp).Format(time.RFC3339),
+				TransactionHash: trans.TransactionHash,
 			}
 			out = append(out, &t)
 		}

@@ -38,6 +38,34 @@ paths:
   /api/accounts/{accountID}/transactions:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
+    post:
+      description: Publishes an withdrawal transaction
+      requestBody: 
+        description: >
+          Withdrawal request
+          send currencies from your account
+        required: true
+        content: 
+          'application/json': 
+            schema: 
+              $ref: '#/components/schemas/TransactionRequest'
+      responses: 
+        200: 
+          description: OK
+          content: 
+            'application/json': 
+              schema: 
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+        409:
+          description: Insufficient account balance
+          content:
+            'application/json':
+              schema:
+                properties:
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
     get:
       description: Retrieve account transactions
       responses:
@@ -194,6 +222,20 @@ components:
           type: string
         balances:
           $ref: '#/components/schemas/BalanceList'
+    TransactionRequest:
+      type: object
+      description: withdrawal request
+      required:
+      - symbol
+      - address
+      - quantity
+      properties:
+        symbol:
+          $ref: '#/components/schemas/SymbolType'
+        address:
+          type: string
+        quantity:
+          $ref: '#/components/schemas/CurrencyValue'
     TransactionList:
       type: array
       items:
@@ -208,6 +250,7 @@ components:
       - fee
       - orderid
       - timestamp
+      - transactionHash
       properties:
         type:
           $ref: '#/components/schemas/TransactionType'
@@ -220,6 +263,8 @@ components:
         orderid:
           type: string
         timestamp:
+          type: string
+        transactionHash:
           type: string
     BalanceList:
       type: array

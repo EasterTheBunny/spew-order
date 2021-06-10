@@ -37,3 +37,11 @@ export const calcTotal: (
 
   return amt
 }
+
+export const balanceMap: (b: IfcBalanceResource[]) => object = (b) => {
+  const mp = {}
+  for (var i = 0; i < b.length; i++) {
+    mp[b[i].symbol] = parseFloat(b[i].quantity)
+  }
+  return mp
+}

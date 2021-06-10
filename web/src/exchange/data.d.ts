@@ -83,4 +83,11 @@ interface IfcTransactionResource {
   fee: string
   orderid: string
   timestamp: string
+  transactionHash: string
+}
+
+interface IfcTransactionRequest {
+  symbol: Currency
+  address: string
+  quantity: string
 }

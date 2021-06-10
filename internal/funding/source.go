@@ -46,7 +46,7 @@ type Source interface {
 	Supports(types.Symbol) bool
 	Callback() func(http.Handler) http.Handler
 	CreateAddress(types.Symbol) (*Address, error)
-	Withdraw(*Transaction) error
+	Withdraw(*Transaction) (string, error)
 	OKResponse() int
 }
 

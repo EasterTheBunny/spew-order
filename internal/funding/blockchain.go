@@ -34,8 +34,8 @@ func (b *blockchainSource) Callback() func(http.Handler) http.Handler {
 	}
 }
 
-func (b *blockchainSource) Withdraw(*Transaction) error {
-	return errors.New("not implemented")
+func (b *blockchainSource) Withdraw(*Transaction) (string, error) {
+	return "", errors.New("not implemented")
 }
 
 func (b *blockchainSource) OKResponse() int {

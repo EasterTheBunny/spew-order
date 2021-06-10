@@ -2,10 +2,10 @@ import type { Writable, Readable } from "svelte/store"
 
 const reloadWait = 5000
 
-const TransactionReadable = (
-  loader: (accountID: string) => Promise<IfcTransactionResource[]>,
+const TransactionWritable = (
+  loader: (accountID: string, data: IfcTransactionRequest) => Promise<IfcTransactionResource[] | IfcTransactionResource>,
   account: Writable<IfcAccountResource | IfcBalanceResource>
-): Readable<IfcTransactionResource[]> => {
+): Writable<IfcTransactionResource[] | IfcTransactionRequest | IfcTransactionResource> => {
 
   let store: IfcTransactionCache = {
     data: [],
@@ -17,10 +17,20 @@ const TransactionReadable = (
   let tick = null
 
   const loadRecords = () => {
-    loader(accountID).then((value: IfcTransactionResource[]) => {
+    loader(accountID, null).then((value: IfcTransactionResource[]) => {
       store.loading = false
       const prev = store.data.length
       if (value !== null) {
+        value.sort((a, b) => {
+          if (a.timestamp < b.timestamp) {
+            return 1
+          }
+          if (a.timestamp > b.timestamp) {
+            return -1
+          }
+
+          return 0
+        })
         store.data = value
       } else {
         store.data = []
@@ -63,7 +73,34 @@ const TransactionReadable = (
     return () => subs = subs.filter(sub => sub !== handler)   // return unsubscribe function
   }
 
-  return { subscribe }
+  const set = (new_value: IfcTransactionResource[] | IfcTransactionRequest) => {
+    // new value could be a transaction request
+    if (isRequest(new_value)) {
+      loader(accountID, new_value).then((tr: IfcTransactionResource) => {
+        store.data.push(tr)
+        subs.forEach(sub => sub(store.data))         // update subscribers
+      })
+    } else {
+      if (store.data === new_value) return         // same value, exit
+      store.data = new_value                       // update value
+    }
+
+    subs.forEach(sub => sub(store.data))         // update subscribers
+  }
+
+  const update = (fn: (r: IfcTransactionResource) => IfcTransactionResource) => () => {
+    for (let i = 0; i < store.data.length; i++) {
+      store.data[i] = fn(store.data[i])
+    }
+
+    set(store.data)   // update function
+  }
+
+  return { subscribe, set, update }
 }
 
-export default TransactionReadable
+function isRequest(item: IfcTransactionResource[] | IfcTransactionRequest): item is IfcTransactionRequest {
+  return (item as IfcTransactionRequest).address !== undefined
+}
+
+export default TransactionWritable

@@ -1,0 +1,57 @@
+<script type="ts">
+  import LayoutGrid, { Cell } from '@smui/layout-grid'
+  import CurrencySelect from '../components/CurrencySelect.svelte'
+  import Textfield from '@smui/textfield'
+  import Icon from '@smui/textfield/icon'
+  import CopyClipBoard from '../components/CopyClipBoard.svelte'
+  import type { Currency } from '../constants'
+
+  export let balances: IfcBalanceResource[] = []
+
+  let selected: Currency
+
+  const getHash: (c: Currency, b: IfcBalanceResource[]) => string = (c, b) => {
+    for (let x = 0; x < b.length; x++) {
+      if (b[x].symbol === c) {
+        return b[x].funding
+      }
+    }
+    return ""
+  }
+
+  const copyHash = () => {
+    const app = new CopyClipBoard({
+			target: document.getElementById('clipboard'),
+			props: { name: hash },
+		});
+		app.$destroy();
+  }
+
+  $: hash = !!selected ? getHash(selected, balances) : ""
+</script>
+
+<LayoutGrid>
+  <Cell span={6}>
+    <div>
+      <CurrencySelect bind:selected />
+    </div>
+  
+    {#if selected != null}
+    <div style="padding-top: 25px;">
+      <Textfield bind:value={hash} label="Deposit Address" on:click={copyHash} >
+        <Icon class="material-icons" slot="trailingIcon">content_copy</Icon>
+      </Textfield>
+    </div>
+    <p>
+      Copy the deposit address above or scan the code to the right with your wallet app to transfer
+      funds.
+    </p>
+    {/if}
+  
+  </Cell>
+  <Cell span={6}>
+    {#if selected != null}
+    <img src="https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl={hash}&choe=UTF-8" alt="{selected} deposit address qrcode" />
+    {/if}
+  </Cell>
+</LayoutGrid>

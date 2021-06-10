@@ -2,7 +2,10 @@ package types
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSymbolMarshalJSON(t *testing.T) {
@@ -70,5 +73,22 @@ func TestSymbolUnmarshalJSON(t *testing.T) {
 
 	if err != ErrSymbolUnrecognized {
 		t.Errorf("error expected: symbol is not in the valid set; received %v", err)
+	}
+}
+
+func TestValidateAddress(t *testing.T) {
+	type testCase struct {
+		s        Symbol
+		h        string
+		expected bool
+	}
+
+	tests := []testCase{
+		{SymbolEthereum, "0x03a03cDE317214414fd314fA5105C78f1f342a15", true},
+	}
+
+	for _, test := range tests {
+		result := test.s.ValidateAddress(test.h)
+		assert.Equal(t, test.expected, result, fmt.Sprintf("%s: %s", test.s.String(), test.h))
 	}
 }

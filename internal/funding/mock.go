@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/easterthebunny/spew-order/pkg/types"
 	uuid "github.com/satori/go.uuid"
@@ -66,8 +68,27 @@ func (s *mockSource) CreateAddress(types.Symbol) (*Address, error) {
 	return &Address{ID: id.String(), Hash: encoded}, nil
 }
 
-func (s *mockSource) Withdraw(*Transaction) error {
-	return nil
+func (s *mockSource) Withdraw(*Transaction) (string, error) {
+
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	randSeq := func(n int) string {
+		b := make([]rune, n)
+		for i := range b {
+			b[i] = letters[rand.Intn(len(letters))]
+		}
+		return string(b)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+
+	hash := hmac.New(sha256.New, []byte("secret"))
+	_, err := io.WriteString(hash, randSeq(30))
+	if err != nil {
+		return "", err
+	}
+	encoded := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+	return encoded, nil
 }
 
 func (s *mockSource) OKResponse() int {

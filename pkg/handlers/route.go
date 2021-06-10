@@ -64,6 +64,7 @@ func (d *Router) AccountSubRoutes() func(r chi.Router) {
 
 func (d *Router) TransactionRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
+		r.Post("/", d.Accounts.PostTransaction(d.Balance))
 		r.Get("/", d.Accounts.GetAccountTransactions())
 	}
 }

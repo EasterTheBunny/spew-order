@@ -251,6 +251,57 @@ func (m *BalanceManager) PostAmtToBalance(a *Account, s types.Symbol, amt decima
 	return nil
 }
 
+func (m *BalanceManager) WithdrawFunds(a *Account, s types.Symbol, amt decimal.Decimal, hash string) (t *persist.Transaction, err error) {
+
+	hid, err := m.SetHoldOnAccount(a, s, amt)
+	if err != nil {
+		return
+	}
+
+	tr := funding.Transaction{
+		Symbol:  s,
+		Address: hash,
+		Amount:  amt,
+	}
+
+	trhash, err := m.funding.Withdraw(&tr)
+	if err != nil {
+		return
+	}
+
+	err = m.PostAmtToBalance(a, s, amt.Mul(decimal.NewFromInt(-1)))
+	if err != nil {
+		return
+	}
+
+	err = m.RemoveHoldOnAccount(a, s, ky(hid))
+	if err != nil {
+		return
+	}
+
+	var tm = persist.NanoTime(time.Now())
+	trepo := m.acct.Transactions(&persist.Account{ID: a.ID.String()})
+	t = &persist.Transaction{
+		Type:            persist.TransferTransactionType,
+		TransactionHash: trhash,
+		AddressHash:     hash,
+		Symbol:          s.String(),
+		Quantity:        amt.Mul(decimal.NewFromInt(-1)).StringFixedBank(s.RoundingPlace()),
+		Timestamp:       tm,
+	}
+	err = trepo.SetTransaction(t)
+	if err != nil {
+		return
+	}
+
+	err = m.ledger.RecordTransfer(s, amt)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decimal.Decimal) error {
 	a, err := m.acct.Find(id)
 	if err != nil {

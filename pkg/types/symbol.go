@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 
 	"github.com/shopspring/decimal"
@@ -72,6 +73,90 @@ func (s Symbol) MinimumFee() decimal.Decimal {
 	default:
 		return decimal.NewFromInt(0)
 	}
+}
+
+// ValidateAddress checks that an address for a given symbol is a valid sending address
+// supported addresses on Ethereum include EIP55
+func (s Symbol) ValidateAddress(a string) bool {
+
+	switch s {
+	case SymbolBitcoin:
+		// A Bitcoin address is between 25 and 34 characters long;
+		if len(a) < 25 || len(a) > 34 {
+			return false
+		}
+
+		// the address always starts with a 1;
+		if string(a[0]) != "1" {
+			return false
+		}
+
+		// an address can contain all alphanumeric characters, with the exceptions of 0, O, I, and l.
+		if exceptionLetters.MatchString(a) {
+			return false
+		}
+	case SymbolEthereum:
+		return validateEIP55(a)
+	}
+
+	return false
+}
+
+var (
+	lenCheck         = regexp.MustCompile(`^(?P<Pref>0x)(?P<Addr>[0-9a-fA-F]{40})$`)
+	capsCheck1       = regexp.MustCompile(`^(?P<Pref>0x)(?P<Addr>[0-9a-f]{40})$`)
+	capsCheck2       = regexp.MustCompile(`^(?P<Pref>0x)(?P<Addr>[0-9A-F]{40})$`)
+	exceptionLetters = regexp.MustCompile(`[0OIl]`)
+)
+
+// Checks if the given string is an address
+func validateEIP55(s string) bool {
+
+	if !lenCheck.MatchString(s) {
+		// check if it has the basic requirements of an address
+		return false
+	}
+
+	if capsCheck1.MatchString(s) || capsCheck2.MatchString(s) {
+		// If it's all small caps or all caps, return true
+		return true
+	}
+
+	/*
+		// Checks if the given string is a checksummed address
+		s = strings.ReplaceAll(s, `0x`, "")
+
+		hash := sha3.NewLegacyKeccak256()
+		_, err := io.WriteString(hash, strings.ToLower(s))
+		if err != nil {
+			return false
+		}
+
+		sm := hash.Sum(nil)
+		fmt.Println(sm)
+
+		if len(sm) < 40 {
+			return false
+		}
+
+		for i := 0; i < 40; i++ {
+			// the nth letter should be uppercase if the nth digit of casemap is 1
+			nt, err := strconv.ParseInt(string(sm[i]), 16, 64)
+			if err != nil {
+				return false
+			}
+
+			str := string(s[i])
+			upper := strings.ToUpper(str)
+			lower := strings.ToLower(str)
+
+			if (nt > 7 && upper != str) || (nt <= 7 && lower != str) {
+				return false
+			}
+		}
+	*/
+
+	return true
 }
 
 // MarshalBinary ...

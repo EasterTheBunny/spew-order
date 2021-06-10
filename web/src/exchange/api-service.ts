@@ -61,13 +61,18 @@ export default class ExchangeAPI {
     return f(this.api)
   }
 
-  public getTransactionFunc(): (accountID: string) => Promise<IfcTransactionResource[]> {
-    const f: (inst: AxiosInstance) => (accountID: string) => Promise<IfcTransactionResource[]> = (inst) => {
-      return async (accountID) => {
+  public getTransactionFunc(): (accountID: string, data: IfcTransactionRequest) => Promise<IfcTransactionResource[] | IfcTransactionResource> {
+    const f: (inst: AxiosInstance) => (accountID: string, data: IfcTransactionRequest) => Promise<IfcTransactionResource[] | IfcTransactionResource> = (inst) => {
+      return async (accountID, data) => {
         const path = ExchangeAPI.ACCOUNT_PATH+"/"+accountID+ExchangeAPI.TRANSACTION_PATH
 
-        // get all values
-        return inst.get(path).then((x) => this.dataResponse<IfcTransactionResource[]>(x))
+        if (data !== null) {
+          // post new
+          return inst.post(path, data).then((x) => this.dataResponse<IfcTransactionResource>(x))
+        } else {
+          // get all values
+          return inst.get(path).then((x) => this.dataResponse<IfcTransactionResource[]>(x))
+        }
       }
     }
 

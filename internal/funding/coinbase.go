@@ -164,8 +164,73 @@ func (s *coinbaseSource) getSignaturePublicKey() (*rsa.PublicKey, error) {
 	return pubKey, nil
 }
 
-func (s *coinbaseSource) Withdraw(*Transaction) error {
-	return errors.New("not implemented")
+func (s *coinbaseSource) Withdraw(t *Transaction) (trhash string, err error) {
+
+	acct, ok := s.accounts[t.Symbol.String()]
+	if !ok {
+		err = s.getAccounts()
+		if err != nil {
+			err = fmt.Errorf("Withdraw::%w", err)
+			return
+		}
+
+		acct, ok = s.accounts[t.Symbol.String()]
+		if !ok {
+			keys := []string{}
+			for k, _ := range s.accounts {
+				keys = append(keys, k)
+			}
+			err = fmt.Errorf("Withdraw: account not found '%s' -> %v", t.Symbol.String(), keys)
+			return
+		}
+	}
+
+	path := fmt.Sprintf("/v2/accounts/%s/transactions", acct)
+
+	req := coinbaseSendMoneyRequestV2{
+		Type:     "send",
+		To:       t.Address,
+		Amount:   t.Amount.StringFixedBank(t.Symbol.RoundingPlace()),
+		Currency: coinbaseCurrencyType(t.Symbol.String()),
+	}
+
+	bts, err := json.Marshal(req)
+	if err != nil {
+		return
+	}
+	hash := hmac.New(sha256.New, []byte(s.apisecret))
+	_, err = io.WriteString(hash, fmt.Sprintf("%d%s", time.Now().Unix(), string(bts)))
+	if err != nil {
+		err = fmt.Errorf("request (write hash error): %w", err)
+		return
+	}
+	req.Idem = hex.EncodeToString(hash.Sum(nil))
+
+	resp, err := s.request("POST", path, req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		err = fmt.Errorf("Withdraw: unexpected response code '%d'", resp.StatusCode)
+		return
+	}
+
+	data, err := s.extractResponsePayload(resp.Body)
+	if err != nil {
+		err = fmt.Errorf("Withdraw::%w", err)
+		return
+	}
+
+	var obj coinbaseTransactionResourceFullV2
+	err = json.Unmarshal(data.Data, &obj)
+	if err != nil {
+		err = fmt.Errorf("Withdraw (unmarshal transaction resource): %w", err)
+		return
+	}
+
+	return obj.Network.Hash, nil
 }
 
 func (s *coinbaseSource) OKResponse() int {
@@ -443,6 +508,18 @@ type coinbaseTransactionResourceV2 struct {
 	Path     string               `json:"resource_path"`
 }
 
+type coinbaseTransactionResourceFullV2 struct {
+	coinbaseTransactionResourceV2
+	Type    string                  `json:"type"`
+	Network coinbaseNetworkDetailV2 `json:"network"`
+}
+
+type coinbaseNetworkDetailV2 struct {
+	Status string `json:"status"`
+	Hash   string `json:"hash"`
+	Name   string `json:"name"`
+}
+
 type coinbaseResponsePayloadV2 struct {
 	Data json.RawMessage `json:"data"`
 }
@@ -489,6 +566,14 @@ type coinbaseCurrencyResourceV2 struct {
 type coinbaseMoneyResourceV2 struct {
 	Amount   decimal.Decimal      `json:"amount"`
 	Currency coinbaseCurrencyType `json:"currency"`
+}
+
+type coinbaseSendMoneyRequestV2 struct {
+	Type     string               `json:"type"`
+	To       string               `json:"to"`
+	Amount   string               `json:"amount"`
+	Currency coinbaseCurrencyType `json:"currency"`
+	Idem     string               `json:"idem"`
 }
 
 type coinbaseAccountType string
