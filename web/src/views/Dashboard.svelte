@@ -52,11 +52,5 @@
   }
   * :global(.paper-demo) {
     margin: 0 auto;
-    max-width: 600px;
-  }
-  * :global(.demo-list) {
-    max-width: 600px;
-    border: 1px solid
-      var(--mdc-theme-text-hint-on-background, rgba(0, 0, 0, 0.1));
   }
 </style>

@@ -1,13 +1,14 @@
-<script>
+<script type="ts">
+  import { navigate } from "svelte-routing"
   import TopAppBar, {
     Row,
     Section,
     Title,
     AutoAdjust,
   } from "@smui/top-app-bar";
-  import IconButton from "@smui/icon-button";
-  import Button, { Label } from '@smui/button';
-  import { navigate } from "svelte-routing"
+  import IconButton from "@smui/icon-button"
+  import Button, { Label } from '@smui/button'
+  import UserMenu from './UserMenu.svelte'
   import { getOidc } from "../oidc";
   import { getLocalization } from '../i18n';
   
@@ -30,6 +31,7 @@
       <Button on:click={() => navigate("/dashboard", { replace: true })} color="secondary" variant="outlined">
         <Label>{$t('Exchange')}</Label>
       </Button>
+      <UserMenu />
       {:else}
       <Button on:click={() => oidc.signIn()} variant="unelevated">
         <Label>{$t('Login')}</Label>
