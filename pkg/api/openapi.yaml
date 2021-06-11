@@ -82,6 +82,35 @@ paths:
   /api/accounts/{accountID}/orders:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
+    patch:
+      description: Cancel an order
+      requestBody: 
+        description: >
+          Adheres to JSON-PATCH RFC-6902
+          Accepted patch commands on order records:
+            type: replace; path: /status; value: CANCELLED
+        required: true
+        content: 
+          'application/json': 
+            schema: 
+              $ref: '#/components/schemas/PatchCommandList'
+      responses: 
+        200: 
+          description: OK
+          content: 
+            'application/json': 
+              schema: 
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BookOrder'
+        403:
+          description: Invalid input
+          content:
+            'application/json':
+              schema:
+                properties:
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
     post:
       description: Publishes an order to the order book
       requestBody: 
@@ -365,3 +394,20 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/BookOrder'
+    PatchCommandList:
+      type: array
+      items:
+        $ref: '#/components/schemas/PatchCommand'
+    PatchCommand:
+      type: object
+      required:
+      - op
+      - path
+      - value
+      properties:
+        op:
+          type: string
+        path:
+          type: string
+        value:
+          type: string

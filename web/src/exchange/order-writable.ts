@@ -37,6 +37,7 @@ const OrderWritable = (
       }
 
       tick = setTimeout(loadRecords, reloadWait)
+      account.update((a: IfcBalanceResource) => a)
       subs.forEach(sub => sub(store.data))
     })
   }
@@ -74,7 +75,7 @@ const OrderWritable = (
     // new value could be a new single order resource
     if (isSingle(new_value)) {
       loader(accountID, new_value).then((order: IfcOrderResource) => {
-        store.data.push(order)
+        store.data.unshift(order)
         account.update((a: IfcBalanceResource) => {
           let symbol: Currency = order.order.base
           let amt = 0
@@ -109,16 +110,21 @@ const OrderWritable = (
         subs.forEach(sub => sub(store.data))         // update subscribers
       })
     } else {
-      if (store.data === new_value) return         // same value, exit
       store.data = new_value                       // update value
     }
 
     subs.forEach(sub => sub(store.data))         // update subscribers
   }
 
-  const update = (fn: (r: IfcOrderResource) => IfcOrderResource) => () => {
+  const update: (fn: (r: IfcOrderResource) => IfcOrderResource) => void = (fn) => {
     for (let i = 0; i < store.data.length; i++) {
+      const oldStatus = store.data[i].status
       store.data[i] = fn(store.data[i])
+    
+      // run a patch command here for a cancelled order
+      if (store.data[i].status != oldStatus) {
+        loader(accountID, store.data[i])
+      }
     }
 
     set(store.data)   // update function
@@ -128,7 +134,7 @@ const OrderWritable = (
 }
 
 function isSingle(item: IfcOrderResource[] | IfcOrderResource): item is IfcOrderResource {
-  return (item as IfcOrderResource).id !== undefined
+  return (item as IfcOrderResource).guid !== undefined
 }
 
 function isLimit(item: IfcMarketOrder | IfcLimitOrder): item is IfcLimitOrder {

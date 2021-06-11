@@ -35,6 +35,18 @@ type OrderQueue struct {
 	balance *domain.BalanceManager
 }
 
+func (o *OrderQueue) CancelOrder(ctx context.Context, order types.Order) (err error) {
+
+	b, err := json.Marshal(order)
+	if err != nil {
+		return
+	}
+
+	_, err = o.client.Publish(ctx, OrderTopic, b)
+
+	return
+}
+
 func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequest) (order types.Order, err error) {
 
 	aID, err := contexts.GetAccountID(ctx)

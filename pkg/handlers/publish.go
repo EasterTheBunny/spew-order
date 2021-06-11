@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -24,8 +25,67 @@ type OrderHandler struct {
 	queue *queue.OrderQueue
 }
 
+type patchType string
+
+const (
+	patchTypeReplace = "replace"
+)
+
+type statusPatch struct {
+	Operation patchType       `json:"op"`
+	Path      string          `json:"path"`
+	Value     api.OrderStatus `json:"value"`
+}
+
 func NewOrderHandler(q *queue.OrderQueue) *OrderHandler {
 	return &OrderHandler{queue: q}
+}
+
+func (h *OrderHandler) CancelOrder() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			render.Render(w, r, HTTPBadRequest(fmt.Errorf("%s method not allowed", r.Method)))
+			return
+		}
+
+		var patches []statusPatch
+		err := json.NewDecoder(r.Body).Decode(&patches)
+		if err != nil {
+			render.Render(w, r, HTTPBadRequest(err))
+			return
+		}
+
+		if len(patches) != 1 {
+			render.Render(w, r, HTTPBadRequest(errors.New("only status value allowed to be patched")))
+			return
+		}
+
+		patch := patches[0]
+		if patch.Path != "/status" || patch.Operation != patchTypeReplace || api.OrderStatusValue(patch.Value) != persist.StatusCanceled {
+			render.Render(w, r, HTTPBadRequest(errors.New("only status value allowed to be patched")))
+			return
+		}
+
+		order := contexts.GetOrder(r.Context())
+
+		if order.Status == persist.StatusCanceled {
+			render.Render(w, r, HTTPBadRequest(errors.New("order already cancelled")))
+			return
+		}
+
+		err = h.queue.CancelOrder(r.Context(), order.Base)
+		if err != nil {
+			render.Render(w, r, HTTPInternalServerError(err))
+			return
+		}
+
+		o := api.BookOrder{
+			Guid:   order.Base.ID.String(),
+			Order:  api.BuildOrderRequest(order.Base.OrderRequest),
+			Status: api.StringOrderStatus(persist.StatusCanceled),
+		}
+		render.Render(w, r, HTTPNewOKResponse(&o))
+	}
 }
 
 // PostOrder publishes a message to Pub/Sub. PublishMessage only works

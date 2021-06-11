@@ -15,6 +15,22 @@ func NewBookRepository(store persist.KVStore) *BookRepository {
 	return &BookRepository{kvstore: store}
 }
 
+func (br *BookRepository) BookItemExists(item *persist.BookItem) (bool, error) {
+	query := &persist.KVStoreQuery{
+		StartOffset: bookItemKey(*item)}
+
+	attrs, err := br.kvstore.RangeGet(query, 1)
+	if err != nil {
+		return false, err
+	}
+
+	if len(attrs) == 1 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (br *BookRepository) SetBookItem(bi *persist.BookItem) error {
 	if bi == nil {
 		return fmt.Errorf("%w for book item", persist.ErrCannotSaveNilValue)

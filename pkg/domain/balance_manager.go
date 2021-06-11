@@ -481,3 +481,28 @@ func (m *BalanceManager) CreateOrder(a *Account, req types.OrderRequest) (types.
 
 	return order, err
 }
+
+// CancelOrder cancels an order and removes any associated holds
+func (m *BalanceManager) CancelOrder(order types.Order) error {
+	var err error
+
+	rep := m.acct.Orders(&persist.Account{ID: order.Account.String()})
+	if rep == nil {
+		return errors.New("CancelOrder: unknown order acount")
+	}
+
+	err = rep.UpdateOrderStatus(order.ID, persist.StatusCanceled, []string{})
+	if err != nil {
+		err = fmt.Errorf("CancelOrder::OrderRepository::%w", err)
+		return err
+	}
+
+	smb, _ := order.Type.HoldAmount(order.Action, order.Base, order.Target)
+	err = m.RemoveHoldOnAccount(&Account{ID: order.Account}, smb, ky(order.HoldID))
+	if err != nil {
+		err = fmt.Errorf("CancelOrder::RemoveHoldOnAccount::%w", err)
+		return err
+	}
+
+	return nil
+}

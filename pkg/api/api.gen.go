@@ -137,6 +137,16 @@ type OrderType struct {
 // Order type: * `MARKET` - order type used to buy or sell at market value * `LIMIT` - used to set buy or sell limit
 type OrderTypeName string
 
+// PatchCommand defines model for PatchCommand.
+type PatchCommand struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value"`
+}
+
+// PatchCommandList defines model for PatchCommandList.
+type PatchCommandList []PatchCommand
+
 // ResponseError defines model for ResponseError.
 type ResponseError struct {
 	Detail string `json:"detail"`
@@ -181,11 +191,17 @@ type AccountPathParam string
 // OrderPathParam defines model for OrderPathParam.
 type OrderPathParam string
 
+// PatchApiAccountsAccountIDOrdersJSONBody defines parameters for PatchApiAccountsAccountIDOrders.
+type PatchApiAccountsAccountIDOrdersJSONBody PatchCommandList
+
 // PostApiAccountsAccountIDOrdersJSONBody defines parameters for PostApiAccountsAccountIDOrders.
 type PostApiAccountsAccountIDOrdersJSONBody OrderRequest
 
 // PostApiAccountsAccountIDTransactionsJSONBody defines parameters for PostApiAccountsAccountIDTransactions.
 type PostApiAccountsAccountIDTransactionsJSONBody TransactionRequest
+
+// PatchApiAccountsAccountIDOrdersJSONRequestBody defines body for PatchApiAccountsAccountIDOrders for application/json ContentType.
+type PatchApiAccountsAccountIDOrdersJSONRequestBody PatchApiAccountsAccountIDOrdersJSONBody
 
 // PostApiAccountsAccountIDOrdersJSONRequestBody defines body for PostApiAccountsAccountIDOrders for application/json ContentType.
 type PostApiAccountsAccountIDOrdersJSONRequestBody PostApiAccountsAccountIDOrdersJSONBody

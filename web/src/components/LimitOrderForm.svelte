@@ -38,7 +38,7 @@
 
   const onSubmitForm = () => {
     const o: IfcOrderResource = {
-      id: "",
+      guid: "",
       status: null,
       order: {
         base,

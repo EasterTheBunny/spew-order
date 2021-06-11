@@ -8,7 +8,7 @@ interface IfcAccountResource {
 }
 
 interface IfcOrderResource {
-  id: string
+  guid: string
   status: OrderStatus
   order: IfcOrderRequest
 }

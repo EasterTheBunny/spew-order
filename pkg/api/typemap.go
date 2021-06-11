@@ -149,6 +149,21 @@ func StringOrderStatus(f persist.FillStatus) OrderStatus {
 	}
 }
 
+func OrderStatusValue(f OrderStatus) persist.FillStatus {
+	switch f {
+	case OrderStatusOPEN:
+		return persist.StatusOpen
+	case OrderStatusPARTIAL:
+		return persist.StatusPartial
+	case OrderStatusFILLED:
+		return persist.StatusFilled
+	case OrderStatusCANCELLED:
+		return persist.StatusCanceled
+	default:
+		return 0
+	}
+}
+
 func StringTransactionType(t persist.TransactionType) TransactionType {
 	switch t {
 	case persist.DepositTransactionType:

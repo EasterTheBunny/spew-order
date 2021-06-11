@@ -175,8 +175,9 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order.HoldID = id
 
-		s.ExecuteOrInsertOrder(order)
+		err = s.ExecuteOrInsertOrder(order)
 
+		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
 	})
 
@@ -204,8 +205,9 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order.HoldID = id
 
-		s.ExecuteOrInsertOrder(order)
+		err = s.ExecuteOrInsertOrder(order)
 
+		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
 	})
 
@@ -233,9 +235,45 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order.HoldID = id
 
-		s.ExecuteOrInsertOrder(order)
+		err = s.ExecuteOrInsertOrder(order)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expected, st.Len())
+	})
+
+	t.Run("CancelOrder", func(t *testing.T) {
+
+		order := newLimitBookOrder(12700, 0.33, 1.2, types.ActionTypeBuy)
+
+		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
+			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
+		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.HoldID = id
+
+		// insert the order
+		err = s.ExecuteOrInsertOrder(order)
+		assert.NoError(t, err)
+
+		// cancel the order
+		err = s.ExecuteOrInsertOrder(order)
+		assert.NoError(t, err)
 
 		assert.Equal(t, expected, st.Len())
+
 	})
 }
 

@@ -80,6 +80,7 @@ func (d *Router) OrderRoutes() func(r chi.Router) {
 func (d *Router) OrderSubRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(d.Accounts.OrderCtx())
+		r.Patch("/", d.Orders.CancelOrder())
 		r.Get("/", d.Accounts.GetAccountOrder())
 	}
 }
