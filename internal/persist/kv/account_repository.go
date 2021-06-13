@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -15,7 +16,7 @@ func NewAccountRepository(store persist.KVStore) *AccountRepository {
 	return &AccountRepository{kvstore: store}
 }
 
-func (r *AccountRepository) Find(id persist.Key) (account *persist.Account, err error) {
+func (r *AccountRepository) Find(ctx context.Context, id persist.Key) (account *persist.Account, err error) {
 
 	b, err := r.kvstore.Get(accountKey(id))
 	if err != nil {
@@ -37,7 +38,7 @@ func (r *AccountRepository) Find(id persist.Key) (account *persist.Account, err 
 	return
 }
 
-func (r *AccountRepository) FindByAddress(addr string, sym types.Symbol) (acct *persist.Account, err error) {
+func (r *AccountRepository) FindByAddress(ctx context.Context, addr string, sym types.Symbol) (acct *persist.Account, err error) {
 
 	b, err := r.kvstore.Get(addressKey(addr, sym))
 	if err != nil {
@@ -45,10 +46,10 @@ func (r *AccountRepository) FindByAddress(addr string, sym types.Symbol) (acct *
 		return
 	}
 
-	return r.Find(stringer(string(b)))
+	return r.Find(ctx, stringer(string(b)))
 }
 
-func (r *AccountRepository) Save(account *persist.Account) error {
+func (r *AccountRepository) Save(ctx context.Context, account *persist.Account) error {
 	if account == nil {
 		return fmt.Errorf("%w for account", persist.ErrCannotSaveNilValue)
 	}

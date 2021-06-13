@@ -83,7 +83,11 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 		return
 	}
 
-	b, err := json.Marshal(order)
+	om := domain.OrderMessage{
+		Action: domain.OpenOrderMessageType,
+		Order:  order}
+
+	b, err := json.Marshal(om)
 	if err != nil {
 		return
 	}

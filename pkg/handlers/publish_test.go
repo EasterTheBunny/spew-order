@@ -3,6 +3,7 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -31,7 +32,7 @@ func TestPostOrder(t *testing.T) {
 	log.SetOutput(&logBuf)
 
 	// set up the mocked pub sub and establish a subscription to the topic
-	subscription := make(chan domain.OrderMessage)
+	subscription := make(chan domain.PubSubMessage)
 	mps := queue.NewMockPubSub()
 	mps.Subscribe(queue.OrderTopic, subscription)
 
@@ -40,7 +41,7 @@ func TestPostOrder(t *testing.T) {
 	store := persist.NewMockKVStore()
 	repo := kv.NewAccountRepository(store)
 	l := kv.NewLedgerRepository(store)
-	err := repo.Save(pstAcct)
+	err := repo.Save(context.Background(), pstAcct)
 	if err != nil {
 		t.FailNow()
 	}

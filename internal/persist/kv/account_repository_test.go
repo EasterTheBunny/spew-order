@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"testing"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -9,6 +10,8 @@ import (
 )
 
 func TestSaveFind(t *testing.T) {
+
+	ctx := context.Background()
 
 	s := persist.NewMockKVStore()
 	r := &AccountRepository{kvstore: s}
@@ -24,7 +27,7 @@ func TestSaveFind(t *testing.T) {
 
 	t.Run("NotFound", func(t *testing.T) {
 
-		a, err = r.Find(id)
+		a, err = r.Find(ctx, id)
 		if err == nil {
 			assert.FailNowf(t, "Error expected when attempting to find account by id: %s", id.String())
 		}
@@ -36,13 +39,13 @@ func TestSaveFind(t *testing.T) {
 
 	t.Run("Save", func(t *testing.T) {
 
-		err = r.Save(&expected)
+		err = r.Save(context.Background(), &expected)
 		assert.NoError(t, err)
 	})
 
 	t.Run("Find", func(t *testing.T) {
 
-		a, err = r.Find(id)
+		a, err = r.Find(ctx, id)
 		assert.NoError(t, err)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered: %s", err.Error())

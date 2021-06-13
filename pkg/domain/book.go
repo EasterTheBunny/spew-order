@@ -14,10 +14,7 @@ func NewOrderBook(br persist.BookRepository, bm *BalanceManager) *OrderBook {
 	return &OrderBook{bir: br, bm: bm}
 }
 
-// ExecuteOrInsertOrder takes an order and matches it from top down in the order
-// book. This process will create account balance updates and update/delete
-// account holds. It assumes holds exist and will return an error if they don't.
-func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
+func (ob *OrderBook) CancelOrder(order types.Order) error {
 	item := persist.NewBookItem(order)
 
 	ok, err := ob.bir.BookItemExists(&item)
@@ -38,6 +35,26 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 			return err
 		}
 
+		return nil
+	}
+
+	return nil
+}
+
+// ExecuteOrInsertOrder takes an order and matches it from top down in the order
+// book. This process will create account balance updates and update/delete
+// account holds. It assumes holds exist and will return an error if they don't.
+func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
+	item := persist.NewBookItem(order)
+
+	ok, err := ob.bir.BookItemExists(&item)
+	if err != nil {
+		return err
+	}
+
+	// maintain this function as idempotent and don't run the same action twice
+	// for the same record
+	if ok {
 		return nil
 	}
 

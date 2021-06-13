@@ -18,7 +18,7 @@ import (
 func TestPublishOrderRequest(t *testing.T) {
 
 	// set up the mocked pub sub and establish a subscription to the topic
-	subscription := make(chan domain.OrderMessage)
+	subscription := make(chan domain.PubSubMessage)
 	mps := NewMockPubSub()
 	mps.Subscribe(OrderTopic, subscription)
 
@@ -26,7 +26,7 @@ func TestPublishOrderRequest(t *testing.T) {
 	store := persist.NewMockKVStore()
 	repo := kv.NewAccountRepository(store)
 	l := kv.NewLedgerRepository(store)
-	err := repo.Save(&persist.Account{ID: acct.ID.String()})
+	err := repo.Save(context.Background(), &persist.Account{ID: acct.ID.String()})
 	if err != nil {
 		t.FailNow()
 	}

@@ -2,6 +2,7 @@ package persist
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -17,6 +18,7 @@ import (
 
 var (
 	ErrCannotSaveNilValue = errors.New("cannot save nil value")
+	ErrCannotParseValue   = errors.New("datastore collection parse error")
 )
 
 type Key interface {
@@ -36,9 +38,9 @@ const (
 )
 
 type AccountRepository interface {
-	Find(Key) (*Account, error)
-	FindByAddress(string, types.Symbol) (*Account, error)
-	Save(*Account) error
+	Find(context.Context, Key) (*Account, error)
+	FindByAddress(context.Context, string, types.Symbol) (*Account, error)
+	Save(context.Context, *Account) error
 	Balances(*Account, types.Symbol) BalanceRepository
 	Transactions(*Account) TransactionRepository
 	Orders(*Account) OrderRepository

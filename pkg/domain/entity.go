@@ -6,8 +6,20 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type OrderMessage struct {
+type OrderMessageType string
+
+const (
+	CancelOrderMessageType OrderMessageType = "CANCEL"
+	OpenOrderMessageType   OrderMessageType = "OPEN"
+)
+
+type PubSubMessage struct {
 	Data []byte `json:"data"`
+}
+
+type OrderMessage struct {
+	Action OrderMessageType `json:"action"`
+	Order  types.Order      `json:"order"`
 }
 
 // Account ...

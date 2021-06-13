@@ -28,6 +28,7 @@ func (b *BalanceRepository) GetBalance() (balance decimal.Decimal, err error) {
 
 	k := balanceKey(*b.account, b.symbol)
 	var byt []byte
+	b.kvstore.Attrs(k)
 	byt, err = b.kvstore.Get(k)
 	if err != nil {
 		if err == persist.ErrObjectNotExist {

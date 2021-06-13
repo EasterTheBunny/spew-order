@@ -6,11 +6,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
+	"math/rand"
+	"net"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 )
 
@@ -35,6 +40,7 @@ type KVStoreObjectAttrs struct {
 	Metadata        map[string]string
 	ContentEncoding string
 	Created         time.Time
+	Updated         time.Time
 }
 
 type KVStoreObjectAttrsToUpdate struct {
@@ -106,7 +112,8 @@ func (gs *GoogleKVStore) Attrs(sKey string) (attrs *KVStoreObjectAttrs, err erro
 		Name:            obj.Name,
 		Metadata:        obj.Metadata,
 		ContentEncoding: obj.ContentEncoding,
-		Created:         obj.Created}
+		Created:         obj.Created,
+		Updated:         obj.Updated}
 
 	return
 }
@@ -114,25 +121,74 @@ func (gs *GoogleKVStore) Attrs(sKey string) (attrs *KVStoreObjectAttrs, err erro
 // Set ...
 func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrsToUpdate) error {
 	ctx := context.Background()
-	value := bytes.NewReader(data)
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
 	defer cancel()
 
-	handle := gs.client.Bucket(gs.bucket).Object(sKey)
+	var doOp = func(b, k string) error {
 
-	wc := handle.NewWriter(ctx)
-	if _, err := io.Copy(wc, value); err != nil {
-		return err
-	}
-	if err := wc.Close(); err != nil {
-		return err
+		handle := gs.client.Bucket(b).Object(k)
+
+		wc := handle.NewWriter(ctx)
+		if _, err := io.Copy(wc, bytes.NewReader(data)); err != nil {
+			return err
+		}
+		if err := wc.Close(); err != nil {
+			return err
+		}
+
+		if attrs != nil {
+			at := &storage.ObjectAttrsToUpdate{
+				ContentEncoding: attrs.ContentEncoding,
+				Metadata:        attrs.Metadata}
+			handle.Update(ctx, *at)
+		}
+
+		return nil
 	}
 
-	if attrs != nil {
-		at := &storage.ObjectAttrsToUpdate{
-			ContentEncoding: attrs.ContentEncoding,
-			Metadata:        attrs.Metadata}
-		handle.Update(ctx, *at)
+	min := 0
+	max := 1000
+	deadline := 5 * time.Second
+	cnt := 1
+
+	err := doOp(gs.bucket, sKey)
+	for err != nil {
+
+		if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+			// exponential backoff
+			rand.Seed(time.Now().UnixNano())
+			wait := rand.Intn(max-min+1) + min
+			wait = int(math.Pow(float64(2), float64(cnt))) + wait
+			<-time.After(time.Duration(wait))
+			err = doOp(gs.bucket, sKey)
+
+			cnt++
+			if deadline <= time.Duration(wait) {
+				return err
+			}
+		}
+
+		if e, ok := err.(*googleapi.Error); ok {
+			if e.Code == http.StatusTooManyRequests || e.Code >= http.StatusInternalServerError {
+				// exponential backoff
+				rand.Seed(time.Now().UnixNano())
+				wait := rand.Intn(max-min+1) + min
+				wait = int(math.Pow(float64(2), float64(cnt))) + wait
+
+				// wait and execute again
+				<-time.After(time.Duration(wait))
+				err = doOp(gs.bucket, sKey)
+
+				cnt++
+				if deadline <= time.Duration(wait) {
+					return err
+				}
+			} else {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 
 	return nil
@@ -171,7 +227,8 @@ func (gs *GoogleKVStore) RangeGet(q *KVStoreQuery, limit int) ([]*KVStoreObjectA
 				Name:            attrs.Name,
 				Metadata:        attrs.Metadata,
 				ContentEncoding: attrs.ContentEncoding,
-				Created:         attrs.Created}
+				Created:         attrs.Created,
+				Updated:         attrs.Updated}
 		}
 
 		attr = append(attr, a)
@@ -189,7 +246,55 @@ func (gs *GoogleKVStore) Delete(sKey string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
 	defer cancel()
-	return gs.client.Bucket(gs.bucket).Object(sKey).Delete(ctx)
+
+	var doOp = func() error {
+		return gs.client.Bucket(gs.bucket).Object(sKey).Delete(ctx)
+	}
+
+	min := 0
+	max := 1000
+	deadline := 5 * time.Second
+	cnt := 1
+
+	err := doOp()
+	for err != nil {
+
+		if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+			// exponential backoff
+			rand.Seed(time.Now().UnixNano())
+			wait := rand.Intn(max-min+1) + min
+			wait = int(math.Pow(float64(2), float64(cnt))) + wait
+			<-time.After(time.Duration(wait))
+			err = doOp()
+
+			cnt++
+			if deadline <= time.Duration(wait) {
+				return err
+			}
+		}
+
+		if e, ok := err.(*googleapi.Error); ok {
+			if e.Code == http.StatusTooManyRequests || e.Code >= http.StatusInternalServerError {
+				// exponential backoff
+				rand.Seed(time.Now().UnixNano())
+				wait := rand.Intn(max-min+1) + min
+				wait = int(math.Pow(float64(2), float64(cnt))) + wait
+				<-time.After(time.Duration(wait))
+				err = doOp()
+
+				cnt++
+				if deadline <= time.Duration(wait) {
+					return err
+				}
+			} else {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // NewMockKVStore ...
@@ -227,17 +332,19 @@ func (gsm *MockKVStore) Set(key string, b []byte, attrs *KVStoreObjectAttrsToUpd
 
 	sAttrs := &KVStoreObjectAttrs{
 		Name:    key,
-		Created: time.Now()}
+		Created: time.Now(),
+		Updated: time.Now()}
 
 	if attrs != nil {
 		sAttrs.Metadata = attrs.Metadata
 	}
 
-	if _, ok := gsm.meta[key]; ok {
+	if m, ok := gsm.meta[key]; ok {
 		sAttrs = gsm.meta[key]
 
 		if attrs != nil {
 			sAttrs.Metadata = attrs.Metadata
+			sAttrs.Created = m.Created
 		}
 	} else {
 		gsm.key = append(gsm.key, key)

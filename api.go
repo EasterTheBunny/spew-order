@@ -14,7 +14,6 @@ import (
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
-	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
 const (
@@ -89,15 +88,17 @@ func FundingWebhooks(w http.ResponseWriter, r *http.Request) {
 }
 
 // OrderPubSub consumes a Pub/Sub message.
-func OrderPubSub(ctx context.Context, m domain.OrderMessage) error {
+func OrderPubSub(ctx context.Context, m domain.PubSubMessage) error {
 
-	var order types.Order
-	if err := json.Unmarshal(m.Data, &order); err != nil {
+	var msg domain.OrderMessage
+	if err := json.Unmarshal(m.Data, &msg); err != nil {
 		return err
 	}
 
-	if err := GS.ExecuteOrInsertOrder(order); err != nil {
-		return err
+	if msg.Action == domain.CancelOrderMessageType {
+		return GS.CancelOrder(msg.Order)
+	} else if msg.Action == domain.OpenOrderMessageType {
+		return GS.ExecuteOrInsertOrder(msg.Order)
 	}
 
 	return nil

@@ -42,11 +42,11 @@ func (g *GooglePubSub) Publish(ctx context.Context, topic string, data []byte) (
 
 func NewMockPubSub() *MockPubSub {
 	return &MockPubSub{
-		subscribers: make(map[string][]chan domain.OrderMessage)}
+		subscribers: make(map[string][]chan domain.PubSubMessage)}
 }
 
 type MockPubSub struct {
-	subscribers map[string][]chan domain.OrderMessage
+	subscribers map[string][]chan domain.PubSubMessage
 }
 
 func (m *MockPubSub) Publish(ctx context.Context, topic string, data []byte) (id string, err error) {
@@ -57,8 +57,8 @@ func (m *MockPubSub) Publish(ctx context.Context, topic string, data []byte) (id
 		id = m.randSeq(10)
 
 		for _, sub := range t {
-			go func(s chan domain.OrderMessage) {
-				s <- domain.OrderMessage{Data: data}
+			go func(s chan domain.PubSubMessage) {
+				s <- domain.PubSubMessage{Data: data}
 			}(sub)
 		}
 
@@ -69,7 +69,7 @@ func (m *MockPubSub) Publish(ctx context.Context, topic string, data []byte) (id
 	return
 }
 
-func (m *MockPubSub) Subscribe(topic string, c chan domain.OrderMessage) {
+func (m *MockPubSub) Subscribe(topic string, c chan domain.PubSubMessage) {
 	m.subscribers[topic] = append(m.subscribers[topic], c)
 }
 

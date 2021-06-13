@@ -140,7 +140,7 @@ func bookItemSubspace(b persist.BookItem, t *types.ActionType) key.Subspace {
 		Sub(uint(tp))
 }
 
-// bookItemKey generates a key that will sort ASC lexigraphically, but remain in
+// bookItemKey generates a key that will sort ASC lexicographically, but remain in
 // type sorted order: buys are sorted largest/oldest to smallest/newest and sells
 // are sorted smallest/oldest to largest/newest
 func bookItemKey(b persist.BookItem) string {

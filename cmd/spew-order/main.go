@@ -25,7 +25,7 @@ func main() {
 	book := handlers.NewGoogleOrderBook(kvstore, f)
 	ps := queue.NewMockPubSub()
 	jwt := &mockJWTAuth{}
-	subscription := make(chan domain.OrderMessage)
+	subscription := make(chan domain.PubSubMessage)
 	ps.Subscribe(queue.OrderTopic, subscription)
 
 	rh, err := handlers.NewDefaultRouter(kvstore, ps, jwt, f)

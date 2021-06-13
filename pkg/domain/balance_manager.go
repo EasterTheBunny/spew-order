@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -39,15 +40,13 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 	a.ID = uid
 
 	dirty := false
-	p, err := m.acct.Find(a.ID)
+	p, err := m.acct.Find(context.Background(), a.ID)
+
+	// create the account if it wasn't found
 	if err != nil {
 		if errors.Is(err, persist.ErrObjectNotExist) {
 			p = &persist.Account{ID: a.ID.String()}
-			err = m.acct.Save(p)
-			if err != nil {
-				err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
-				return
-			}
+			dirty = true
 		} else {
 			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return
@@ -85,8 +84,9 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 		}
 	}
 
+	// only save the value once; protect against rapid back to back updates
 	if dirty {
-		err := m.acct.Save(p)
+		err := m.acct.Save(context.Background(), p)
 		if err != nil {
 			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return nil, err
@@ -140,31 +140,31 @@ func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance d
 		return
 	}
 
+	changeBal := decimal.NewFromInt(0)
 	// for each post, remove the posting from the account,
 	// update the balance variable
-	var deleteErrors []error
 	for _, post := range p {
 		balance = balance.Add(post.Amount)
+		changeBal = changeBal.Add(post.Amount)
 
 		err = r.DeletePost(post)
 		if err != nil {
-			deleteErrors = append(deleteErrors, err)
+			changeBal = changeBal.Sub(post.Amount)
 		}
-	}
-
-	// if an error is encountered deleting balance postings, don't
-	// allow the balance to be updated
-	// this should be fault tolerant and potentially thread safe??
-	// TODO: benchmark test this
-	if len(deleteErrors) > 0 {
-		err = deleteErrors[0]
-		return
 	}
 
 	// update the balance if posts were found
 	if len(p) > 0 {
 		err = r.UpdateBalance(balance)
 		if err != nil {
+
+			// at this point, the balance has not been updated
+			// some of the posts might have been deleted
+			// don't attempt to update the balance again
+			// re-add the amount of all deleted posts
+
+			newPost := persist.NewBalanceItem(changeBal)
+			err = r.CreatePost(newPost)
 			return
 		}
 	}
@@ -303,7 +303,7 @@ func (m *BalanceManager) WithdrawFunds(a *Account, s types.Symbol, amt decimal.D
 }
 
 func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decimal.Decimal) error {
-	a, err := m.acct.Find(id)
+	a, err := m.acct.Find(context.Background(), id)
 	if err != nil {
 		return err
 	}
@@ -336,7 +336,7 @@ func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decim
 }
 
 func (m *BalanceManager) FundAccountByAddress(hash string, transaction string, s types.Symbol, amt decimal.Decimal) error {
-	a, err := m.acct.FindByAddress(hash, s)
+	a, err := m.acct.FindByAddress(context.Background(), hash, s)
 	if err != nil {
 		return err
 	}
