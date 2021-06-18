@@ -72,8 +72,11 @@ interface IfcMarketOrderRequest {
 }
 
 interface IfcBookProductSpread {
+  maxDepth: number
   ask: string
   bid: string
+  asks: string[][]
+  bids: string[][]
 }
 
 interface IfcTransactionResource {

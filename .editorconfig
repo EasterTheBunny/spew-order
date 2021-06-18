@@ -1,11 +1,7 @@
 [*]
 end_of_line = lf
 
-[*.ts]
-indent_style = space
-indent_size = 2
-
-[*.svelte]
+[*.{ts,js,svelte}]
 indent_style = space
 indent_size = 2
 

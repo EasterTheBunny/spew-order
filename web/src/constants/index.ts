@@ -25,3 +25,8 @@ export enum TransactionType {
   Deposit = "DEPOSIT",
   Transfer = "TRANSFER",
 }
+
+export enum WorkerMessageType {
+  Ticker = "TICKER",
+  Book = "BOOK",
+}

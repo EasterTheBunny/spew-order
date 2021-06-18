@@ -1,7 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 import type { AxiosResponse } from "axios"
-import type { User } from "oidc-client"
-import { OrderStatus } from "../constants"
+import axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 
 export default class ExchangeAPI {
   private api: AxiosInstance

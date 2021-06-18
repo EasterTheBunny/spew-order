@@ -4,6 +4,7 @@
   import LayoutGrid, { Cell } from "@smui/layout-grid";
   import OrderForm from "../components/OrderForm.svelte"
   import OrderList from "../components/OrderList.svelte"
+  import MarketInfo from "../components/MarketInfo.svelte"
   import { getOidc } from "../oidc"
   import { getDataCtx } from "../exchange";
 
@@ -21,25 +22,25 @@
 {#if $loggedIn && $account}
 <div class="paper-container">
   <LayoutGrid>
-  
-  <Cell span={9}>
-    <Paper transition {elevation} {color} class="paper-demo">
-      <Title>Order List</Title>
-      <Content>
-        <OrderList />
-      </Content>
-    </Paper>
-  </Cell>
-  
-  <Cell span={3}>
-    <Paper transition {elevation} {color} class="paper-demo">
-      <Title>Create New Order</Title>
-      <Content>
-        <OrderForm />
-      </Content>
-    </Paper>
-  </Cell>
+    <Cell span={9}>
+      <MarketInfo />
 
+      <Paper transition {elevation} {color} class="paper-demo">
+        <Title>Order List</Title>
+        <Content>
+          <OrderList />
+        </Content>
+      </Paper>
+    </Cell>
+    
+    <Cell span={3}>
+      <Paper transition {elevation} {color} class="paper-demo">
+        <Title>Create New Order</Title>
+        <Content>
+          <OrderForm />
+        </Content>
+      </Paper>
+    </Cell>
   </LayoutGrid>
 </div>
 {/if}

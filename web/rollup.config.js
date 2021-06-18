@@ -7,6 +7,7 @@ import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
 import replace from '@rollup/plugin-replace';
+import workerLoader from 'rollup-plugin-web-worker-loader';
 
 const production = !process.env.ROLLUP_WATCH;
 const AUTH0_CLIENTID = process.env.AUTH0_CLIENTID;
@@ -49,6 +50,11 @@ export default {
 			'process.env.AUTH0_DOMAIN': JSON.stringify(AUTH0_DOMAIN ? AUTH0_DOMAIN : "https://dev-xfscxtiv.us.auth0.com"),
 			'process.env.API_URL': JSON.stringify(API_URL ? API_URL : "http://localhost:8080/api"),
 		}),
+    workerLoader({
+      targetPlatform: 'browser',
+      inline: 'false',
+      outputFolder: 'public',
+    }),
 		svelte({
 			preprocess: sveltePreprocess({ sourceMap: !production }),
 			compilerOptions: {

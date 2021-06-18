@@ -1,121 +1,46 @@
 import type { Writable } from "svelte/store"
 import { writable } from "svelte/store"
+import WebWorker from 'web-worker:../Worker.ts'
+import { WorkerMessageType } from '../constants'
 
 const PriceWritable = (): Writable<IfcBookProductSpread> => {
-  const WebSocketStateEnum = {CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3};
-  const { subscribe, set, update } = writable<IfcBookProductSpread>(null)
-  let wsChannel = new WebSocket('wss://ws-feed.pro.coinbase.com')
-  let subs = []                     // subscriber's handlers
+  const { subscribe, set, update } = writable<IfcBookProductSpread>({ maxDepth: 0, ask: "0.000", bid: "0.000", asks: [], bids: []})
+  const worker = new WebWorker()
 
-  let product: string = "ETH-BTC"
-  let bidLookup = {}
-  let askLookup = {}
+  worker.onmessage = (evt) => {
+    if (isTicker(evt.data)) {
+      const msg: IfcTickerMessage = evt.data
 
-  const setLookups: (bids: object, asks: object) => void = (bids, asks) => {
-    bidLookup = Object.keys(bids).sort((a, b) => {
-      if (a[0] < b[0]) {
-        return 1;
-      }
-      if (a[0] > b[0]) {
-        return -1;
-      }
-      return 0;
-    }).reduce(
-      (obj, key) => { 
-        obj[key] = bids[key]; 
-        return obj;
-      }, 
-      {}
-    )
+      update((v) => {
+        v.ask = msg.price
+        v.bid = msg.price
 
-    askLookup = Object.keys(asks).sort((a, b) => {
-      if (a[0] > b[0]) {
-        return 1;
-      }
-      if (a[0] < b[0]) {
-        return -1;
-      }
-      return 0;
-    }).reduce(
-      (obj, key) => { 
-        obj[key] = asks[key]; 
-        return obj;
-      }, 
-      {}
-    )
-  }
+        return v
+      })
+    } else if (isBook(evt.data)) {
+      const msg: IfcBookMessage = evt.data
 
-  wsChannel.onopen = function() {
-    const subscribe = {
-      type: "subscribe",
-      product_ids: [product],
-      channels: ["ticker"],
-    }
+      update((v) => {
+        v.maxDepth = msg.maxDepth
+        v.asks = msg.asks
+        v.bids = msg.bids
 
-    const msg = JSON.stringify(subscribe)
-    wsChannel.send(msg)
-  }
-
-  wsChannel.onmessage = function(evt) {
-    const data = JSON.parse(evt.data)
-
-    switch (data.type) {
-      case "snapshot":
-        // this is a full order book list
-        const { bids, asks } = data
-        const lbids = {}
-        for (let x = 0; x < bids.length; x++) {
-          lbids[bids[x][0]] = bids[x][1]
-        }
-
-        const lasks = {}
-        for (let x = 0; x < asks.length; x++) {
-          lasks[asks[x][0]] = asks[x][1]
-        }
-
-        setLookups(lbids, lasks)
-        set({
-          ask: Object.keys(askLookup)[0],
-          bid: Object.keys(bidLookup)[0],
-        })
-        break
-      case "l2update":
-        // this is only a list of updates
-        for (let x = 0; x < data.changes.length; x++) {
-          if (data.changes[x][0] === "buy") {
-            bidLookup[data.changes[x][1]] = bidLookup[data.changes[x][2]]
-          } else {
-            askLookup[data.changes[x][1]] = askLookup[data.changes[x][2]]
-          }
-        }
-        setLookups(bidLookup, askLookup)
-        set({
-          ask: Object.keys(askLookup)[0],
-          bid: Object.keys(bidLookup)[0],
-        })
-        break
-      case "ticker":
-        set({
-          ask: data.price,
-          bid: data.price,
-        })
-        break
+        return v
+      })
     }
   }
-
-  wsChannel.onclose = function(evt) {
-    wsChannel = null;
-  }
-
-  wsChannel.onerror = function(evt) {
-    if (wsChannel.readyState == WebSocketStateEnum.OPEN) {
-      wsChannel.close();
-    } else {
-      wsChannel = null;
-    }
-  }
+  
+  worker.postMessage({type: 'init'})
 
   return { subscribe, set, update }
+}
+
+function isTicker(item: IfcWorkerMessage): item is IfcTickerMessage {
+  return (item as IfcTickerMessage).type === WorkerMessageType.Ticker
+}
+
+function isBook(item: IfcWorkerMessage): item is IfcBookMessage {
+  return (item as IfcBookMessage).type === WorkerMessageType.Book
 }
 
 export default PriceWritable
