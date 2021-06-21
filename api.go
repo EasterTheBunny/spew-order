@@ -53,7 +53,11 @@ func init() {
 	pubKey := strings.NewReader(getEnvVar(envCoinbasePubKey))
 	ky := getEnvVar(envCoinbaseAPIKey)
 	sct := getEnvVar(envCoinbaseAPISecret)
-	f := handlers.NewFundingSource("COINBASE", &ky, &sct, log.Writer(), pubKey)
+	srcType := "COINBASE"
+	if strings.ToUpper(getEnvVar(envRuntimeEnv)) != "PROD" {
+		srcType = "MOCK"
+	}
+	f := handlers.NewFundingSource(srcType, &ky, &sct, log.Writer(), pubKey)
 	ps := handlers.NewGooglePubSub(projectID)
 
 	kv, err := handlers.NewGoogleKVStore(&bucket)

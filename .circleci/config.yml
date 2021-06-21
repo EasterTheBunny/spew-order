@@ -55,3 +55,17 @@ workflows:
               only: ci
           requires:
             - test
+  deploy-uat:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only: uat
+      - deploy:
+          context:
+            - UAT
+          filters:
+            branches:
+              only: uat
+          requires:
+            - test
