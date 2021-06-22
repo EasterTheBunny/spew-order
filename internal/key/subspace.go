@@ -33,7 +33,10 @@ type pathspace struct {
 }
 
 func (p pathspace) Sub(el ...TupleElement) Subspace {
-	b := concat(p.Bytes(), []byte("/")...)
+	b := p.Bytes()
+	if len(b) > 0 {
+		b = concat(b, []byte("/")...)
+	}
 	return pathspace{concat(b, Tuple(el).Pack()...)}
 }
 
@@ -42,7 +45,10 @@ func (p pathspace) Bytes() []byte {
 }
 
 func (p pathspace) Pack(t Tuple) Key {
-	b := concat(p.path, []byte("/")...)
+	b := p.path
+	if len(b) > 0 {
+		b = concat(p.path, []byte("/")...)
+	}
 	return Key(concat(b, t.Pack()...))
 }
 
