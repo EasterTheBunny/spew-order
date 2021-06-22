@@ -65,6 +65,7 @@ version: 1`)
 }
 
 func TestCoinbaseGetTime(t *testing.T) {
+	t.Skip()
 	s := &coinbaseSource{
 		baseURL: "https://api.coinbase.com",
 		client: &http.Client{
