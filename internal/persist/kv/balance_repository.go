@@ -72,7 +72,7 @@ func (b *BalanceRepository) FindHolds() (holds []*persist.BalanceItem, err error
 		var bts []byte
 		bts, err = b.kvstore.Get(at.Name)
 		if err != nil {
-			err = fmt.Errorf("Balace::FindHolds -- %w", err)
+			err = fmt.Errorf("Balance::FindHolds -- %w", err)
 			return
 		}
 

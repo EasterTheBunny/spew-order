@@ -75,3 +75,11 @@ func NewWebhookRouter(kvstore persist.KVStore, f funding.Source) *WebhookRouter 
 
 	return &WebhookRouter{Funding: NewFundingHandler(a, l, f)}
 }
+
+func NewAuditRouter(kvstore persist.KVStore) *AuditRouter {
+	a := kv.NewAccountRepository(kvstore)
+	u := kv.NewAuthorizationRepository(kvstore)
+	l := kv.NewLedgerRepository(kvstore)
+
+	return &AuditRouter{Audit: NewAuditHandler(a, u, l)}
+}

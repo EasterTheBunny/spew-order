@@ -13,7 +13,6 @@ import (
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
-	"github.com/easterthebunny/spew-order/pkg/types"
 	"github.com/go-chi/chi"
 )
 
@@ -34,6 +33,7 @@ func main() {
 	}
 
 	wh := handlers.NewWebhookRouter(kvstore, f)
+	ah := handlers.NewAuditRouter(kvstore)
 
 	wg := new(sync.WaitGroup)
 
@@ -45,15 +45,16 @@ func main() {
 		host := "0.0.0.0:8080"
 		log.Printf("starting api listener on %s", host)
 
-		uni := func(api http.Handler, webhook http.Handler) http.Handler {
+		uni := func(api http.Handler, webhook http.Handler, audit http.Handler) http.Handler {
 			r := chi.NewRouter()
 			r.Mount("/api", api)
 			r.Mount("/webhook", webhook)
+			r.Mount("/tools", audit)
 			return r
 		}
 
 		l, _ := net.Listen("tcp", host)
-		srv := &http.Server{Handler: uni(rh.Routes(), wh.Routes())}
+		srv := &http.Server{Handler: uni(rh.Routes(), wh.Routes(), ah.Routes())}
 
 		err := srv.Serve(l)
 		if err != nil {
@@ -68,16 +69,24 @@ func main() {
 		log.Println("starting pubsub listener")
 		for {
 			m := <-subscription
-			var order types.Order
-			if err := json.Unmarshal(m.Data, &order); err != nil {
+			var om domain.OrderMessage
+			if err := json.Unmarshal(m.Data, &om); err != nil {
 				log.Printf("error: %s", err)
 				continue
 			}
 
-			if err := book.ExecuteOrInsertOrder(order); err != nil {
-				log.Printf("error: %s", err)
-				continue
+			if om.Action == domain.CancelOrderMessageType {
+				if err := book.CancelOrder(om.Order); err != nil {
+					log.Printf("error: %s", err)
+					continue
+				}
+			} else if om.Action == domain.OpenOrderMessageType {
+				if err := book.ExecuteOrInsertOrder(om.Order); err != nil {
+					log.Printf("error: %s", err)
+					continue
+				}
 			}
+
 		}
 	}()
 

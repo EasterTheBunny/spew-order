@@ -106,6 +106,7 @@ func (bi *BalanceItem) Decode(b []byte, enc EncodingType) error {
 // AuthorizationRepository ...
 type AuthorizationRepository interface {
 	GetAuthorization(Key) (*Authorization, error)
+	GetAuthorizations() ([]*Authorization, error)
 	SetAuthorization(*Authorization) error
 	DeleteAuthorization(*Authorization) error
 }
@@ -233,7 +234,32 @@ func (t *Transaction) Decode(b []byte, enc EncodingType) error {
 	return decode(b, enc, t)
 }
 
+type AccountType int
+
+const (
+	Liability AccountType = iota
+	Asset
+)
+
+type LedgerAccount int
+
+const (
+	Cash LedgerAccount = iota
+	Sales
+	TransfersPayable
+	Transfers
+)
+
+type EntryType int
+
+const (
+	Credit EntryType = iota
+	Debit
+)
+
 type LedgerEntry struct {
+	Account   LedgerAccount   `json:"account"`
+	Entry     EntryType       `json:"entry"`
 	Symbol    types.Symbol    `json:"symbol"`
 	Amount    decimal.Decimal `json:"amount"`
 	Timestamp NanoTime        `json:"timestamp"`
@@ -252,6 +278,10 @@ type LedgerRepository interface {
 	RecordDeposit(types.Symbol, decimal.Decimal) error
 	// RecordTransfer saves a transfer from the exchange in the main ledger
 	RecordTransfer(types.Symbol, decimal.Decimal) error
+	// GetLiabilityBalance ...
+	GetLiabilityBalance(a LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
+	// GetAssetBalance ...
+	GetAssetBalance(a LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
 	// RecordFee saves a fee paid from a completed order in the main ledger
 	RecordFee(types.Symbol, decimal.Decimal) error
 }

@@ -58,9 +58,14 @@ func accountKey(id persist.Key) string {
 	return accountSubspace(nil).Pack(key.Tuple{id.String()}).String()
 }
 
+func authzSubspace() key.Subspace {
+	// /root/authz
+	return gsRoot.Sub(authzSub)
+}
+
 func authzKey(id persist.Key) string {
 	// /root/authz/{authzid}
-	return gsRoot.Sub(authzSub).Pack(key.Tuple{id.String()}).String()
+	return authzSubspace().Pack(key.Tuple{id.String()}).String()
 }
 
 func transactionSubspace(acct persist.Account) key.Subspace {

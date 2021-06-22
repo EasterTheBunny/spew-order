@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"math/rand"
 	"net"
@@ -300,19 +301,24 @@ func (gs *GoogleKVStore) Delete(sKey string) error {
 // NewMockKVStore ...
 func NewMockKVStore() *MockKVStore {
 	return &MockKVStore{
-		data: make(map[string][]byte),
-		meta: make(map[string]*KVStoreObjectAttrs)}
+		data:     make(map[string][]byte),
+		meta:     make(map[string]*KVStoreObjectAttrs),
+		logLevel: 0}
 }
 
 // MockKVStore ...
 type MockKVStore struct {
-	key  []string
-	data map[string][]byte
-	meta map[string]*KVStoreObjectAttrs
+	key      []string
+	data     map[string][]byte
+	meta     map[string]*KVStoreObjectAttrs
+	logLevel int
 }
 
 // Get ...
 func (gsm *MockKVStore) Get(key string) ([]byte, error) {
+	if gsm.logLevel > 0 {
+		log.Printf("GET %s", key)
+	}
 	if _, ok := gsm.data[key]; !ok {
 		return []byte{}, ErrObjectNotExist
 	}
@@ -320,6 +326,9 @@ func (gsm *MockKVStore) Get(key string) ([]byte, error) {
 }
 
 func (gsm *MockKVStore) Attrs(key string) (a *KVStoreObjectAttrs, err error) {
+	if gsm.logLevel > 0 {
+		log.Printf("ATTRS %s", key)
+	}
 	a, ok := gsm.meta[key]
 	if !ok {
 		err = ErrObjectNotExist
@@ -329,7 +338,9 @@ func (gsm *MockKVStore) Attrs(key string) (a *KVStoreObjectAttrs, err error) {
 
 // Set ...
 func (gsm *MockKVStore) Set(key string, b []byte, attrs *KVStoreObjectAttrsToUpdate) error {
-
+	if gsm.logLevel > 0 {
+		log.Printf("SET %s", key)
+	}
 	sAttrs := &KVStoreObjectAttrs{
 		Name:    key,
 		Created: time.Now(),
@@ -358,6 +369,9 @@ func (gsm *MockKVStore) Set(key string, b []byte, attrs *KVStoreObjectAttrsToUpd
 
 // Delete ...
 func (gsm *MockKVStore) Delete(key string) error {
+	if gsm.logLevel > 0 {
+		log.Printf("DELETE %s", key)
+	}
 	for i, k := range gsm.key {
 		if k == key {
 			gsm.key = append(gsm.key[:i], gsm.key[i+1:]...)
@@ -380,6 +394,9 @@ func (gsm *MockKVStore) RangeGet(q *KVStoreQuery, limit int) (attrs []*KVStoreOb
 
 	if q.StartOffset != "" {
 		qry = q.StartOffset
+	}
+	if gsm.logLevel > 0 {
+		log.Printf("RANGE_GET %s", qry)
 	}
 
 	for _, k := range gsm.key {

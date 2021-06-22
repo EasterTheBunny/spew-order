@@ -265,7 +265,7 @@ func (h *AccountHandler) AccountCtx(bm *domain.BalanceManager) func(http.Handler
 				// look for the account in storage and create the account if it doesn't exist
 				ctxAccount, err = bm.GetAccount(accountID)
 				if err != nil {
-					render.Render(w, r, HTTPInternalServerError(err))
+					render.Render(w, r, HTTPInternalServerError(fmt.Errorf("AccountCtx::%w", err)))
 					return
 				}
 			} else {

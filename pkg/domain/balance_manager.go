@@ -40,7 +40,9 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 	a.ID = uid
 
 	dirty := false
-	p, err := m.acct.Find(context.Background(), a.ID)
+
+	var p *persist.Account
+	p, err = m.acct.Find(context.Background(), a.ID)
 
 	// create the account if it wasn't found
 	if err != nil {
@@ -58,8 +60,10 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 	}
 
 	// TODO: very inefficient method of collecting account balances; refactor
+	var bal decimal.Decimal
+	var addr *funding.Address
 	for _, s := range a.ActiveSymbols() {
-		bal, err := m.GetAvailableBalance(a, s)
+		bal, err = m.GetAvailableBalance(a, s)
 		if err != nil {
 			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return nil, err
@@ -70,7 +74,7 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 		// check for funding address; if it doesn't exist of that symbol or it
 		// is blank, create a new one
 		if x, ok := a.Addresses[s]; !ok || x == "" {
-			addr, err := m.funding.CreateAddress(s)
+			addr, err = m.funding.CreateAddress(s)
 			if err == nil {
 				dirty = true
 				a.Addresses[s] = addr.Hash
@@ -86,7 +90,7 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 
 	// only save the value once; protect against rapid back to back updates
 	if dirty {
-		err := m.acct.Save(context.Background(), p)
+		err = m.acct.Save(context.Background(), p)
 		if err != nil {
 			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return nil, err
@@ -392,7 +396,7 @@ func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
 	filled = false
 	// post amounts to balance and transactions list for account b
 	for _, order := range t.Filled {
-		if order.ID.String() == t.A.Order.ID.String() {
+		if order.ID.String() == t.B.Order.ID.String() {
 			filled = true
 		}
 	}

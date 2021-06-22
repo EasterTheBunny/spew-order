@@ -3,6 +3,7 @@ package kv
 import (
 	"fmt"
 
+	"github.com/easterthebunny/spew-order/internal/key"
 	"github.com/easterthebunny/spew-order/internal/persist"
 )
 
@@ -32,6 +33,37 @@ func (a *AuthorizationRepository) GetAuthorization(id persist.Key) (authz *persi
 	err = authz.Decode(b, encodingFromStr(attr.ContentEncoding))
 	if err != nil {
 		return
+	}
+
+	return
+}
+
+func (a *AuthorizationRepository) GetAuthorizations() (authz []*persist.Authorization, err error) {
+
+	q := persist.KVStoreQuery{
+		StartOffset: authzSubspace().Pack(key.Tuple{}).String(),
+	}
+
+	attr, err := a.kvstore.RangeGet(&q, 0)
+	if err != nil {
+		return
+	}
+
+	for _, at := range attr {
+		var bts []byte
+		bts, err = a.kvstore.Get(at.Name)
+		if err != nil {
+			err = fmt.Errorf("Authorization::GetAll -- %w", err)
+			return
+		}
+
+		auth := &persist.Authorization{}
+		err = auth.Decode(bts, encodingFromStr(at.ContentEncoding))
+		if err != nil {
+			return
+		}
+
+		authz = append(authz, auth)
 	}
 
 	return

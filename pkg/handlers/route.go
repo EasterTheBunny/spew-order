@@ -101,3 +101,19 @@ func (wr *WebhookRouter) Routes() http.Handler {
 
 	return r
 }
+
+type AuditRouter struct {
+	Audit *AuditHandler
+}
+
+func (ar *AuditRouter) Routes() http.Handler {
+
+	r := chi.NewRouter()
+
+	// set CORS headers early and short circuit the response loop
+	r.Use(middleware.SetCORSHeaders)
+
+	r.Get("/audit", ar.Audit.AuditBalances())
+
+	return r
+}
