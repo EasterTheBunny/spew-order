@@ -28,11 +28,33 @@ func (s subspace) Pack(t Tuple) Key {
 	return Key(concat(s.rawPrefix, t.Pack()...))
 }
 
+type pathspace struct {
+	path []byte
+}
+
+func (p pathspace) Sub(el ...TupleElement) Subspace {
+	b := concat(p.Bytes(), []byte("/")...)
+	return pathspace{concat(b, Tuple(el).Pack()...)}
+}
+
+func (p pathspace) Bytes() []byte {
+	return p.path
+}
+
+func (p pathspace) Pack(t Tuple) Key {
+	b := concat(p.path, []byte("/")...)
+	return Key(concat(b, t.Pack()...))
+}
+
 // FromBytes returns a new Subspace from the provided bytes.
 func FromBytes(b []byte) Subspace {
 	s := make([]byte, len(b))
 	copy(s, b)
 	return subspace{s}
+}
+
+func NewPath() Subspace {
+	return pathspace{[]byte{}}
 }
 
 func concat(a []byte, b ...byte) []byte {
