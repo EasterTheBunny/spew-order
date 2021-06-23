@@ -25,14 +25,16 @@ type AuthenticationProvider interface {
 func AuthorizationCtx(as persist.AuthorizationRepository, p AuthenticationProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
-			a, err := as.GetAuthorization(authKey(p.Subject()))
+			ctx := r.Context()
+
+			a, err := as.GetAuthorization(ctx, authKey(p.Subject()))
 
 			if err == persist.ErrObjectNotExist {
 				acc := domain.NewAccount()
 				a = persist.NewAuthorization(persist.Account{ID: acc.ID.String()})
 
 				p.UpdateAuthz(a)
-				err = as.SetAuthorization(a)
+				err = as.SetAuthorization(ctx, a)
 			}
 
 			if err != nil {
@@ -40,7 +42,7 @@ func AuthorizationCtx(as persist.AuthorizationRepository, p AuthenticationProvid
 				panic(err)
 			}
 
-			ctx := contexts.AttachAuthorization(r.Context(), *a)
+			ctx = contexts.AttachAuthorization(ctx, *a)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 

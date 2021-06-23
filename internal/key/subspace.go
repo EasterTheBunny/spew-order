@@ -3,6 +3,7 @@ package key
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
 // Subspace ...
@@ -37,7 +38,9 @@ func (p pathspace) Sub(el ...TupleElement) Subspace {
 	if len(b) > 0 {
 		b = concat(b, []byte("/")...)
 	}
-	return pathspace{concat(b, Tuple(el).Pack()...)}
+	build := &strings.Builder{}
+	simplePrint(Tuple(el), build)
+	return pathspace{concat(b, []byte(build.String())...)}
 }
 
 func (p pathspace) Bytes() []byte {
@@ -49,7 +52,9 @@ func (p pathspace) Pack(t Tuple) Key {
 	if len(b) > 0 {
 		b = concat(p.path, []byte("/")...)
 	}
-	return Key(concat(b, t.Pack()...))
+	build := &strings.Builder{}
+	simplePrint(t, build)
+	return Key(concat(b, []byte(build.String())...))
 }
 
 // FromBytes returns a new Subspace from the provided bytes.

@@ -58,7 +58,7 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 		return
 	}
 
-	acct, err := o.balance.GetAccount(aID)
+	acct, err := o.balance.GetAccount(ctx, aID)
 	if err != nil {
 		return
 	}
@@ -75,14 +75,14 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 		return
 	}
 
-	holdid, err := o.balance.SetHoldOnAccount(acct, symbol, hold)
+	holdid, err := o.balance.SetHoldOnAccount(ctx, acct, symbol, hold)
 	if err != nil {
 		return
 	}
 
 	or.HoldID = holdid
 
-	order, err = o.balance.CreateOrder(acct, or)
+	order, err = o.balance.CreateOrder(ctx, acct, or)
 	if err != nil {
 		return
 	}

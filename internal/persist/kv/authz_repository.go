@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/easterthebunny/spew-order/internal/key"
@@ -15,7 +16,7 @@ func NewAuthorizationRepository(store persist.KVStore) *AuthorizationRepository 
 	return &AuthorizationRepository{kvstore: store}
 }
 
-func (a *AuthorizationRepository) GetAuthorization(id persist.Key) (authz *persist.Authorization, err error) {
+func (a *AuthorizationRepository) GetAuthorization(ctx context.Context, id persist.Key) (authz *persist.Authorization, err error) {
 
 	k := authzKey(id)
 
@@ -38,7 +39,7 @@ func (a *AuthorizationRepository) GetAuthorization(id persist.Key) (authz *persi
 	return
 }
 
-func (a *AuthorizationRepository) GetAuthorizations() (authz []*persist.Authorization, err error) {
+func (a *AuthorizationRepository) GetAuthorizations(ctx context.Context) (authz []*persist.Authorization, err error) {
 
 	q := persist.KVStoreQuery{
 		StartOffset: authzSubspace().Pack(key.Tuple{}).String(),
@@ -69,7 +70,7 @@ func (a *AuthorizationRepository) GetAuthorizations() (authz []*persist.Authoriz
 	return
 }
 
-func (a *AuthorizationRepository) SetAuthorization(authz *persist.Authorization) error {
+func (a *AuthorizationRepository) SetAuthorization(ctx context.Context, authz *persist.Authorization) error {
 
 	if authz == nil {
 		return fmt.Errorf("%w for authorization", persist.ErrCannotSaveNilValue)
@@ -91,7 +92,7 @@ func (a *AuthorizationRepository) SetAuthorization(authz *persist.Authorization)
 	return nil
 }
 
-func (a *AuthorizationRepository) DeleteAuthorization(authz *persist.Authorization) error {
+func (a *AuthorizationRepository) DeleteAuthorization(ctx context.Context, authz *persist.Authorization) error {
 
 	if authz == nil {
 		return fmt.Errorf("%w for authorization", persist.ErrCannotSaveNilValue)

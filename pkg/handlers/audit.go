@@ -35,7 +35,8 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 			accountBalances[s] = decimal.NewFromInt(0)
 		}
 
-		auths, err = h.auths.GetAuthorizations()
+		ctx := r.Context()
+		auths, err = h.auths.GetAuthorizations(ctx)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
@@ -49,7 +50,7 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 					br := h.accounts.Balances(a, s)
 
 					var bal decimal.Decimal
-					bal, err = br.GetBalance()
+					bal, err = br.GetBalance(ctx)
 					if err != nil {
 						render.Render(w, r, HTTPInternalServerError(err))
 						return
@@ -58,7 +59,7 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 					accountBalances[s] = accountBalances[s].Add(bal)
 
 					var bi []*persist.BalanceItem
-					bi, err = br.FindPosts()
+					bi, err = br.FindPosts(ctx)
 					if err != nil {
 						render.Render(w, r, HTTPInternalServerError(err))
 						return
@@ -74,12 +75,12 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 		aBal := make(map[types.Symbol]decimal.Decimal)
 		lBal := make(map[types.Symbol]decimal.Decimal)
 
-		transferAssets, err := h.ledger.GetAssetBalance(persist.Transfers)
+		transferAssets, err := h.ledger.GetAssetBalance(ctx, persist.Transfers)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
-		payableLiabilities, err := h.ledger.GetLiabilityBalance(persist.TransfersPayable)
+		payableLiabilities, err := h.ledger.GetLiabilityBalance(ctx, persist.TransfersPayable)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
@@ -123,12 +124,12 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 			}
 		}
 
-		cashAssets, err := h.ledger.GetAssetBalance(persist.Cash)
+		cashAssets, err := h.ledger.GetAssetBalance(ctx, persist.Cash)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
-		salesLiabilities, err := h.ledger.GetLiabilityBalance(persist.Sales)
+		salesLiabilities, err := h.ledger.GetLiabilityBalance(ctx, persist.Sales)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return

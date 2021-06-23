@@ -19,11 +19,12 @@ import (
 )
 
 type AccountHandler struct {
-	repo persist.AccountRepository
+	repo      persist.AccountRepository
+	paramFunc func(*http.Request, string) string
 }
 
 func NewAccountHandler(r persist.AccountRepository) *AccountHandler {
-	return &AccountHandler{repo: r}
+	return &AccountHandler{repo: r, paramFunc: chi.URLParam}
 }
 
 func (h *AccountHandler) GetAccounts() func(w http.ResponseWriter, r *http.Request) {
@@ -84,10 +85,11 @@ func (h *AccountHandler) GetAccountOrder() func(w http.ResponseWriter, r *http.R
 
 func (h *AccountHandler) GetAccountOrders() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		acct := contexts.GetAccount(r.Context())
+		ctx := r.Context()
+		acct := contexts.GetAccount(ctx)
 		or := h.repo.Orders(&persist.Account{ID: acct.ID.String()})
 
-		list, err := or.GetOrdersByStatus(persist.StatusOpen, persist.StatusPartial, persist.StatusFilled, persist.StatusCanceled)
+		list, err := or.GetOrdersByStatus(ctx, persist.StatusOpen, persist.StatusPartial, persist.StatusFilled, persist.StatusCanceled)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
@@ -110,7 +112,8 @@ func (h *AccountHandler) GetAccountOrders() func(w http.ResponseWriter, r *http.
 // PostTransaction ...
 func (h *AccountHandler) PostTransaction(b *domain.BalanceManager) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		acct := contexts.GetAccount(r.Context())
+		ctx := r.Context()
+		acct := contexts.GetAccount(ctx)
 
 		if acct == nil {
 			render.Render(w, r, HTTPInternalServerError(errors.New("incorrect route structure")))
@@ -147,7 +150,7 @@ func (h *AccountHandler) PostTransaction(b *domain.BalanceManager) func(w http.R
 			return
 		}
 
-		tr, err := b.WithdrawFunds(acct, smb, amt, in.Address)
+		tr, err := b.WithdrawFunds(ctx, acct, smb, amt, in.Address)
 		if err != nil {
 			if errors.Is(domain.ErrInsufficientBalanceForHold, err) {
 				render.Render(w, r, HTTPConflict(err))
@@ -177,10 +180,11 @@ func (h *AccountHandler) PostTransaction(b *domain.BalanceManager) func(w http.R
 
 func (h *AccountHandler) GetAccountTransactions() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		acct := contexts.GetAccount(r.Context())
+		ctx := r.Context()
+		acct := contexts.GetAccount(ctx)
 		tr := h.repo.Transactions(&persist.Account{ID: acct.ID.String()})
 
-		list, err := tr.GetTransactions()
+		list, err := tr.GetTransactions(ctx)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
@@ -211,7 +215,9 @@ func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
 			var err error
 			var id uuid.UUID
 
-			acct := contexts.GetAccount(r.Context())
+			ctx := r.Context()
+
+			acct := contexts.GetAccount(ctx)
 
 			if orderID := chi.URLParam(r, api.OrderPathParamName); orderID != "" {
 
@@ -222,7 +228,7 @@ func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
 				}
 
 				or := h.repo.Orders(&persist.Account{ID: acct.ID.String()})
-				ctxOrder, err = or.GetOrder(id)
+				ctxOrder, err = or.GetOrder(ctx, id)
 				if err != nil {
 					render.Render(w, r, HTTPInternalServerError(err))
 					return
@@ -232,13 +238,17 @@ func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := contexts.AttachOrder(r.Context(), *ctxOrder)
+			ctx = contexts.AttachOrder(ctx, *ctxOrder)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-func (h *AccountHandler) AccountCtx(bm *domain.BalanceManager) func(http.Handler) http.Handler {
+func (h *AccountHandler) urlParam(r *http.Request, name string) string {
+	return chi.URLParam(r, name)
+}
+
+func (h *AccountHandler) AccountCtx(bm *domain.BalanceManager, paramFunc func(*http.Request, string) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var ctxAccount *domain.Account
@@ -256,14 +266,14 @@ func (h *AccountHandler) AccountCtx(bm *domain.BalanceManager) func(http.Handler
 				return
 			}
 
-			if accountID := chi.URLParam(r, api.AccountPathParamName); accountID != "" {
+			if accountID := paramFunc(r, api.AccountPathParamName); accountID != "" {
 				if accountID != availableID {
 					render.Render(w, r, HTTPUnauthorized(errors.New("invalid authorization to access this account")))
 					return
 				}
 
 				// look for the account in storage and create the account if it doesn't exist
-				ctxAccount, err = bm.GetAccount(accountID)
+				ctxAccount, err = bm.GetAccount(r.Context(), accountID)
 				if err != nil {
 					render.Render(w, r, HTTPInternalServerError(fmt.Errorf("AccountCtx::%w", err)))
 					return

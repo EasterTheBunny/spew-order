@@ -65,7 +65,7 @@ func TestPublishOrderRequest(t *testing.T) {
 	// PublishOrder should place hold on account, publish to pubsub, and return an id
 	t.Run("Success", func(t *testing.T) {
 		// set an initial amount in the account that is equal to the next order
-		svc.PostAmtToBalance(acct, types.SymbolBitcoin, decimal.NewFromFloat(1.0))
+		svc.PostAmtToBalance(ctx, acct, types.SymbolBitcoin, decimal.NewFromFloat(1.0))
 
 		or := types.OrderRequest{
 			Base:   types.SymbolBitcoin,
@@ -96,7 +96,7 @@ func TestPublishOrderRequest(t *testing.T) {
 	// the hold from the previous run should still be active and register this run as an error
 	t.Run("InsufficientFunds", func(t *testing.T) {
 		// set an initial amount in the account that is less than the next order
-		svc.PostAmtToBalance(acct, types.SymbolBitcoin, decimal.NewFromFloat(1.0))
+		svc.PostAmtToBalance(ctx, acct, types.SymbolBitcoin, decimal.NewFromFloat(1.0))
 
 		or := types.OrderRequest{
 			Base:   types.SymbolBitcoin,

@@ -3,18 +3,20 @@ package handlers
 import (
 	"io"
 
+	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/middleware"
 	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/internal/persist/firebase"
 	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 )
 
-func NewGoogleOrderBook(kvstore persist.KVStore, f funding.Source) *domain.OrderBook {
+func NewGoogleOrderBook(kvstore persist.KVStore, client *firestore.Client, f funding.Source) *domain.OrderBook {
 	br := kv.NewBookRepository(kvstore)
-	a := kv.NewAccountRepository(kvstore)
-	l := kv.NewLedgerRepository(kvstore)
+	a := firebase.NewAccountRepository(client)
+	l := firebase.NewLedgerRepository(client)
 	bs := domain.NewBalanceManager(a, l, f)
 	return domain.NewOrderBook(br, bs)
 }
@@ -53,13 +55,13 @@ func NewFundingSource(t string, apiKey, apiSecret *string, audit io.Writer, pubk
 	}
 }
 
-func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.AuthenticationProvider, f funding.Source) (*Router, error) {
-	a := kv.NewAccountRepository(kvstore)
-	l := kv.NewLedgerRepository(kvstore)
+func NewDefaultRouter(kvstore persist.KVStore, client *firestore.Client, ps queue.PubSub, pr middleware.AuthenticationProvider, f funding.Source) (*Router, error) {
+	a := firebase.NewAccountRepository(client)
+	l := firebase.NewLedgerRepository(client)
 	bs := domain.NewBalanceManager(a, l, f)
 
 	r := Router{
-		AuthStore: kv.NewAuthorizationRepository(kvstore),
+		AuthStore: firebase.NewAuthorizationRepository(client),
 		Balance:   bs,
 		AuthProv:  pr,
 		Orders:    NewOrderHandler(queue.NewOrderQueue(ps, bs)),
@@ -69,17 +71,17 @@ func NewDefaultRouter(kvstore persist.KVStore, ps queue.PubSub, pr middleware.Au
 	return &r, nil
 }
 
-func NewWebhookRouter(kvstore persist.KVStore, f funding.Source) *WebhookRouter {
-	a := kv.NewAccountRepository(kvstore)
-	l := kv.NewLedgerRepository(kvstore)
+func NewWebhookRouter(client *firestore.Client, f funding.Source) *WebhookRouter {
+	a := firebase.NewAccountRepository(client)
+	l := firebase.NewLedgerRepository(client)
 
 	return &WebhookRouter{Funding: NewFundingHandler(a, l, f)}
 }
 
-func NewAuditRouter(kvstore persist.KVStore) *AuditRouter {
-	a := kv.NewAccountRepository(kvstore)
-	u := kv.NewAuthorizationRepository(kvstore)
-	l := kv.NewLedgerRepository(kvstore)
+func NewAuditRouter(client *firestore.Client) *AuditRouter {
+	a := firebase.NewAccountRepository(client)
+	u := firebase.NewAuthorizationRepository(client)
+	l := firebase.NewLedgerRepository(client)
 
 	return &AuditRouter{Audit: NewAuditHandler(a, u, l)}
 }

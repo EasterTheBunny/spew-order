@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ func TestOrders(t *testing.T) {
 		ID: id.String(),
 	}
 	or := NewOrderRepository(s, account)
+	ctx := context.Background()
 
 	inserts := []*persist.Order{
 		{
@@ -125,7 +127,7 @@ func TestOrders(t *testing.T) {
 
 	t.Run("Set", func(t *testing.T) {
 		for _, item := range inserts {
-			err := or.SetOrder(item)
+			err := or.SetOrder(ctx, item)
 			assert.NoError(t, err)
 		}
 
@@ -134,19 +136,19 @@ func TestOrders(t *testing.T) {
 
 	t.Run("Get", func(t *testing.T) {
 		for _, item := range inserts {
-			o, err := or.GetOrder(item.Base.ID)
+			o, err := or.GetOrder(ctx, item.Base.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, item.Status, o.Status, "order status must match")
 		}
 	})
 
 	t.Run("Update", func(t *testing.T) {
-		err := or.UpdateOrderStatus(inserts[len(inserts)-1].Base.ID, persist.StatusOpen, []string{})
+		err := or.UpdateOrderStatus(ctx, inserts[len(inserts)-1].Base.ID, persist.StatusOpen, []string{})
 		assert.NoError(t, err)
 	})
 
 	t.Run("GetByStatus", func(t *testing.T) {
-		orders, err := or.GetOrdersByStatus(persist.StatusOpen, persist.StatusCanceled)
+		orders, err := or.GetOrdersByStatus(ctx, persist.StatusOpen, persist.StatusCanceled)
 		assert.NoError(t, err)
 		assert.Len(t, orders, 3)
 	})

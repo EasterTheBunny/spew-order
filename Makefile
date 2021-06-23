@@ -27,6 +27,9 @@ openapi:
 build: openapi
 	go build -o $(GOBIN)/$(API) ./cmd/$(API)/*.go || exit
 
+build-google-storage-test:
+	go build -o $(GOBIN)/tools/google-storage-test ./cmd/tools/google-storage-test/*.go || exit
+
 build-all: fmt test build
 
 run: build-all

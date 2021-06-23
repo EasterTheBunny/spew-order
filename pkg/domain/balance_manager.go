@@ -30,7 +30,7 @@ type BalanceManager struct {
 
 // GetAccount searches the persistance layer for an account. If one doesn't
 // exist, it creates one.
-func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
+func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account, err error) {
 
 	a = NewAccount()
 	uid, err := uuid.FromString(id)
@@ -42,7 +42,7 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 	dirty := false
 
 	var p *persist.Account
-	p, err = m.acct.Find(context.Background(), a.ID)
+	p, err = m.acct.Find(ctx, a.ID)
 
 	// create the account if it wasn't found
 	if err != nil {
@@ -63,9 +63,9 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 	var bal decimal.Decimal
 	var addr *funding.Address
 	for _, s := range a.ActiveSymbols() {
-		bal, err = m.GetAvailableBalance(a, s)
+		bal, err = m.GetAvailableBalance(ctx, a, s)
 		if err != nil {
-			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
+			err = fmt.Errorf("BalanceManager::GetAccount.GetAvailableBalance::%w", err)
 			return nil, err
 		}
 
@@ -83,16 +83,16 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 
 			// log errors instead of bubbling them up
 			if err != nil {
-				log.Printf("BalanceManager::GetAccount::%s", err)
+				log.Printf("BalanceManager::GetAccount.CreateAddress::%s", err)
 			}
 		}
 	}
 
 	// only save the value once; protect against rapid back to back updates
 	if dirty {
-		err = m.acct.Save(context.Background(), p)
+		err = m.acct.Save(ctx, p)
 		if err != nil {
-			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
+			err = fmt.Errorf("BalanceManager::GetAccount.Save::%w", err)
 			return nil, err
 		}
 	}
@@ -101,17 +101,17 @@ func (m *BalanceManager) GetAccount(id string) (a *Account, err error) {
 }
 
 // GetAvailableBalance returns the total spendable balance for a single Symbol and includes all active holds
-func (m *BalanceManager) GetAvailableBalance(a *Account, s types.Symbol) (balance decimal.Decimal, err error) {
+func (m *BalanceManager) GetAvailableBalance(ctx context.Context, a *Account, s types.Symbol) (balance decimal.Decimal, err error) {
 
 	acct := &persist.Account{ID: a.ID.String()}
-	r := m.acct.Balances(acct, s)
-	balance, err = m.GetPostedBalance(a, s)
+	balance, err = m.GetPostedBalance(ctx, a, s)
 	if err != nil {
 		err = fmt.Errorf("BalanceManager::GetAvailableBalance::%w", err)
 		return
 	}
 
-	h, err := r.FindHolds()
+	r := m.acct.Balances(acct, s)
+	h, err := r.FindHolds(ctx)
 	if err != nil {
 		err = fmt.Errorf("BalanceManager::GetAvailableBalance::%w", err)
 		return
@@ -128,17 +128,17 @@ func (m *BalanceManager) GetAvailableBalance(a *Account, s types.Symbol) (balanc
 // returns both a balance and/or an error. Because multiple threads could call this
 // function at the same time, one will succeed and one will fail however a failure
 // will still return a balance but the balance may not be accurate.
-func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance decimal.Decimal, err error) {
+func (m *BalanceManager) GetPostedBalance(ctx context.Context, a *Account, s types.Symbol) (balance decimal.Decimal, err error) {
 
 	acct := &persist.Account{ID: a.ID.String()}
 	r := m.acct.Balances(acct, s)
-	balance, err = r.GetBalance()
+	balance, err = r.GetBalance(ctx)
 	if err != nil {
 		err = fmt.Errorf("BalanceManager.GetPostedBalance::%w", err)
 		return
 	}
 
-	p, err := r.FindPosts()
+	p, err := r.FindPosts(ctx)
 	if err != nil {
 		err = fmt.Errorf("BalanceManager.GetPostedBalance::%w", err)
 		return
@@ -151,7 +151,7 @@ func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance d
 		balance = balance.Add(post.Amount)
 		changeBal = changeBal.Add(post.Amount)
 
-		err = r.DeletePost(post)
+		err = r.DeletePost(ctx, post)
 		if err != nil {
 			changeBal = changeBal.Sub(post.Amount)
 		}
@@ -159,7 +159,7 @@ func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance d
 
 	// update the balance if posts were found
 	if len(p) > 0 {
-		err = r.UpdateBalance(balance)
+		err = r.UpdateBalance(ctx, balance)
 		if err != nil {
 
 			// at this point, the balance has not been updated
@@ -168,7 +168,7 @@ func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance d
 			// re-add the amount of all deleted posts
 
 			newPost := persist.NewBalanceItem(changeBal)
-			err = r.CreatePost(newPost)
+			err = r.CreatePost(ctx, newPost)
 			return
 		}
 	}
@@ -179,22 +179,22 @@ func (m *BalanceManager) GetPostedBalance(a *Account, s types.Symbol) (balance d
 // SetHoldOnAccount places a hold on the account and Symbol specified
 // in the case of an insufficient balance, the hold will be removed and
 // an error returned.
-func (m *BalanceManager) SetHoldOnAccount(a *Account, s types.Symbol, amt decimal.Decimal) (holdid string, err error) {
+func (m *BalanceManager) SetHoldOnAccount(ctx context.Context, a *Account, s types.Symbol, amt decimal.Decimal) (holdid string, err error) {
 
 	acct := &persist.Account{ID: a.ID.String()}
 	r := m.acct.Balances(acct, s)
 	newHold := persist.NewBalanceItem(amt)
-	err = r.CreateHold(newHold)
+	err = r.CreateHold(ctx, newHold)
 	if err != nil {
 		return
 	}
 
-	balance, err := m.GetPostedBalance(a, s)
+	balance, err := m.GetPostedBalance(ctx, a, s)
 	if err != nil {
 		return
 	}
 
-	activeHolds, err := r.FindHolds()
+	activeHolds, err := r.FindHolds(ctx)
 	if err != nil {
 		return
 	}
@@ -211,7 +211,7 @@ func (m *BalanceManager) SetHoldOnAccount(a *Account, s types.Symbol, amt decima
 
 	if balance.LessThan(decimal.NewFromInt(0)) {
 
-		err = r.DeleteHold(ky(newHold.ID))
+		err = r.DeleteHold(ctx, ky(newHold.ID))
 		if err != nil {
 			return
 		}
@@ -224,30 +224,30 @@ func (m *BalanceManager) SetHoldOnAccount(a *Account, s types.Symbol, amt decima
 	return
 }
 
-func (m *BalanceManager) UpdateHoldOnAccount(a *Account, s types.Symbol, amt decimal.Decimal, id persist.Key) error {
+func (m *BalanceManager) UpdateHoldOnAccount(ctx context.Context, a *Account, s types.Symbol, amt decimal.Decimal, id persist.Key) error {
 
 	acct := &persist.Account{ID: a.ID.String()}
 	r := m.acct.Balances(acct, s)
 
-	return r.UpdateHold(id, amt)
+	return r.UpdateHold(ctx, id, amt)
 }
 
-func (m *BalanceManager) RemoveHoldOnAccount(a *Account, s types.Symbol, id persist.Key) error {
+func (m *BalanceManager) RemoveHoldOnAccount(ctx context.Context, a *Account, s types.Symbol, id persist.Key) error {
 
 	acct := &persist.Account{ID: a.ID.String()}
 	r := m.acct.Balances(acct, s)
 
-	return r.DeleteHold(id)
+	return r.DeleteHold(ctx, id)
 }
 
 // PostAmtToBalance places a balance change record on the account and Symbol provided
 // does not roll posting up to the balance and is a thread safe operation.
-func (m *BalanceManager) PostAmtToBalance(a *Account, s types.Symbol, amt decimal.Decimal) error {
+func (m *BalanceManager) PostAmtToBalance(ctx context.Context, a *Account, s types.Symbol, amt decimal.Decimal) error {
 
 	acct := &persist.Account{ID: a.ID.String()}
 	r := m.acct.Balances(acct, s)
 	newPost := persist.NewBalanceItem(amt)
-	err := r.CreatePost(newPost)
+	err := r.CreatePost(ctx, newPost)
 	if err != nil {
 		return err
 	}
@@ -255,9 +255,9 @@ func (m *BalanceManager) PostAmtToBalance(a *Account, s types.Symbol, amt decima
 	return nil
 }
 
-func (m *BalanceManager) WithdrawFunds(a *Account, s types.Symbol, amt decimal.Decimal, hash string) (t *persist.Transaction, err error) {
+func (m *BalanceManager) WithdrawFunds(ctx context.Context, a *Account, s types.Symbol, amt decimal.Decimal, hash string) (t *persist.Transaction, err error) {
 
-	hid, err := m.SetHoldOnAccount(a, s, amt)
+	hid, err := m.SetHoldOnAccount(ctx, a, s, amt)
 	if err != nil {
 		return
 	}
@@ -273,12 +273,12 @@ func (m *BalanceManager) WithdrawFunds(a *Account, s types.Symbol, amt decimal.D
 		return
 	}
 
-	err = m.PostAmtToBalance(a, s, amt.Mul(decimal.NewFromInt(-1)))
+	err = m.PostAmtToBalance(ctx, a, s, amt.Mul(decimal.NewFromInt(-1)))
 	if err != nil {
 		return
 	}
 
-	err = m.RemoveHoldOnAccount(a, s, ky(hid))
+	err = m.RemoveHoldOnAccount(ctx, a, s, ky(hid))
 	if err != nil {
 		return
 	}
@@ -293,12 +293,12 @@ func (m *BalanceManager) WithdrawFunds(a *Account, s types.Symbol, amt decimal.D
 		Quantity:        amt.Mul(decimal.NewFromInt(-1)).StringFixedBank(s.RoundingPlace()),
 		Timestamp:       tm,
 	}
-	err = trepo.SetTransaction(t)
+	err = trepo.SetTransaction(ctx, t)
 	if err != nil {
 		return
 	}
 
-	err = m.ledger.RecordTransfer(s, amt)
+	err = m.ledger.RecordTransfer(ctx, s, amt)
 	if err != nil {
 		return
 	}
@@ -306,22 +306,23 @@ func (m *BalanceManager) WithdrawFunds(a *Account, s types.Symbol, amt decimal.D
 	return
 }
 
-func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decimal.Decimal) error {
-	a, err := m.acct.Find(context.Background(), id)
+func (m *BalanceManager) FundAccountByID(ctx context.Context, id uuid.UUID, s types.Symbol, amt decimal.Decimal) error {
+
+	a, err := m.acct.Find(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	r := m.acct.Balances(a, s)
 	newPost := persist.NewBalanceItem(amt)
-	err = r.CreatePost(newPost)
+	err = r.CreatePost(ctx, newPost)
 	if err != nil {
 		return err
 	}
 
 	var tm = persist.NanoTime(time.Now())
 	trepo := m.acct.Transactions(a)
-	err = trepo.SetTransaction(&persist.Transaction{
+	err = trepo.SetTransaction(ctx, &persist.Transaction{
 		Type:      persist.DepositTransactionType,
 		Symbol:    s.String(),
 		Quantity:  amt.StringFixedBank(s.RoundingPlace()),
@@ -331,7 +332,7 @@ func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decim
 		return err
 	}
 
-	err = m.ledger.RecordDeposit(s, amt)
+	err = m.ledger.RecordDeposit(ctx, s, amt)
 	if err != nil {
 		return err
 	}
@@ -339,22 +340,23 @@ func (m *BalanceManager) FundAccountByID(id uuid.UUID, s types.Symbol, amt decim
 	return nil
 }
 
-func (m *BalanceManager) FundAccountByAddress(hash string, transaction string, s types.Symbol, amt decimal.Decimal) error {
-	a, err := m.acct.FindByAddress(context.Background(), hash, s)
+func (m *BalanceManager) FundAccountByAddress(ctx context.Context, hash string, transaction string, s types.Symbol, amt decimal.Decimal) error {
+
+	a, err := m.acct.FindByAddress(ctx, hash, s)
 	if err != nil {
 		return err
 	}
 
 	r := m.acct.Balances(a, s)
 	newPost := persist.NewBalanceItem(amt)
-	err = r.CreatePost(newPost)
+	err = r.CreatePost(ctx, newPost)
 	if err != nil {
 		return err
 	}
 
 	var tm = persist.NanoTime(time.Now())
 	trepo := m.acct.Transactions(a)
-	err = trepo.SetTransaction(&persist.Transaction{
+	err = trepo.SetTransaction(ctx, &persist.Transaction{
 		Type:            persist.DepositTransactionType,
 		TransactionHash: transaction,
 		AddressHash:     hash,
@@ -366,7 +368,7 @@ func (m *BalanceManager) FundAccountByAddress(hash string, transaction string, s
 		return err
 	}
 
-	err = m.ledger.RecordDeposit(s, amt)
+	err = m.ledger.RecordDeposit(ctx, s, amt)
 	if err != nil {
 		return err
 	}
@@ -376,7 +378,7 @@ func (m *BalanceManager) FundAccountByAddress(hash string, transaction string, s
 
 // PostTransactionToBalance creates balance updates and transaction records in the appropriate
 // accounts and adds fee payments to the general ledger
-func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
+func (m *BalanceManager) PostTransactionToBalance(ctx context.Context, t *types.Transaction) error {
 
 	var err error
 	var tm = time.Now()
@@ -388,7 +390,7 @@ func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
 			filled = true
 		}
 	}
-	err = m.makeOrderRecords(t.A, tm, filled)
+	err = m.makeOrderRecords(ctx, t.A, tm, filled)
 	if err != nil {
 		return err
 	}
@@ -400,7 +402,7 @@ func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
 			filled = true
 		}
 	}
-	err = m.makeOrderRecords(t.B, tm, filled)
+	err = m.makeOrderRecords(ctx, t.B, tm, filled)
 	if err != nil {
 		return err
 	}
@@ -408,14 +410,14 @@ func (m *BalanceManager) PostTransactionToBalance(t *types.Transaction) error {
 	return nil
 }
 
-func (m *BalanceManager) makeOrderRecords(entry types.BalanceEntry, t time.Time, filled bool) error {
+func (m *BalanceManager) makeOrderRecords(ctx context.Context, entry types.BalanceEntry, t time.Time, filled bool) error {
 
 	var err error
 	var tm = persist.NanoTime(t)
 
 	// post amounts to balance and transactions list for account a
 	a := &Account{ID: entry.AccountID}
-	err = m.PostAmtToBalance(a, entry.AddSymbol, entry.AddQuantity)
+	err = m.PostAmtToBalance(ctx, a, entry.AddSymbol, entry.AddQuantity)
 	if err != nil {
 		return err
 	}
@@ -426,7 +428,7 @@ func (m *BalanceManager) makeOrderRecords(entry types.BalanceEntry, t time.Time,
 
 	acct := &persist.Account{ID: a.ID.String()}
 	trepo := m.acct.Transactions(acct)
-	err = trepo.SetTransaction(&persist.Transaction{
+	err = trepo.SetTransaction(ctx, &persist.Transaction{
 		Type:      persist.OrderTransactionType,
 		OrderID:   entry.Order.ID.String(),
 		Symbol:    entry.AddSymbol.String(),
@@ -438,12 +440,12 @@ func (m *BalanceManager) makeOrderRecords(entry types.BalanceEntry, t time.Time,
 		return err
 	}
 
-	err = m.PostAmtToBalance(a, entry.SubSymbol, entry.SubQuantity.Mul(decimal.NewFromInt(-1)))
+	err = m.PostAmtToBalance(ctx, a, entry.SubSymbol, entry.SubQuantity.Mul(decimal.NewFromInt(-1)))
 	if err != nil {
 		return err
 	}
 
-	err = trepo.SetTransaction(&persist.Transaction{
+	err = trepo.SetTransaction(ctx, &persist.Transaction{
 		Type:      persist.OrderTransactionType,
 		OrderID:   entry.Order.ID.String(),
 		Symbol:    entry.SubSymbol.String(),
@@ -455,7 +457,7 @@ func (m *BalanceManager) makeOrderRecords(entry types.BalanceEntry, t time.Time,
 		return err
 	}
 
-	err = m.ledger.RecordFee(entry.AddSymbol, entry.FeeQuantity)
+	err = m.ledger.RecordFee(ctx, entry.AddSymbol, entry.FeeQuantity)
 	if err != nil {
 		return err
 	}
@@ -468,7 +470,7 @@ func (m *BalanceManager) makeOrderRecords(entry types.BalanceEntry, t time.Time,
 		stat = persist.StatusFilled
 	}
 
-	err = orepo.UpdateOrderStatus(entry.Order.ID, stat, []string{tm.String(), qFee, qAdd, qSub})
+	err = orepo.UpdateOrderStatus(ctx, entry.Order.ID, stat, []string{tm.String(), qFee, qAdd, qSub})
 	if err != nil {
 		return err
 	}
@@ -477,17 +479,17 @@ func (m *BalanceManager) makeOrderRecords(entry types.BalanceEntry, t time.Time,
 }
 
 // CreateOrder inserts an order into the provided account as an open order
-func (m *BalanceManager) CreateOrder(a *Account, req types.OrderRequest) (types.Order, error) {
+func (m *BalanceManager) CreateOrder(ctx context.Context, a *Account, req types.OrderRequest) (types.Order, error) {
 	rep := m.acct.Orders(&persist.Account{ID: a.ID.String()})
 
 	order := types.NewOrderFromRequest(req)
-	err := rep.SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+	err := rep.SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
 
 	return order, err
 }
 
 // CancelOrder cancels an order and removes any associated holds
-func (m *BalanceManager) CancelOrder(order types.Order) error {
+func (m *BalanceManager) CancelOrder(ctx context.Context, order types.Order) error {
 	var err error
 
 	rep := m.acct.Orders(&persist.Account{ID: order.Account.String()})
@@ -495,14 +497,14 @@ func (m *BalanceManager) CancelOrder(order types.Order) error {
 		return errors.New("CancelOrder: unknown order acount")
 	}
 
-	err = rep.UpdateOrderStatus(order.ID, persist.StatusCanceled, []string{})
+	err = rep.UpdateOrderStatus(context.Background(), order.ID, persist.StatusCanceled, []string{})
 	if err != nil {
 		err = fmt.Errorf("CancelOrder::OrderRepository::%w", err)
 		return err
 	}
 
 	smb, _ := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-	err = m.RemoveHoldOnAccount(&Account{ID: order.Account}, smb, ky(order.HoldID))
+	err = m.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 	if err != nil {
 		err = fmt.Errorf("CancelOrder::RemoveHoldOnAccount::%w", err)
 		return err

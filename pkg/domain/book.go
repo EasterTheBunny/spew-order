@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"context"
+
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
@@ -14,7 +16,7 @@ func NewOrderBook(br persist.BookRepository, bm *BalanceManager) *OrderBook {
 	return &OrderBook{bir: br, bm: bm}
 }
 
-func (ob *OrderBook) CancelOrder(order types.Order) error {
+func (ob *OrderBook) CancelOrder(ctx context.Context, order types.Order) error {
 	item := persist.NewBookItem(order)
 
 	ok, err := ob.bir.BookItemExists(&item)
@@ -30,7 +32,7 @@ func (ob *OrderBook) CancelOrder(order types.Order) error {
 			return err
 		}
 
-		err = ob.bm.CancelOrder(order)
+		err = ob.bm.CancelOrder(ctx, order)
 		if err != nil {
 			return err
 		}
@@ -44,7 +46,7 @@ func (ob *OrderBook) CancelOrder(order types.Order) error {
 // ExecuteOrInsertOrder takes an order and matches it from top down in the order
 // book. This process will create account balance updates and update/delete
 // account holds. It assumes holds exist and will return an error if they don't.
-func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
+func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order) error {
 	item := persist.NewBookItem(order)
 
 	ok, err := ob.bir.BookItemExists(&item)
@@ -81,7 +83,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 				// since a transaction exists, save it
 				// this should update balances for each applicable account and
 				// before any book items or holds are removed
-				err = ob.pairOrders(tr)
+				err = ob.pairOrders(ctx, tr)
 				if err != nil {
 					return err
 				}
@@ -98,14 +100,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 						// update the account hold for the book order to
 						// match the new order amount
 						smb, amt := o.Type.HoldAmount(o.Action, o.Base, o.Target)
-						err = ob.bm.UpdateHoldOnAccount(&Account{ID: o.Account}, smb, amt, ky(o.HoldID))
+						err = ob.bm.UpdateHoldOnAccount(ctx, &Account{ID: o.Account}, smb, amt, ky(o.HoldID))
 						if err != nil {
 							return err
 						}
 
 						// remove hold on incoming order since that order is filled
 						smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
-						err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, smb, ky(order.HoldID))
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 						if err != nil {
 							return err
 						}
@@ -124,14 +126,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 						// update the account hold for the incoming order to
 						// match the new order amount
 						smb, amt := o.Type.HoldAmount(order.Action, order.Base, order.Target)
-						err = ob.bm.UpdateHoldOnAccount(&Account{ID: order.Account}, smb, amt, ky(order.HoldID))
+						err = ob.bm.UpdateHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt, ky(order.HoldID))
 						if err != nil {
 							return err
 						}
 
 						// remove hold on book order since that order is filled
 						smb, _ = book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
-						err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 						if err != nil {
 							return err
 						}
@@ -148,14 +150,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 				if o == nil {
 					// remove hold on book order since that order is filled
 					smb, _ := book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
-					err = ob.bm.RemoveHoldOnAccount(&Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 					if err != nil {
 						return err
 					}
 
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
-					err = ob.bm.RemoveHoldOnAccount(&Account{ID: order.Account}, smb, ky(order.HoldID))
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 					if err != nil {
 						return err
 					}
@@ -175,8 +177,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(order types.Order) error {
 	}
 }
 
-func (ob *OrderBook) pairOrders(tr *types.Transaction) error {
-	return ob.bm.PostTransactionToBalance(tr)
+func (ob *OrderBook) pairOrders(ctx context.Context, tr *types.Transaction) error {
+	return ob.bm.PostTransactionToBalance(ctx, tr)
 }
 
 type ky string

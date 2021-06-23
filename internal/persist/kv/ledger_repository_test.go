@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"testing"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -13,16 +14,17 @@ func TestRecordDeposit(t *testing.T) {
 	s := persist.NewMockKVStore()
 	r := NewLedgerRepository(s)
 	b := types.SymbolBitcoin
+	ctx := context.Background()
 
 	var err error
-	err = r.RecordDeposit(b, decimal.NewFromFloat(0.3))
+	err = r.RecordDeposit(ctx, b, decimal.NewFromFloat(0.3))
 	assert.NoError(t, err)
 
 	var m map[types.Symbol]decimal.Decimal
 	var v decimal.Decimal
 	var ok bool
 
-	m, err = r.GetAssetBalance(persist.Transfers)
+	m, err = r.GetAssetBalance(ctx, persist.Transfers)
 	assert.NoError(t, err)
 
 	v, ok = m[types.SymbolBitcoin]
@@ -32,7 +34,7 @@ func TestRecordDeposit(t *testing.T) {
 		assert.Equal(t, "0.30000000", v.StringFixedBank(b.RoundingPlace()))
 	}
 
-	m, err = r.GetLiabilityBalance(persist.TransfersPayable)
+	m, err = r.GetLiabilityBalance(ctx, persist.TransfersPayable)
 	assert.NoError(t, err)
 
 	v, ok = m[types.SymbolBitcoin]
@@ -47,16 +49,17 @@ func TestRecordTransfer(t *testing.T) {
 	s := persist.NewMockKVStore()
 	r := NewLedgerRepository(s)
 	b := types.SymbolBitcoin
+	ctx := context.Background()
 
 	var err error
-	err = r.RecordTransfer(b, decimal.NewFromFloat(0.3))
+	err = r.RecordTransfer(ctx, b, decimal.NewFromFloat(0.3))
 	assert.NoError(t, err)
 
 	var m map[types.Symbol]decimal.Decimal
 	var v decimal.Decimal
 	var ok bool
 
-	m, err = r.GetAssetBalance(persist.Transfers)
+	m, err = r.GetAssetBalance(ctx, persist.Transfers)
 	assert.NoError(t, err)
 
 	v, ok = m[types.SymbolBitcoin]
@@ -66,7 +69,7 @@ func TestRecordTransfer(t *testing.T) {
 		assert.Equal(t, "-0.30000000", v.StringFixedBank(b.RoundingPlace()))
 	}
 
-	m, err = r.GetLiabilityBalance(persist.TransfersPayable)
+	m, err = r.GetLiabilityBalance(ctx, persist.TransfersPayable)
 	assert.NoError(t, err)
 
 	v, ok = m[types.SymbolBitcoin]
@@ -86,24 +89,26 @@ func TestIntegratedLedger(t *testing.T) {
 	startETH := decimal.NewFromInt(20)
 	startBTC := decimal.NewFromInt(2)
 
+	ctx := context.Background()
+
 	var err error
 
-	err = r.RecordDeposit(eth, startETH)
+	err = r.RecordDeposit(ctx, eth, startETH)
 	assert.NoError(t, err)
 
-	err = r.RecordDeposit(btc, startBTC)
+	err = r.RecordDeposit(ctx, btc, startBTC)
 	assert.NoError(t, err)
 
-	err = r.RecordFee(btc, decimal.NewFromFloat(0.00002500))
+	err = r.RecordFee(ctx, btc, decimal.NewFromFloat(0.00002500))
 	assert.NoError(t, err)
 
-	err = r.RecordFee(eth, decimal.NewFromFloat(0.00075000))
+	err = r.RecordFee(ctx, eth, decimal.NewFromFloat(0.00075000))
 	assert.NoError(t, err)
 
-	err = r.RecordFee(btc, decimal.NewFromFloat(0.00001050))
+	err = r.RecordFee(ctx, btc, decimal.NewFromFloat(0.00001050))
 	assert.NoError(t, err)
 
-	err = r.RecordFee(eth, decimal.NewFromFloat(0.00210000))
+	err = r.RecordFee(ctx, eth, decimal.NewFromFloat(0.00210000))
 	assert.NoError(t, err)
 
 	type symbs struct {
@@ -139,9 +144,9 @@ func TestIntegratedLedger(t *testing.T) {
 
 		switch test.typ {
 		case "asset":
-			mp, err = r.GetAssetBalance(test.act)
+			mp, err = r.GetAssetBalance(ctx, test.act)
 		case "liability":
-			mp, err = r.GetLiabilityBalance(test.act)
+			mp, err = r.GetLiabilityBalance(ctx, test.act)
 		}
 
 		assert.NoError(t, err)

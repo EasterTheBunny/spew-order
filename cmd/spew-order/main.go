@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
@@ -19,21 +21,27 @@ import (
 func main() {
 
 	log.Println("starting service")
+
+	client, err := firestore.NewClient(context.Background(), "")
+	if err != nil {
+		panic(err)
+	}
+
 	kvstore := persist.NewMockKVStore()
 	f := handlers.NewFundingSource("MOCK", nil, nil, nil, nil)
-	book := handlers.NewGoogleOrderBook(kvstore, f)
+	book := handlers.NewGoogleOrderBook(kvstore, client, f)
 	ps := queue.NewMockPubSub()
 	jwt := &mockJWTAuth{}
 	subscription := make(chan domain.PubSubMessage)
 	ps.Subscribe(queue.OrderTopic, subscription)
 
-	rh, err := handlers.NewDefaultRouter(kvstore, ps, jwt, f)
+	rh, err := handlers.NewDefaultRouter(kvstore, client, ps, jwt, f)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	wh := handlers.NewWebhookRouter(kvstore, f)
-	ah := handlers.NewAuditRouter(kvstore)
+	wh := handlers.NewWebhookRouter(client, f)
+	ah := handlers.NewAuditRouter(client)
 
 	wg := new(sync.WaitGroup)
 
@@ -76,12 +84,12 @@ func main() {
 			}
 
 			if om.Action == domain.CancelOrderMessageType {
-				if err := book.CancelOrder(om.Order); err != nil {
+				if err := book.CancelOrder(context.Background(), om.Order); err != nil {
 					log.Printf("error: %s", err)
 					continue
 				}
 			} else if om.Action == domain.OpenOrderMessageType {
-				if err := book.ExecuteOrInsertOrder(om.Order); err != nil {
+				if err := book.ExecuteOrInsertOrder(context.Background(), om.Order); err != nil {
 					log.Printf("error: %s", err)
 					continue
 				}

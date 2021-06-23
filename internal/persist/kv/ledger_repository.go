@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -22,7 +23,7 @@ var _ persist.LedgerRepository = &LedgerRepository{}
 
 // RecordDeposit is run for the case when a new customer sends funds to their account.
 // This makes a credit in a Transfers Payable account and a debit in a Transfers account.
-func (r *LedgerRepository) RecordDeposit(s types.Symbol, amt decimal.Decimal) error {
+func (r *LedgerRepository) RecordDeposit(ctx context.Context, s types.Symbol, amt decimal.Decimal) error {
 	entry := &persist.LedgerEntry{
 		Symbol:    s,
 		Amount:    amt,
@@ -44,7 +45,7 @@ func (r *LedgerRepository) RecordDeposit(s types.Symbol, amt decimal.Decimal) er
 	return r.record(entry, key2)
 }
 
-func (r *LedgerRepository) RecordTransfer(s types.Symbol, amt decimal.Decimal) error {
+func (r *LedgerRepository) RecordTransfer(ctx context.Context, s types.Symbol, amt decimal.Decimal) error {
 
 	entry := &persist.LedgerEntry{
 		Symbol:    s,
@@ -67,7 +68,7 @@ func (r *LedgerRepository) RecordTransfer(s types.Symbol, amt decimal.Decimal) e
 	return r.record(entry, key2)
 }
 
-func (r *LedgerRepository) GetLiabilityBalance(a persist.LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error) {
+func (r *LedgerRepository) GetLiabilityBalance(ctx context.Context, a persist.LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error) {
 	balances = make(map[types.Symbol]decimal.Decimal)
 
 	q := persist.KVStoreQuery{
@@ -109,7 +110,7 @@ func (r *LedgerRepository) GetLiabilityBalance(a persist.LedgerAccount) (balance
 	return
 }
 
-func (r *LedgerRepository) GetAssetBalance(a persist.LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error) {
+func (r *LedgerRepository) GetAssetBalance(ctx context.Context, a persist.LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error) {
 
 	balances = make(map[types.Symbol]decimal.Decimal)
 
@@ -152,7 +153,7 @@ func (r *LedgerRepository) GetAssetBalance(a persist.LedgerAccount) (balances ma
 	return
 }
 
-func (r *LedgerRepository) RecordFee(s types.Symbol, amt decimal.Decimal) error {
+func (r *LedgerRepository) RecordFee(ctx context.Context, s types.Symbol, amt decimal.Decimal) error {
 
 	entry := &persist.LedgerEntry{
 		Symbol:    s,

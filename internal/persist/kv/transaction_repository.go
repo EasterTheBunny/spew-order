@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/easterthebunny/spew-order/internal/key"
@@ -16,7 +17,7 @@ func NewTransactionRepository(store persist.KVStore, account *persist.Account) *
 	return &TransactionRepository{kvstore: store, account: account}
 }
 
-func (tr *TransactionRepository) SetTransaction(t *persist.Transaction) error {
+func (tr *TransactionRepository) SetTransaction(ctx context.Context, t *persist.Transaction) error {
 	if t == nil {
 		return fmt.Errorf("%w for transaction", persist.ErrCannotSaveNilValue)
 	}
@@ -35,7 +36,7 @@ func (tr *TransactionRepository) SetTransaction(t *persist.Transaction) error {
 	return tr.kvstore.Set(transactionKey(*tr.account, *t), b, &attrs)
 }
 
-func (tr *TransactionRepository) GetTransactions() (t []*persist.Transaction, err error) {
+func (tr *TransactionRepository) GetTransactions(ctx context.Context) (t []*persist.Transaction, err error) {
 
 	q := persist.KVStoreQuery{
 		StartOffset: transactionSubspace(*tr.account).Pack(key.Tuple{}).String()}

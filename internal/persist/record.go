@@ -68,15 +68,15 @@ func (a *Account) Decode(b []byte, enc EncodingType) error {
 }
 
 type BalanceRepository interface {
-	GetBalance() (decimal.Decimal, error)
-	UpdateBalance(decimal.Decimal) error
-	FindHolds() ([]*BalanceItem, error)
-	CreateHold(*BalanceItem) error
-	DeleteHold(Key) error
-	UpdateHold(Key, decimal.Decimal) error
-	FindPosts() ([]*BalanceItem, error)
-	CreatePost(*BalanceItem) error
-	DeletePost(*BalanceItem) error
+	GetBalance(context.Context) (decimal.Decimal, error)
+	UpdateBalance(context.Context, decimal.Decimal) error
+	FindHolds(context.Context) ([]*BalanceItem, error)
+	CreateHold(context.Context, *BalanceItem) error
+	DeleteHold(context.Context, Key) error
+	UpdateHold(context.Context, Key, decimal.Decimal) error
+	FindPosts(context.Context) ([]*BalanceItem, error)
+	CreatePost(context.Context, *BalanceItem) error
+	DeletePost(context.Context, *BalanceItem) error
 }
 
 type BalanceItem struct {
@@ -105,20 +105,20 @@ func (bi *BalanceItem) Decode(b []byte, enc EncodingType) error {
 
 // AuthorizationRepository ...
 type AuthorizationRepository interface {
-	GetAuthorization(Key) (*Authorization, error)
-	GetAuthorizations() ([]*Authorization, error)
-	SetAuthorization(*Authorization) error
-	DeleteAuthorization(*Authorization) error
+	GetAuthorization(context.Context, Key) (*Authorization, error)
+	GetAuthorizations(context.Context) ([]*Authorization, error)
+	SetAuthorization(context.Context, *Authorization) error
+	DeleteAuthorization(context.Context, *Authorization) error
 }
 
 // Authorization ...
 type Authorization struct {
-	ID       string   `json:"id"`
-	Username string   `json:"username"`
-	Email    string   `json:"email"`
-	Name     string   `json:"name"`
-	Avatar   string   `json:"avatar"`
-	Accounts []string `json:"accounts"`
+	ID       string   `json:"id" firestore:"id"`
+	Username string   `json:"username" firestore:"username"`
+	Email    string   `json:"email" firestore:"email"`
+	Name     string   `json:"name" firestore:"name"`
+	Avatar   string   `json:"avatar" firestore:"avatar"`
+	Accounts []string `json:"accounts" firestore:"accounts"`
 }
 
 // NewAuthorization returns a new auth with values set to defaults and a new
@@ -182,16 +182,16 @@ func (bi *BookItem) Decode(b []byte, enc EncodingType) error {
 }
 
 type OrderRepository interface {
-	GetOrder(Key) (*Order, error)
-	SetOrder(*Order) error
-	GetOrdersByStatus(...FillStatus) ([]*Order, error)
-	UpdateOrderStatus(Key, FillStatus, []string) error
+	GetOrder(context.Context, Key) (*Order, error)
+	SetOrder(context.Context, *Order) error
+	GetOrdersByStatus(context.Context, ...FillStatus) ([]*Order, error)
+	UpdateOrderStatus(context.Context, Key, FillStatus, []string) error
 }
 
 type Order struct {
-	Status       FillStatus  `json:"status"`
-	Transactions [][]string  `json:"transactions"`
-	Base         types.Order `json:"base"`
+	Status       FillStatus  `json:"status" firestore:"status"`
+	Transactions [][]string  `json:"transactions" firestore:"transactions"`
+	Base         types.Order `json:"base" firestore:"base"`
 }
 
 func (o Order) Encode(enc EncodingType) ([]byte, error) {
@@ -222,8 +222,8 @@ const (
 )
 
 type TransactionRepository interface {
-	SetTransaction(*Transaction) error
-	GetTransactions() ([]*Transaction, error)
+	SetTransaction(context.Context, *Transaction) error
+	GetTransactions(context.Context) ([]*Transaction, error)
 }
 
 func (t Transaction) Encode(enc EncodingType) ([]byte, error) {
@@ -275,15 +275,15 @@ func (e *LedgerEntry) Decode(b []byte, enc EncodingType) error {
 
 type LedgerRepository interface {
 	// RecordDeposit saves a transfer to the exchange in the main ledger
-	RecordDeposit(types.Symbol, decimal.Decimal) error
+	RecordDeposit(context.Context, types.Symbol, decimal.Decimal) error
 	// RecordTransfer saves a transfer from the exchange in the main ledger
-	RecordTransfer(types.Symbol, decimal.Decimal) error
+	RecordTransfer(context.Context, types.Symbol, decimal.Decimal) error
 	// GetLiabilityBalance ...
-	GetLiabilityBalance(a LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
+	GetLiabilityBalance(context.Context, LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
 	// GetAssetBalance ...
-	GetAssetBalance(a LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
+	GetAssetBalance(context.Context, LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
 	// RecordFee saves a fee paid from a completed order in the main ledger
-	RecordFee(types.Symbol, decimal.Decimal) error
+	RecordFee(context.Context, types.Symbol, decimal.Decimal) error
 }
 
 type FillStatus int

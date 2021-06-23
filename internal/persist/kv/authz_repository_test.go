@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"testing"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -14,6 +15,7 @@ func TestAuthorizationPersistence(t *testing.T) {
 	r := NewAuthorizationRepository(s)
 
 	id := uuid.NewV4()
+	ctx := context.Background()
 
 	expected := persist.Authorization{
 		ID:       id.String(),
@@ -25,10 +27,10 @@ func TestAuthorizationPersistence(t *testing.T) {
 	}
 
 	t.Run("Set/Get", func(t *testing.T) {
-		err := r.SetAuthorization(&expected)
+		err := r.SetAuthorization(ctx, &expected)
 		assert.NoError(t, err)
 
-		x, err := r.GetAuthorization(id)
+		x, err := r.GetAuthorization(ctx, id)
 		assert.NoError(t, err)
 
 		if x != nil {
@@ -41,10 +43,10 @@ func TestAuthorizationPersistence(t *testing.T) {
 	t.Run("Update", func(t *testing.T) {
 		expected.Username = "test9"
 
-		err := r.SetAuthorization(&expected)
+		err := r.SetAuthorization(ctx, &expected)
 		assert.NoError(t, err)
 
-		x, err := r.GetAuthorization(id)
+		x, err := r.GetAuthorization(ctx, id)
 		assert.NoError(t, err)
 
 		if x != nil {
@@ -55,10 +57,10 @@ func TestAuthorizationPersistence(t *testing.T) {
 	})
 
 	t.Run("Delete", func(t *testing.T) {
-		err := r.DeleteAuthorization(&expected)
+		err := r.DeleteAuthorization(ctx, &expected)
 		assert.NoError(t, err)
 
-		x, err := r.GetAuthorization(id)
+		x, err := r.GetAuthorization(ctx, id)
 		assert.Nil(t, x)
 		assert.ErrorIs(t, err, persist.ErrObjectNotExist)
 	})

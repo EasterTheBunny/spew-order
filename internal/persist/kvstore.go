@@ -3,6 +3,7 @@ package persist
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -71,6 +72,7 @@ type GoogleKVStore struct {
 
 // Get ...
 func (gs *GoogleKVStore) Get(sKey string) ([]byte, error) {
+	fmt.Printf("get key: %s\n", sKey)
 	ctx := context.Background()
 
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
@@ -78,7 +80,8 @@ func (gs *GoogleKVStore) Get(sKey string) ([]byte, error) {
 
 	rc, err := gs.client.Bucket(gs.bucket).Object(sKey).NewReader(ctx)
 	if err != nil {
-		if err == storage.ErrObjectNotExist {
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			fmt.Println("--- key doesn't exist")
 			err = ErrObjectNotExist
 		}
 		return []byte{}, err
@@ -121,6 +124,7 @@ func (gs *GoogleKVStore) Attrs(sKey string) (attrs *KVStoreObjectAttrs, err erro
 
 // Set ...
 func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrsToUpdate) error {
+	fmt.Printf("set key: %s\n", sKey)
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
 	defer cancel()
@@ -154,6 +158,7 @@ func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrs
 
 	err := doOp(gs.bucket, sKey)
 	for err != nil {
+		fmt.Println("exponential backoff")
 
 		if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
 			// exponential backoff

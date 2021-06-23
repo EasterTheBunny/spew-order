@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
@@ -64,20 +65,26 @@ func init() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	GS = handlers.NewGoogleOrderBook(kv, f)
+
+	client, err := firestore.NewClient(context.Background(), projectID)
+	if err != nil {
+		panic(err)
+	}
+
+	GS = handlers.NewGoogleOrderBook(kv, client, f)
 
 	jwt, err := handlers.NewJWTAuth(getEnvVar(envIdentityURI))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	rh, err := handlers.NewDefaultRouter(kv, ps, jwt, f)
+	rh, err := handlers.NewDefaultRouter(kv, client, ps, jwt, f)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	Router = rh.Routes()
-	Webhooks = handlers.NewWebhookRouter(kv, f).Routes()
+	Webhooks = handlers.NewWebhookRouter(client, f).Routes()
 }
 
 // RestAPI forwards all rest requests to the main API handler.
@@ -100,9 +107,9 @@ func OrderPubSub(ctx context.Context, m domain.PubSubMessage) error {
 	}
 
 	if msg.Action == domain.CancelOrderMessageType {
-		return GS.CancelOrder(msg.Order)
+		return GS.CancelOrder(ctx, msg.Order)
 	} else if msg.Action == domain.OpenOrderMessageType {
-		return GS.ExecuteOrInsertOrder(msg.Order)
+		return GS.ExecuteOrInsertOrder(ctx, msg.Order)
 	}
 
 	return nil

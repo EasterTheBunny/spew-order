@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -21,13 +22,14 @@ func TestBalances(t *testing.T) {
 	a := persist.Account{
 		ID: id.String(),
 	}
+	ctx := context.Background()
 
 	br := &BalanceRepository{kvstore: s, account: &a, symbol: m}
 	assert.NotNil(t, br)
 
 	t.Run("StartingZeroBalance", func(t *testing.T) {
 
-		v, err := br.GetBalance()
+		v, err := br.GetBalance(ctx)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting balance: %s", err.Error())
 		}
@@ -41,10 +43,10 @@ func TestBalances(t *testing.T) {
 	t.Run("UpdateBalance", func(t *testing.T) {
 
 		bal := decimal.NewFromFloat(10.288942)
-		err := br.UpdateBalance(bal)
+		err := br.UpdateBalance(ctx, bal)
 		assert.NoError(t, err)
 
-		v, err := br.GetBalance()
+		v, err := br.GetBalance(ctx)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting balance: %s", err.Error())
 		}
@@ -54,7 +56,7 @@ func TestBalances(t *testing.T) {
 
 	t.Run("StartingEmptyHolds", func(t *testing.T) {
 
-		holds, err := br.FindHolds()
+		holds, err := br.FindHolds(ctx)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting holds: %s", err.Error())
 		}
@@ -76,13 +78,13 @@ func TestBalances(t *testing.T) {
 			}
 			expected = append(expected, &hold)
 
-			err := br.CreateHold(&hold)
+			err := br.CreateHold(ctx, &hold)
 			if err != nil {
 				assert.FailNowf(t, "Error encountered saving hold: %s", err.Error())
 			}
 		}
 
-		holds, err := br.FindHolds()
+		holds, err := br.FindHolds(ctx)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting holds: %s", err.Error())
 		}
@@ -95,14 +97,14 @@ func TestBalances(t *testing.T) {
 
 		assert.Len(t, holds, len(expected))
 
-		err = br.DeleteHold(ky(expected[0].ID))
+		err = br.DeleteHold(ctx, ky(expected[0].ID))
 		if err != nil {
 			assert.FailNowf(t, "Error encountered deleting hold: %s", err.Error())
 		}
 
 		expected = expected[1:]
 
-		holds, err = br.FindHolds()
+		holds, err = br.FindHolds(ctx)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting holds: %s", err.Error())
 		}
@@ -123,27 +125,27 @@ func TestBalances(t *testing.T) {
 			}
 			expected = append(expected, &post)
 
-			err := br.CreatePost(&post)
+			err := br.CreatePost(ctx, &post)
 			if err != nil {
 				assert.FailNowf(t, "Error encountered saving post: %s", err.Error())
 			}
 		}
 
-		posts, err := br.FindPosts()
+		posts, err := br.FindPosts(ctx)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting posts: %s", err.Error())
 		}
 
 		assert.Len(t, posts, len(expected))
 
-		err = br.DeletePost(expected[0])
+		err = br.DeletePost(ctx, expected[0])
 		if err != nil {
 			assert.FailNowf(t, "Error encountered deleting post: %s", err.Error())
 		}
 
 		expected = expected[1:]
 
-		posts, err = br.FindPosts()
+		posts, err = br.FindPosts(ctx)
 		if err != nil {
 			assert.FailNowf(t, "Error encountered getting posts: %s", err.Error())
 		}

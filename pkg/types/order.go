@@ -185,6 +185,7 @@ type OrderType interface {
 	Name() string
 	FillWith(Order) (*Transaction, OrderType)
 	KeyTuple(ActionType) key.Tuple
+	KeyString(ActionType) string
 	HoldAmount(tp ActionType, base Symbol, target Symbol) (Symbol, decimal.Decimal)
 	String() string
 }
@@ -329,11 +330,16 @@ func (m MarketOrderType) Name() string {
 
 // KeyTuple ...
 func (m MarketOrderType) KeyTuple(t ActionType) key.Tuple {
+	return key.Tuple{m.KeyString(t)}
+}
+
+// KeyString ...
+func (m MarketOrderType) KeyString(t ActionType) string {
 	pr := decimal.NewFromInt(0)
 	if t == ActionTypeBuy {
 		pr = decimal.NewFromInt(SortSwitch)
 	}
-	return key.Tuple{pr.StringFixedBank(m.Base.RoundingPlace())}
+	return pr.StringFixedBank(m.Base.RoundingPlace())
 }
 
 // HoldAmount ...
@@ -492,11 +498,16 @@ func (l LimitOrderType) Name() string {
 
 // KeyTuple ...
 func (l LimitOrderType) KeyTuple(t ActionType) key.Tuple {
+	return key.Tuple{l.KeyString(t)}
+}
+
+// KeyString ...
+func (l LimitOrderType) KeyString(t ActionType) string {
 	pr := l.Price
 	if t == ActionTypeBuy {
 		pr = decimal.NewFromInt(SortSwitch).Sub(l.Price)
 	}
-	return key.Tuple{pr.StringFixedBank(l.Base.RoundingPlace())}
+	return pr.StringFixedBank(l.Base.RoundingPlace())
 }
 
 // HoldAmount ...
