@@ -22,7 +22,7 @@ func main() {
 
 	log.Println("starting service")
 
-	client, err := firestore.NewClient(context.Background(), "")
+	client, err := firestore.NewClient(context.Background(), "centering-rex-274623")
 	if err != nil {
 		panic(err)
 	}

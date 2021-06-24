@@ -29,7 +29,8 @@ func (a *AuthorizationRepository) GetAuthorization(ctx context.Context, id persi
 		return nil, err
 	}
 
-	err = dsnap.DataTo(authz)
+	var au persist.Authorization
+	err = dsnap.DataTo(&au)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			return nil, persist.ErrObjectNotExist
@@ -37,6 +38,8 @@ func (a *AuthorizationRepository) GetAuthorization(ctx context.Context, id persi
 
 		return nil, err
 	}
+
+	authz = &au
 
 	return
 }

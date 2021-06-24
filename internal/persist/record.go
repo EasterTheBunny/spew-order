@@ -241,6 +241,17 @@ const (
 	Asset
 )
 
+func (a AccountType) String() string {
+	switch a {
+	case Liability:
+		return "liabilities"
+	case Asset:
+		return "assets"
+	default:
+		return "unknown"
+	}
+}
+
 type LedgerAccount int
 
 const (
@@ -250,12 +261,38 @@ const (
 	Transfers
 )
 
+func (a LedgerAccount) String() string {
+	switch a {
+	case Cash:
+		return "cash"
+	case Sales:
+		return "sales"
+	case TransfersPayable:
+		return "transafers_payable"
+	case Transfers:
+		return "transfers"
+	default:
+		return "unknown"
+	}
+}
+
 type EntryType int
 
 const (
 	Credit EntryType = iota
 	Debit
 )
+
+func (e EntryType) String() string {
+	switch e {
+	case Credit:
+		return "credit"
+	case Debit:
+		return "debit"
+	default:
+		return "unknown"
+	}
+}
 
 type LedgerEntry struct {
 	Account   LedgerAccount   `json:"account"`
