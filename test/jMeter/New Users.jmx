@@ -60,12 +60,12 @@
       <hashTree/>
       <kg.apc.jmeter.threads.UltimateThreadGroup guiclass="kg.apc.jmeter.threads.UltimateThreadGroupGui" testclass="kg.apc.jmeter.threads.UltimateThreadGroup" testname="New Account Onboarding" enabled="true">
         <collectionProp name="ultimatethreadgroupdata">
-          <collectionProp name="-1000660374">
+          <collectionProp name="-999652946">
             <stringProp name="1598">20</stringProp>
             <stringProp name="48">0</stringProp>
-            <stringProp name="51">3</stringProp>
-            <stringProp name="1572">15</stringProp>
-            <stringProp name="50">2</stringProp>
+            <stringProp name="53">5</stringProp>
+            <stringProp name="1629">30</stringProp>
+            <stringProp name="53">5</stringProp>
           </collectionProp>
         </collectionProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
@@ -141,7 +141,7 @@
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
-          <stringProp name="HTTPSampler.domain">us-central1-centering-rex-274623.cloudfunctions.net</stringProp>
+          <stringProp name="HTTPSampler.domain">us-central1-ciphermtn-uat.cloudfunctions.net</stringProp>
           <stringProp name="HTTPSampler.port">443</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
@@ -209,9 +209,15 @@
           <stringProp name="HTTPSampler.response_timeout"></stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract Deposit Hashes" enabled="true">
-            <stringProp name="JSONPostProcessor.referenceNames">btc_hash,eth_hash</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.data.balances[0].funding,$.data.balances[1].funding</stringProp>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="BTC Hash Extractor" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">btc_hash</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.data.balances[?(@.symbol==&quot;BTC&quot;)].funding</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="ETH Hash Extractor" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">eth_hash</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.data.balances[?(@.symbol==&quot;ETH&quot;)].funding</stringProp>
             <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
           </JSONPostProcessor>
           <hashTree/>
@@ -263,7 +269,7 @@
             <stringProp name="HTTPSampler.protocol"></stringProp>
             <stringProp name="HTTPSampler.contentEncoding"></stringProp>
             <stringProp name="HTTPSampler.path">${webhookPath}/funding</stringProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -294,7 +300,7 @@
             <stringProp name="HTTPSampler.protocol"></stringProp>
             <stringProp name="HTTPSampler.contentEncoding"></stringProp>
             <stringProp name="HTTPSampler.path">${webhookPath}/funding</stringProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
             <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>

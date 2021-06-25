@@ -36,6 +36,7 @@ var (
 	GS       *domain.OrderBook
 	Router   http.Handler
 	Webhooks http.Handler
+	Audit    http.Handler
 )
 
 func init() {
@@ -85,6 +86,7 @@ func init() {
 
 	Router = rh.Routes()
 	Webhooks = handlers.NewWebhookRouter(client, f).Routes()
+	Audit = handlers.NewAuditRouter(client).Routes()
 }
 
 // RestAPI forwards all rest requests to the main API handler.
@@ -96,6 +98,11 @@ func RestAPI(w http.ResponseWriter, r *http.Request) {
 // for notices for all assets
 func FundingWebhooks(w http.ResponseWriter, r *http.Request) {
 	Webhooks.ServeHTTP(w, r)
+}
+
+// AuditAPI ...
+func AuditAPI(w http.ResponseWriter, r *http.Request) {
+	Audit.ServeHTTP(w, r)
 }
 
 // OrderPubSub consumes a Pub/Sub message.
