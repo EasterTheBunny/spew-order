@@ -60,7 +60,7 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 
 	iter := br.getClient(ctx).Collection("book").
 		Doc(market(item)).
-		Collection(item.Order.Action.String()).
+		Collection(item.ActionType.String()).
 		Where("sort_key", ">=", itemKey(item)).
 		Limit(limit).
 		Documents(ctx)
