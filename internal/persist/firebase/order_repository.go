@@ -95,10 +95,11 @@ func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
 
 func orderToDocument(order *persist.Order) map[string]interface{} {
 	base, _ := json.Marshal(order.Base)
+	tr, _ := json.Marshal(order.Transactions)
 
 	m := map[string]interface{}{
 		"status":       order.Status.String(),
-		"transactions": order.Transactions,
+		"transactions": tr,
 		"base":         base,
 	}
 
@@ -106,7 +107,19 @@ func orderToDocument(order *persist.Order) map[string]interface{} {
 }
 
 func documentToOrder(m map[string]interface{}) *persist.Order {
-	var order persist.Order
+	order := &persist.Order{}
 
-	return &order
+	if v, ok := m["status"]; ok {
+		order.Status.FromString(v.(string))
+	}
+
+	if v, ok := m["transactions"]; ok {
+		json.Unmarshal(v.([]byte), &order.Transactions)
+	}
+
+	if v, ok := m["base"]; ok {
+		json.Unmarshal(v.([]byte), &order.Base)
+	}
+
+	return order
 }

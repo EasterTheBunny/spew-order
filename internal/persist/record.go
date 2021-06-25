@@ -305,16 +305,34 @@ type EntryType int
 const (
 	Credit EntryType = iota
 	Debit
+	DefaultEntry
+)
+
+const (
+	CreditStr       = "credit"
+	DebitStr        = "debit"
+	DefaultEntryStr = "default"
 )
 
 func (e EntryType) String() string {
 	switch e {
 	case Credit:
-		return "credit"
+		return CreditStr
 	case Debit:
-		return "debit"
+		return CreditStr
 	default:
-		return "unknown"
+		return DefaultEntryStr
+	}
+}
+
+func (e *EntryType) FromString(s string) {
+	switch s {
+	case CreditStr:
+		*e = Credit
+	case DebitStr:
+		*e = Debit
+	default:
+		*e = DefaultEntry
 	}
 }
 
@@ -354,20 +372,44 @@ const (
 	StatusPartial
 	StatusFilled
 	StatusCanceled
+	StatusDefault
+)
+
+const (
+	StatusOpenStr     = "open"
+	StatusPartialStr  = "partial"
+	StatusFilledStr   = "filled"
+	StatusCanceledStr = "canceled"
+	StatusDefaultStr  = "default"
 )
 
 func (s FillStatus) String() string {
 	switch s {
 	case StatusOpen:
-		return "open"
+		return StatusOpenStr
 	case StatusPartial:
-		return "partial"
+		return StatusPartialStr
 	case StatusFilled:
-		return "filled"
+		return StatusFilledStr
 	case StatusCanceled:
-		return "canceled"
+		return StatusCanceledStr
 	default:
-		return "unknown"
+		return StatusDefaultStr
+	}
+}
+
+func (s *FillStatus) FromString(str string) {
+	switch str {
+	case StatusOpenStr:
+		*s = StatusOpen
+	case StatusPartialStr:
+		*s = StatusPartial
+	case StatusFilledStr:
+		*s = StatusFilled
+	case StatusCanceledStr:
+		*s = StatusCanceled
+	default:
+		*s = StatusDefault
 	}
 }
 

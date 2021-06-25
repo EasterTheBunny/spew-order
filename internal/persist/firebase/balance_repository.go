@@ -168,8 +168,7 @@ func documentToBalanceItem(doc map[string]interface{}) *persist.BalanceItem {
 	}
 
 	if v, ok := doc["timestamp"]; ok {
-		t := v.(int64)
-		item.Timestamp = persist.NanoTime(time.Unix(0, t))
+		item.Timestamp = persist.NanoTime(time.Unix(0, v.(int64)))
 	}
 
 	if v, ok := doc["amount"]; ok {

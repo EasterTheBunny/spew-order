@@ -16,7 +16,7 @@ func TestDocumentToEntry(t *testing.T) {
 		"entry":     "debit",
 		"symbol":    "BTC",
 		"amount":    "0.00438920",
-		"timestamp": 5000000000,
+		"timestamp": int64(5000000000),
 	}
 
 	expected := persist.LedgerEntry{
@@ -29,5 +29,9 @@ func TestDocumentToEntry(t *testing.T) {
 
 	entry := documentToEntry(doc)
 
-	assert.Equal(t, expected, *entry)
+	assert.Equal(t, expected.Account, entry.Account)
+	assert.Equal(t, expected.Entry, entry.Entry)
+	assert.Equal(t, expected.Symbol, entry.Symbol)
+	assert.Equal(t, expected.Amount.StringFixedBank(expected.Symbol.RoundingPlace()), entry.Amount.StringFixedBank(entry.Symbol.RoundingPlace()))
+	assert.Equal(t, expected.Timestamp.Value(), entry.Timestamp.Value())
 }
