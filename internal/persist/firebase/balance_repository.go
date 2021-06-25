@@ -2,6 +2,7 @@ package firebase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -126,12 +127,12 @@ func (b *BalanceRepository) getBalanceItems(ctx context.Context, collection *fir
 	var doc *firestore.DocumentSnapshot
 	for {
 		doc, err = iter.Next()
-		if err == iterator.Done {
-			err = nil
-			break
-		}
 		if err != nil {
-			return
+			if errors.Is(err, iterator.Done) {
+				err = nil
+			}
+
+			break
 		}
 
 		items = append(items, documentToBalanceItem(doc.Data()))

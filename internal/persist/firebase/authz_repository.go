@@ -2,6 +2,7 @@ package firebase
 
 import (
 	"context"
+	"errors"
 
 	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -49,12 +50,12 @@ func (a *AuthorizationRepository) GetAuthorizations(ctx context.Context) (authz 
 	var doc *firestore.DocumentSnapshot
 	for {
 		doc, err = iter.Next()
-		if err == iterator.Done {
-			err = nil
-			break
-		}
 		if err != nil {
-			return
+			if errors.Is(err, iterator.Done) {
+				err = nil
+			}
+
+			break
 		}
 
 		var item persist.Authorization

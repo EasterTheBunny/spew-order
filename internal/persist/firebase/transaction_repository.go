@@ -2,6 +2,7 @@ package firebase
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -35,11 +36,12 @@ func (tr *TransactionRepository) GetTransactions(ctx context.Context) (t []*pers
 	var doc *firestore.DocumentSnapshot
 	for {
 		doc, err = iter.Next()
-		if err == iterator.Done {
-			break
-		}
 		if err != nil {
-			return
+			if errors.Is(err, iterator.Done) {
+				err = nil
+			}
+
+			break
 		}
 
 		t = append(t, documentToTransaction(doc.Data()))

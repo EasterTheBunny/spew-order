@@ -3,6 +3,7 @@ package firebase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"cloud.google.com/go/firestore"
@@ -57,15 +58,18 @@ func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.F
 	var doc *firestore.DocumentSnapshot
 	for {
 		doc, err = iter.Next()
-		if err == iterator.Done {
-			break
-		}
 		if err != nil {
-			return
+			if errors.Is(err, iterator.Done) {
+				err = nil
+			}
+
+			break
 		}
 
 		orders = append(orders, documentToOrder(doc.Data()))
 	}
+
+	iter.Stop()
 	return
 }
 

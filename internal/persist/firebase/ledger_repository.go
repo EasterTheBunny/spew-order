@@ -3,6 +3,7 @@ package firebase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -78,12 +79,12 @@ func (r *LedgerRepository) GetLiabilityBalance(ctx context.Context, a persist.Le
 	var doc *firestore.DocumentSnapshot
 	for {
 		doc, err = iter.Next()
-		if err == iterator.Done {
-			err = nil
-			break
-		}
 		if err != nil {
-			return
+			if errors.Is(err, iterator.Done) {
+				err = nil
+			}
+
+			break
 		}
 
 		entry := documentToEntry(doc.Data())
