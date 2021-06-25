@@ -189,9 +189,9 @@ type OrderRepository interface {
 }
 
 type Order struct {
-	Status       FillStatus  `json:"status" firestore:"status"`
-	Transactions [][]string  `json:"transactions" firestore:"transactions"`
-	Base         types.Order `json:"base" firestore:"base"`
+	Status       FillStatus  `json:"status"`
+	Transactions [][]string  `json:"transactions"`
+	Base         types.Order `json:"base"`
 }
 
 func (o Order) Encode(enc EncodingType) ([]byte, error) {
@@ -259,20 +259,44 @@ const (
 	Sales
 	TransfersPayable
 	Transfers
+	DefaultAccount
+)
+
+const (
+	CashStr             = "cash"
+	SalesStr            = "sales"
+	TransfersPayableStr = "transfers_payable"
+	TransfersStr        = "transfers"
+	DefaultAccountStr   = "default"
 )
 
 func (a LedgerAccount) String() string {
 	switch a {
 	case Cash:
-		return "cash"
+		return CashStr
 	case Sales:
-		return "sales"
+		return SalesStr
 	case TransfersPayable:
-		return "transafers_payable"
+		return TransfersPayableStr
 	case Transfers:
-		return "transfers"
+		return TransfersStr
 	default:
-		return "unknown"
+		return DefaultAccountStr
+	}
+}
+
+func (a *LedgerAccount) FromString(s string) {
+	switch s {
+	case CashStr:
+		*a = Cash
+	case SalesStr:
+		*a = Sales
+	case TransfersPayableStr:
+		*a = TransfersPayable
+	case TransfersStr:
+		*a = Transfers
+	default:
+		*a = DefaultAccount
 	}
 }
 
@@ -332,6 +356,21 @@ const (
 	StatusCanceled
 )
 
+func (s FillStatus) String() string {
+	switch s {
+	case StatusOpen:
+		return "open"
+	case StatusPartial:
+		return "partial"
+	case StatusFilled:
+		return "filled"
+	case StatusCanceled:
+		return "canceled"
+	default:
+		return "unknown"
+	}
+}
+
 func (s FillStatus) MarshalBinary() ([]byte, error) {
 	return s.MarshalJSON()
 }
@@ -341,23 +380,24 @@ func (s *FillStatus) UnmarshalBinary(b []byte) error {
 }
 
 func (s FillStatus) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%d", s)), nil
+	return []byte(fmt.Sprintf(`"%s"`, s.String())), nil
 }
 
 func (s *FillStatus) UnmarshalJSON(b []byte) error {
-	val, err := strconv.ParseInt(string(b), 10, 64)
+	var str string
+	err := json.Unmarshal(b, &str)
 	if err != nil {
 		return err
 	}
 
-	switch int(val) {
-	case 0:
+	switch str {
+	case "open":
 		*s = StatusOpen
-	case 1:
+	case "partial":
 		*s = StatusPartial
-	case 2:
+	case "filled":
 		*s = StatusFilled
-	case 3:
+	case "canceled":
 		*s = StatusCanceled
 	}
 

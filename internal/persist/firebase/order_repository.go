@@ -2,6 +2,7 @@ package firebase
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"cloud.google.com/go/firestore"
@@ -31,18 +32,12 @@ func (or *OrderRepository) GetOrder(ctx context.Context, k persist.Key) (*persis
 		return nil, err
 	}
 
-	var od persist.Order
-	err = dsnap.DataTo(&od)
-	if err != nil {
-		return nil, err
-	}
-
-	return &od, nil
+	return documentToOrder(dsnap.Data()), nil
 }
 
 func (or *OrderRepository) SetOrder(ctx context.Context, o *persist.Order) error {
 	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	_, err := or.getClient(ctx).Collection(col).Doc(o.Base.ID.String()).Set(ctx, *o)
+	_, err := or.getClient(ctx).Collection(col).Doc(o.Base.ID.String()).Set(ctx, orderToDocument(o))
 	if err != nil {
 		return err
 	}
@@ -52,7 +47,13 @@ func (or *OrderRepository) SetOrder(ctx context.Context, o *persist.Order) error
 
 func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.FillStatus) (orders []*persist.Order, err error) {
 	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	iter := or.getClient(ctx).Collection(col).Where("status", "in", s).Documents(ctx)
+
+	ops := make([]string, len(s))
+	for i, v := range s {
+		ops[i] = v.String()
+	}
+
+	iter := or.getClient(ctx).Collection(col).Where("status", "in", ops).Documents(ctx)
 	var doc *firestore.DocumentSnapshot
 	for {
 		doc, err = iter.Next()
@@ -63,12 +64,7 @@ func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.F
 			return
 		}
 
-		var od persist.Order
-		err = doc.DataTo(&od)
-		if err != nil {
-			return
-		}
-		orders = append(orders, &od)
+		orders = append(orders, documentToOrder(doc.Data()))
 	}
 	return
 }
@@ -95,4 +91,22 @@ func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
 		client = or.client
 	}
 	return client
+}
+
+func orderToDocument(order *persist.Order) map[string]interface{} {
+	base, _ := json.Marshal(order.Base)
+
+	m := map[string]interface{}{
+		"status":       order.Status.String(),
+		"transactions": order.Transactions,
+		"base":         base,
+	}
+
+	return m
+}
+
+func documentToOrder(m map[string]interface{}) *persist.Order {
+	var order persist.Order
+
+	return &order
 }

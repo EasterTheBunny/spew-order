@@ -208,7 +208,8 @@ func documentToEntry(m map[string]interface{}) *persist.LedgerEntry {
 	entry := &persist.LedgerEntry{}
 
 	if v, ok := m["account"]; ok {
-		json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, v.(string))), &entry.Account)
+		ea := &entry.Account
+		ea.FromString(v.(string))
 	}
 
 	if v, ok := m["entry"]; ok {
