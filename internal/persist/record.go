@@ -319,7 +319,7 @@ func (e EntryType) String() string {
 	case Credit:
 		return CreditStr
 	case Debit:
-		return CreditStr
+		return DebitStr
 	default:
 		return DefaultEntryStr
 	}
