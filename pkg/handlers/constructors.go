@@ -8,13 +8,12 @@ import (
 	"github.com/easterthebunny/spew-order/internal/middleware"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/persist/firebase"
-	"github.com/easterthebunny/spew-order/internal/persist/kv"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 )
 
-func NewGoogleOrderBook(kvstore persist.KVStore, client *firestore.Client, f funding.Source) *domain.OrderBook {
-	br := kv.NewBookRepository(kvstore)
+func NewGoogleOrderBook(client *firestore.Client, f funding.Source) *domain.OrderBook {
+	br := firebase.NewBookRepository(client)
 	a := firebase.NewAccountRepository(client)
 	l := firebase.NewLedgerRepository(client)
 	bs := domain.NewBalanceManager(a, l, f)
@@ -55,7 +54,7 @@ func NewFundingSource(t string, apiKey, apiSecret *string, audit io.Writer, pubk
 	}
 }
 
-func NewDefaultRouter(kvstore persist.KVStore, client *firestore.Client, ps queue.PubSub, pr middleware.AuthenticationProvider, f funding.Source) (*Router, error) {
+func NewDefaultRouter(client *firestore.Client, ps queue.PubSub, pr middleware.AuthenticationProvider, f funding.Source) (*Router, error) {
 	a := firebase.NewAccountRepository(client)
 	l := firebase.NewLedgerRepository(client)
 	bs := domain.NewBalanceManager(a, l, f)

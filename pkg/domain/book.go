@@ -19,7 +19,7 @@ func NewOrderBook(br persist.BookRepository, bm *BalanceManager) *OrderBook {
 func (ob *OrderBook) CancelOrder(ctx context.Context, order types.Order) error {
 	item := persist.NewBookItem(order)
 
-	ok, err := ob.bir.BookItemExists(&item)
+	ok, err := ob.bir.BookItemExists(ctx, &item)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (ob *OrderBook) CancelOrder(ctx context.Context, order types.Order) error {
 	// a cancel order is defined as an executable order that already exists
 	// on the order book. remove the book item and update the order
 	if ok {
-		err := ob.bir.DeleteBookItem(&item)
+		err := ob.bir.DeleteBookItem(ctx, &item)
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func (ob *OrderBook) CancelOrder(ctx context.Context, order types.Order) error {
 func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order) error {
 	item := persist.NewBookItem(order)
 
-	ok, err := ob.bir.BookItemExists(&item)
+	ok, err := ob.bir.BookItemExists(ctx, &item)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 	}
 
 	for {
-		batch, err := ob.bir.GetHeadBatch(&item, 10)
+		batch, err := ob.bir.GetHeadBatch(ctx, &item, 10)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						}
 
 						bi := persist.NewBookItem(*o)
-						return ob.bir.SetBookItem(&bi)
+						return ob.bir.SetBookItem(ctx, &bi)
 					}
 
 					// if the ids don't match, the request order was only
@@ -138,7 +138,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 							return err
 						}
 
-						if err := ob.bir.DeleteBookItem(book); err != nil {
+						if err := ob.bir.DeleteBookItem(ctx, book); err != nil {
 							return err
 						}
 						continue
@@ -162,18 +162,18 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						return err
 					}
 
-					return ob.bir.DeleteBookItem(book)
+					return ob.bir.DeleteBookItem(ctx, book)
 				}
 
 				return nil
 			} else {
 				// TODO: not sure why this is here; should it really re-save the book item???
-				ob.bir.SetBookItem(book)
+				ob.bir.SetBookItem(ctx, book)
 			}
 		}
 
 		// if the order book is empty, insert the order
-		return ob.bir.SetBookItem(&item)
+		return ob.bir.SetBookItem(ctx, &item)
 	}
 }
 

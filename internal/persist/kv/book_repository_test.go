@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -29,7 +30,7 @@ func TestSetBookItem(t *testing.T) {
 		},
 	}))
 
-	err := r.SetBookItem(&i)
+	err := r.SetBookItem(context.Background(), &i)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, s.Len(), "kv store should have 1 item")
@@ -52,11 +53,12 @@ func TestDeleteBookItem(t *testing.T) {
 			Quantity: decimal.NewFromFloat(5.542),
 		},
 	}))
+	ctx := context.Background()
 
-	err := r.SetBookItem(&i)
+	err := r.SetBookItem(ctx, &i)
 	assert.NoError(t, err)
 
-	err = r.DeleteBookItem(&i)
+	err = r.DeleteBookItem(ctx, &i)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 0, s.Len(), "kv store should have 0 items")
@@ -66,6 +68,7 @@ func TestGetHeadBatch(t *testing.T) {
 
 	s := persist.NewMockKVStore()
 	r := &BookRepository{kvstore: s}
+	ctx := context.Background()
 
 	req := types.NewOrderFromRequest(types.OrderRequest{
 		Base:    types.SymbolBitcoin,
@@ -90,7 +93,7 @@ func TestGetHeadBatch(t *testing.T) {
 
 		i := persist.NewBookItem(j)
 
-		err := r.SetBookItem(&i)
+		err := r.SetBookItem(ctx, &i)
 		assert.NoError(t, err)
 
 		expected = append(expected, i)
@@ -99,7 +102,7 @@ func TestGetHeadBatch(t *testing.T) {
 	assert.Equal(t, count, s.Len())
 	assert.Len(t, expected, count)
 
-	batch, err := r.GetHeadBatch(&expected[len(expected)-1], count/2)
+	batch, err := r.GetHeadBatch(ctx, &expected[len(expected)-1], count/2)
 	assert.NoError(t, err)
 
 	// reverse the expected array

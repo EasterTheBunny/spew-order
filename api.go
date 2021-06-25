@@ -43,13 +43,6 @@ func init() {
 	// GOOGLE_CLOUD_PROJECT is a user-set environment variable.
 	var projectID = getEnvVar(envProjectID)
 
-	conf := []interface{}{
-		getEnvVar(envAppName),
-		"book",
-		strings.ToLower(getEnvVar(envRuntimeEnv)),
-		strings.ToLower(getEnvVar(envLocation))}
-
-	bucket := fmt.Sprintf("%s-%s-%s-%s", conf...)
 	queue.OrderTopic = orderTopic
 
 	pubKey := strings.NewReader(getEnvVar(envCoinbasePubKey))
@@ -62,24 +55,19 @@ func init() {
 	f := handlers.NewFundingSource(srcType, &ky, &sct, log.Writer(), pubKey)
 	ps := handlers.NewGooglePubSub(projectID)
 
-	kv, err := handlers.NewGoogleKVStore(&bucket)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 	client, err := firestore.NewClient(context.Background(), projectID)
 	if err != nil {
 		panic(err)
 	}
 
-	GS = handlers.NewGoogleOrderBook(kv, client, f)
+	GS = handlers.NewGoogleOrderBook(client, f)
 
 	jwt, err := handlers.NewJWTAuth(getEnvVar(envIdentityURI))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	rh, err := handlers.NewDefaultRouter(kv, client, ps, jwt, f)
+	rh, err := handlers.NewDefaultRouter(client, ps, jwt, f)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

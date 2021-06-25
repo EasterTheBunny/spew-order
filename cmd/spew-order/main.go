@@ -27,15 +27,14 @@ func main() {
 		panic(err)
 	}
 
-	kvstore := persist.NewMockKVStore()
 	f := handlers.NewFundingSource("MOCK", nil, nil, nil, nil)
-	book := handlers.NewGoogleOrderBook(kvstore, client, f)
+	book := handlers.NewGoogleOrderBook(client, f)
 	ps := queue.NewMockPubSub()
 	jwt := &mockJWTAuth{}
 	subscription := make(chan domain.PubSubMessage)
 	ps.Subscribe(queue.OrderTopic, subscription)
 
-	rh, err := handlers.NewDefaultRouter(kvstore, client, ps, jwt, f)
+	rh, err := handlers.NewDefaultRouter(client, ps, jwt, f)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

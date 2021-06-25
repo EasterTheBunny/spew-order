@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/easterthebunny/spew-order/internal/key"
@@ -15,7 +16,7 @@ func NewBookRepository(store persist.KVStore) *BookRepository {
 	return &BookRepository{kvstore: store}
 }
 
-func (br *BookRepository) BookItemExists(item *persist.BookItem) (bool, error) {
+func (br *BookRepository) BookItemExists(ctx context.Context, item *persist.BookItem) (bool, error) {
 	query := &persist.KVStoreQuery{
 		StartOffset: bookItemKey(*item)}
 
@@ -31,7 +32,7 @@ func (br *BookRepository) BookItemExists(item *persist.BookItem) (bool, error) {
 	return false, nil
 }
 
-func (br *BookRepository) SetBookItem(bi *persist.BookItem) error {
+func (br *BookRepository) SetBookItem(ctx context.Context, bi *persist.BookItem) error {
 	if bi == nil {
 		return fmt.Errorf("%w for book item", persist.ErrCannotSaveNilValue)
 	}
@@ -50,7 +51,7 @@ func (br *BookRepository) SetBookItem(bi *persist.BookItem) error {
 	return br.kvstore.Set(bookItemKey(*bi), b, &attrs)
 }
 
-func (br *BookRepository) GetHeadBatch(bi *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
+func (br *BookRepository) GetHeadBatch(ctx context.Context, bi *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
 	query := &persist.KVStoreQuery{
 		StartOffset: bookItemSubspace(*bi, &bi.ActionType).Pack(key.Tuple{}).String()}
 	attrs, err := br.kvstore.RangeGet(query, 10)
@@ -78,6 +79,6 @@ func (br *BookRepository) GetHeadBatch(bi *persist.BookItem, limit int) (items [
 	return
 }
 
-func (br *BookRepository) DeleteBookItem(bi *persist.BookItem) error {
+func (br *BookRepository) DeleteBookItem(ctx context.Context, bi *persist.BookItem) error {
 	return br.kvstore.Delete(bookItemKey(*bi))
 }

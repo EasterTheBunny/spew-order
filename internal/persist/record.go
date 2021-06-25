@@ -143,10 +143,10 @@ func (a *Authorization) Decode(b []byte, enc EncodingType) error {
 }
 
 type BookRepository interface {
-	SetBookItem(*BookItem) error
-	BookItemExists(*BookItem) (bool, error)
-	GetHeadBatch(*BookItem, int) ([]*BookItem, error)
-	DeleteBookItem(*BookItem) error
+	SetBookItem(context.Context, *BookItem) error
+	BookItemExists(context.Context, *BookItem) (bool, error)
+	GetHeadBatch(context.Context, *BookItem, int) ([]*BookItem, error)
+	DeleteBookItem(context.Context, *BookItem) error
 }
 
 // BookItem is a struct for holding an order in storage

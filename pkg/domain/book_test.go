@@ -114,7 +114,7 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		}
 
 		bitem := persist.NewBookItem(b)
-		err = br.SetBookItem(&bitem)
+		err = br.SetBookItem(ctx, &bitem)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
