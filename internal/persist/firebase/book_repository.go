@@ -91,6 +91,7 @@ func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.Book
 
 	batch := br.client.Batch()
 	for {
+		fmt.Println("checkpoint")
 		doc, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
@@ -101,8 +102,9 @@ func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.Book
 
 		batch.Delete(doc.Ref)
 	}
+	_, err := batch.Commit(ctx)
 
-	return nil
+	return err
 }
 
 func (br *BookRepository) getClient(ctx context.Context) *firestore.Client {
