@@ -13,6 +13,7 @@ import (
 var (
 	account   = flag.String("account", "spew", "Environment naming prefix.")
 	projectID = flag.String("project", "", "Google project id.")
+	delete    = flag.Bool("delete", false, "delete book items")
 )
 
 func main() {
@@ -40,11 +41,23 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Printf("status: %s; exists on book: %v\n", order.Status, result)
-		if order.Status == persist.StatusCanceled && result {
+		fmt.Printf("action %s; status: %s; exists on book: %v\n", order.Base.Action, order.Status, result)
+		if order.Status == persist.StatusCanceled && result && *delete {
 			err = brepo.DeleteBookItem(ctx, &bitem)
 			if err != nil {
 				panic(err)
+			}
+		}
+
+		if order.Status == persist.StatusOpen || order.Status == persist.StatusPartial {
+			items, err := brepo.GetHeadBatch(ctx, &bitem, 10)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Printf("%d items found\n", len(items))
+			for _, item := range items {
+				fmt.Printf("%v\n", item)
 			}
 		}
 	}
