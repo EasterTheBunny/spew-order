@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	gsRoot = key.NewPath()
+	gsRoot = key.FromBytes([]byte{0xFE})
 )
 
 var _ persist.AccountRepository = &AccountRepository{}
