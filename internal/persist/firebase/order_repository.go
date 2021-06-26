@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -116,7 +117,7 @@ func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
 	return client
 }
 
-func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persist.Order, int64, error) {
+func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persist.Order, int, error) {
 	var err error
 	client := or.getClient(ctx)
 	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
@@ -127,7 +128,7 @@ func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persis
 
 	batch := client.Batch()
 	batchedItems := false
-	var version int64 = 0
+	var version int = 0
 	var order *persist.Order
 	var doc *firestore.DocumentSnapshot
 	for {
@@ -143,7 +144,7 @@ func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persis
 		if order == nil {
 			m2 := doc.Data()
 			if v, ok := m2["version"]; ok {
-				version = v.(int64)
+				version, _ = strconv.Atoi(v.(string))
 			}
 			order = documentToOrder(m2)
 		} else {
@@ -159,14 +160,14 @@ func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persis
 	return order, version, err
 }
 
-func orderToDocument(order *persist.Order, version int64) map[string]interface{} {
+func orderToDocument(order *persist.Order, version int) map[string]interface{} {
 	base, _ := json.Marshal(order.Base)
 	tr, _ := json.Marshal(order.Transactions)
 
 	m := map[string]interface{}{
 		"base":         base,
 		"id":           order.Base.ID,
-		"version":      version,
+		"version":      strconv.Itoa(version),
 		"status":       order.Status.String(),
 		"transactions": tr,
 	}
