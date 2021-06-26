@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -18,11 +19,16 @@ import (
 	"github.com/go-chi/chi"
 )
 
+var (
+	projectID = flag.String("project", "", "Google project id.")
+)
+
 func main() {
+	flag.Parse()
 
 	log.Println("starting service")
 
-	client, err := firestore.NewClient(context.Background(), "centering-rex-274623")
+	client, err := firestore.NewClient(context.Background(), *projectID)
 	if err != nil {
 		panic(err)
 	}

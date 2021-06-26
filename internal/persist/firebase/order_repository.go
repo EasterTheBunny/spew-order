@@ -9,8 +9,6 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"google.golang.org/api/iterator"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type OrderRepository struct {
@@ -24,21 +22,20 @@ func NewOrderRepository(client *firestore.Client, account *persist.Account) *Ord
 
 // /root/account/{accountid}/order/{orderid}
 func (or *OrderRepository) GetOrder(ctx context.Context, k persist.Key) (*persist.Order, error) {
-	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	dsnap, err := or.getClient(ctx).Collection(col).Doc(k.String()).Get(ctx)
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return nil, persist.ErrObjectNotExist
-		}
-		return nil, err
-	}
-
-	return documentToOrder(dsnap.Data()), nil
+	order, _, err := or.getOrder(ctx, k)
+	return order, err
 }
 
 func (or *OrderRepository) SetOrder(ctx context.Context, o *persist.Order) error {
+
+	_, version, err := or.getOrder(ctx, o.Base.ID)
+	if err != nil {
+		return err
+	}
+	version++
+
 	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	_, err := or.getClient(ctx).Collection(col).Doc(o.Base.ID.String()).Set(ctx, orderToDocument(o))
+	_, _, err = or.getClient(ctx).Collection(col).Add(ctx, orderToDocument(o, 0))
 	if err != nil {
 		return err
 	}
@@ -47,15 +44,25 @@ func (or *OrderRepository) SetOrder(ctx context.Context, o *persist.Order) error
 }
 
 func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.FillStatus) (orders []*persist.Order, err error) {
-	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
 
 	ops := make([]string, len(s))
 	for i, v := range s {
 		ops[i] = v.String()
 	}
 
-	iter := or.getClient(ctx).Collection(col).Where("status", "in", ops).Documents(ctx)
+	client := or.getClient(ctx)
+	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
+	iter := client.Collection(col).
+		Where("status", "in", ops).
+		OrderBy("version", firestore.Desc).
+		Documents(ctx)
+
+	versionMap := make(map[string]bool)
+
+	batch := client.Batch()
+	batchedItems := false
 	var doc *firestore.DocumentSnapshot
+	var order *persist.Order
 	for {
 		doc, err = iter.Next()
 		if err != nil {
@@ -66,10 +73,22 @@ func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.F
 			break
 		}
 
-		orders = append(orders, documentToOrder(doc.Data()))
+		order = documentToOrder(doc.Data())
+		if _, ok := versionMap[order.Base.ID.String()]; !ok {
+			versionMap[order.Base.ID.String()] = true
+			orders = append(orders, order)
+		} else {
+			// delete the older version
+			batch.Delete(doc.Ref)
+			batchedItems = true
+		}
+	}
+	iter.Stop()
+
+	if batchedItems {
+		_, err = batch.Commit(ctx)
 	}
 
-	iter.Stop()
 	return
 }
 
@@ -97,14 +116,59 @@ func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
 	return client
 }
 
-func orderToDocument(order *persist.Order) map[string]interface{} {
+func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persist.Order, int64, error) {
+	var err error
+	client := or.getClient(ctx)
+	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
+	iter := client.Collection(col).
+		Where("id", "==", k).
+		OrderBy("version", firestore.Desc).
+		Documents(ctx)
+
+	batch := client.Batch()
+	batchedItems := false
+	var version int64 = 0
+	var order *persist.Order
+	var doc *firestore.DocumentSnapshot
+	for {
+		doc, err = iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.Done) {
+				err = nil
+			}
+
+			break
+		}
+
+		if order == nil {
+			m2 := doc.Data()
+			if v, ok := m2["version"]; ok {
+				version = v.(int64)
+			}
+			order = documentToOrder(m2)
+		} else {
+			batch.Delete(doc.Ref)
+			batchedItems = true
+		}
+	}
+
+	if batchedItems {
+		_, err = batch.Commit(ctx)
+	}
+
+	return order, version, err
+}
+
+func orderToDocument(order *persist.Order, version int64) map[string]interface{} {
 	base, _ := json.Marshal(order.Base)
 	tr, _ := json.Marshal(order.Transactions)
 
 	m := map[string]interface{}{
+		"base":         base,
+		"id":           order.Base.ID,
+		"version":      version,
 		"status":       order.Status.String(),
 		"transactions": tr,
-		"base":         base,
 	}
 
 	return m

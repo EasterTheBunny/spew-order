@@ -145,6 +145,8 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 				return
 			}
 
+			response.Balance[k.String()] = l.Sub(a).StringFixedBank(k.RoundingPlace())
+
 			if !l.Equal(a) {
 				response.Errors = append(response.Errors, fmt.Sprintf("liability/asset discrepancy: %s", k))
 			}
@@ -201,10 +203,10 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 }
 
 type AuditResponse struct {
-	UserAccounts   map[string]string
-	LedgerAccounts map[string]map[string]string
-	Balance        map[string]string
-	Errors         []string
+	UserAccounts   map[string]string            `json:"user_accounts"`
+	LedgerAccounts map[string]map[string]string `json:"ledger_accounts"`
+	Balance        map[string]string            `json:"balance"`
+	Errors         []string                     `json:"errors"`
 }
 
 // Render implements the render.Renderer interface for use with chi-router

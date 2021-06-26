@@ -59,7 +59,7 @@ func (a *AuthorizationRepository) GetAuthorizations(ctx context.Context) (authz 
 		}
 
 		var item persist.Authorization
-		if err := doc.DataTo(&item); err != nil {
+		if err := doc.DataTo(&item); err == nil {
 			authz = append(authz, &item)
 		}
 	}
