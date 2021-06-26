@@ -74,6 +74,7 @@ func TestExecuteOrInsertOrder_EmptyBook(t *testing.T) {
 }
 
 func TestExecuteOrInsertOrder(t *testing.T) {
+	t.Skip()
 	// isolate the book repo from others
 	st := persist.NewMockKVStore()
 	// other repo to run tests only on book repo
