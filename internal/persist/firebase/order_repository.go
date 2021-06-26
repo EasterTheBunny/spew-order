@@ -94,16 +94,25 @@ func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.F
 }
 
 func (or *OrderRepository) UpdateOrderStatus(ctx context.Context, k persist.Key, s persist.FillStatus, tr []string) error {
-	order, err := or.GetOrder(ctx, k)
+	o, version, err := or.getOrder(ctx, k)
+	if err != nil {
+		return err
+	}
+	version++
+
+	o.Status = s
+	if len(tr) > 0 {
+		o.Transactions = append(o.Transactions, tr)
+	}
+
+	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
+	_, _, err = or.getClient(ctx).Collection(col).Add(ctx, orderToDocument(o, 0))
 	if err != nil {
 		return err
 	}
 
-	order.Status = s
-	if len(tr) > 0 {
-		order.Transactions = append(order.Transactions, tr)
-	}
-	return or.SetOrder(ctx, order)
+	return nil
+
 }
 
 func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
@@ -136,6 +145,9 @@ func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persis
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
 				err = nil
+				if order == nil {
+					err = fmt.Errorf("order not found for id %s", k)
+				}
 			}
 
 			break
