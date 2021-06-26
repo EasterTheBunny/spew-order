@@ -166,7 +166,7 @@ func orderToDocument(order *persist.Order, version int) map[string]interface{} {
 
 	m := map[string]interface{}{
 		"base":         base,
-		"id":           order.Base.ID,
+		"id":           order.Base.ID.String(),
 		"version":      strconv.Itoa(version),
 		"status":       order.Status.String(),
 		"transactions": tr,
