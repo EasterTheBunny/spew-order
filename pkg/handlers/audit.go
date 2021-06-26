@@ -59,6 +59,8 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 		}
 
 		for k, x := range accountBalances {
+			response.UserAccounts[k.String()] = x.StringFixedBank(k.RoundingPlace())
+
 			y, ok := transferAssets[k]
 			if !ok {
 				y = decimal.NewFromInt(0)
