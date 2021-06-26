@@ -33,7 +33,7 @@ func (r *LedgerRepository) RecordDeposit(ctx context.Context, s types.Symbol, am
 
 	_, _, err := r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.Transfers)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordDeposit: %w", err)
 	}
 
 	record["entry"] = persist.Credit.String()
@@ -41,7 +41,7 @@ func (r *LedgerRepository) RecordDeposit(ctx context.Context, s types.Symbol, am
 
 	_, _, err = r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.TransfersPayable)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordDeposit: %w", err)
 	}
 
 	return nil
@@ -58,7 +58,7 @@ func (r *LedgerRepository) RecordTransfer(ctx context.Context, s types.Symbol, a
 
 	_, _, err := r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.Transfers)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordTransfer: %w", err)
 	}
 
 	record["entry"] = persist.Debit.String()
@@ -66,7 +66,7 @@ func (r *LedgerRepository) RecordTransfer(ctx context.Context, s types.Symbol, a
 
 	_, _, err = r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.TransfersPayable)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordTransfer: %w", err)
 	}
 
 	return nil
@@ -149,7 +149,7 @@ func (r *LedgerRepository) RecordFee(ctx context.Context, s types.Symbol, amt de
 
 	_, _, err := r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.Transfers)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordFee: %w", err)
 	}
 
 	record["entry"] = persist.Debit.String()
@@ -157,7 +157,7 @@ func (r *LedgerRepository) RecordFee(ctx context.Context, s types.Symbol, amt de
 
 	_, _, err = r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.TransfersPayable)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordFee: %w", err)
 	}
 
 	record["entry"] = persist.Debit.String()
@@ -165,7 +165,7 @@ func (r *LedgerRepository) RecordFee(ctx context.Context, s types.Symbol, amt de
 
 	_, _, err = r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.Cash)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordFee: %w", err)
 	}
 
 	record["entry"] = persist.Credit.String()
@@ -173,7 +173,7 @@ func (r *LedgerRepository) RecordFee(ctx context.Context, s types.Symbol, amt de
 
 	_, _, err = r.getClient(ctx).Collection(r.ledgerAccountSubspace(persist.Sales)).Add(ctx, record)
 	if err != nil {
-		return err
+		return fmt.Errorf("RecordFee: %w", err)
 	}
 
 	return nil

@@ -37,7 +37,7 @@ func (br *BookRepository) BookItemExists(ctx context.Context, item *persist.Book
 		if errors.Is(err, iterator.Done) {
 			return false, nil
 		}
-		return false, err
+		return false, fmt.Errorf("BookItemExists: %w", err)
 	}
 
 	return true, nil
@@ -50,7 +50,7 @@ func (br *BookRepository) SetBookItem(ctx context.Context, item *persist.BookIte
 
 	_, _, err := collection.Add(ctx, bookitemToDocument(item))
 	if err != nil {
-		return err
+		return fmt.Errorf("SetBookItem: %w", err)
 	}
 
 	return nil
@@ -71,6 +71,8 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
 				err = nil
+			} else {
+				err = fmt.Errorf("GetHeadBatch: %w", err)
 			}
 
 			break
@@ -93,15 +95,16 @@ func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.Book
 	for {
 		doc, err := iter.Next()
 		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				err = nil
-			}
 			break
 		}
 
 		batch.Delete(doc.Ref)
 	}
+
 	_, err := batch.Commit(ctx)
+	if err != nil {
+		err = fmt.Errorf("DeleteBookItem: %w", err)
+	}
 
 	return err
 }

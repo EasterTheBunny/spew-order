@@ -91,8 +91,16 @@ func (b *BalanceRepository) UpdateHold(ctx context.Context, id persist.Key, amt 
 	col := fmt.Sprintf("accounts/%s/symbols/%s/holds/%s", b.account.ID, b.symbol, id)
 
 	amtStr := amt.StringFixedBank(b.symbol.RoundingPlace())
-	_, err := b.getClient(ctx).Doc(col).Set(ctx, amtStr, firestore.Merge([]string{"amount"}))
-	return err
+	_, err := b.getClient(ctx).Doc(col).Update(ctx, []firestore.Update{
+		{
+			Path:  "amount",
+			Value: amtStr,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("UpdateHold: %w", err)
+	}
+	return nil
 }
 
 func (b *BalanceRepository) DeleteHold(ctx context.Context, id persist.Key) error {

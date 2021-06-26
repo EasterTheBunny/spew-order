@@ -483,7 +483,7 @@ func (m *BalanceManager) CreateOrder(ctx context.Context, a *Account, req types.
 	rep := m.acct.Orders(&persist.Account{ID: a.ID.String()})
 
 	order := types.NewOrderFromRequest(req)
-	err := rep.SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
+	err := rep.SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order, Transactions: [][]string{}})
 
 	return order, err
 }

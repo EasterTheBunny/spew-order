@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
@@ -51,7 +52,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 
 	ok, err := ob.bir.BookItemExists(ctx, &item)
 	if err != nil {
-		return err
+		return fmt.Errorf("ExecuteOrInsertOrder::exist check::%w", err)
 	}
 
 	// maintain this function as idempotent and don't run the same action twice
@@ -63,7 +64,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 	for {
 		batch, err := ob.bir.GetHeadBatch(ctx, &item, 10)
 		if err != nil {
-			return err
+			return fmt.Errorf("ExecuteOrInsertOrder::head batch::%w", err)
 		}
 
 		for _, book := range batch {
@@ -85,7 +86,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 				// before any book items or holds are removed
 				err = ob.pairOrders(ctx, tr)
 				if err != nil {
-					return err
+					return fmt.Errorf("ExecuteOrInsertOrder::pair orders::%w", err)
 				}
 
 				// if an order was returned by the resolve process
@@ -102,18 +103,22 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						smb, amt := o.Type.HoldAmount(o.Action, o.Base, o.Target)
 						err = ob.bm.UpdateHoldOnAccount(ctx, &Account{ID: o.Account}, smb, amt, ky(o.HoldID))
 						if err != nil {
-							return err
+							return fmt.Errorf("ExecuteOrInsertOrder::update hold::%w", err)
 						}
 
 						// remove hold on incoming order since that order is filled
 						smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 						if err != nil {
-							return err
+							return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
 						}
 
 						bi := persist.NewBookItem(*o)
-						return ob.bir.SetBookItem(ctx, &bi)
+						err = ob.bir.SetBookItem(ctx, &bi)
+						if err != nil {
+							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+						}
+						return nil
 					}
 
 					// if the ids don't match, the request order was only
@@ -128,18 +133,18 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						smb, amt := o.Type.HoldAmount(order.Action, order.Base, order.Target)
 						err = ob.bm.UpdateHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt, ky(order.HoldID))
 						if err != nil {
-							return err
+							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
 						}
 
 						// remove hold on book order since that order is filled
 						smb, _ = book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 						if err != nil {
-							return err
+							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
 						}
 
 						if err := ob.bir.DeleteBookItem(ctx, book); err != nil {
-							return err
+							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
 						}
 						continue
 					}
@@ -152,28 +157,36 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					smb, _ := book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 					if err != nil {
-						return err
+						return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
 					}
 
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 					if err != nil {
-						return err
+						return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
 					}
 
-					return ob.bir.DeleteBookItem(ctx, book)
+					err = ob.bir.DeleteBookItem(ctx, book)
+					if err != nil {
+						return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+					}
+					return nil
 				}
 
 				return nil
 			} else {
 				// TODO: not sure why this is here; should it really re-save the book item???
-				ob.bir.SetBookItem(ctx, book)
+				return ob.bir.SetBookItem(ctx, book)
 			}
 		}
 
 		// if the order book is empty, insert the order
-		return ob.bir.SetBookItem(ctx, &item)
+		err = ob.bir.SetBookItem(ctx, &item)
+		if err != nil {
+			return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+		}
+		return nil
 	}
 }
 

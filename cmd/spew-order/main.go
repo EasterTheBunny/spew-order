@@ -4,14 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/easterthebunny/spew-order/internal/middleware"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
@@ -25,6 +28,12 @@ var (
 
 func main() {
 	flag.Parse()
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
 
 	log.Println("starting service")
 
@@ -84,19 +93,19 @@ func main() {
 			m := <-subscription
 			var om domain.OrderMessage
 			if err := json.Unmarshal(m.Data, &om); err != nil {
-				log.Printf("error: %s", err)
-				continue
+				log.Printf("Unmarshal: %s", err)
+				panic(err)
 			}
 
 			if om.Action == domain.CancelOrderMessageType {
 				if err := book.CancelOrder(context.Background(), om.Order); err != nil {
-					log.Printf("error: %s", err)
-					continue
+					log.Printf("CancelOrder: %s", err)
+					panic(err)
 				}
 			} else if om.Action == domain.OpenOrderMessageType {
 				if err := book.ExecuteOrInsertOrder(context.Background(), om.Order); err != nil {
-					log.Printf("error: %s", err)
-					continue
+					log.Printf("ExecuteOrInsertOrder::%s", err)
+					panic(err)
 				}
 			}
 
@@ -115,7 +124,10 @@ type mockJWTAuth struct {
 func (j *mockJWTAuth) Verifier() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			j.subject = tokenFromHeader(r)
+			token := tokenFromHeader(r)
+			jwt := &middleware.JWT{}
+			t, _ := jwt.Decode(token)
+			j.subject = t.Subject()
 			next.ServeHTTP(w, r)
 		})
 	}
