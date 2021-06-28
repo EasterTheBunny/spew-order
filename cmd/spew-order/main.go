@@ -39,6 +39,7 @@ func main() {
 
 	client, err := firestore.NewClient(context.Background(), *projectID)
 	if err != nil {
+		log.Println(err)
 		panic(err)
 	}
 

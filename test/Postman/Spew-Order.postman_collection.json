@@ -9,6 +9,57 @@
 			"name": "Empty Balance: Cannot Create Order",
 			"item": [
 				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_one\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_one}}\",\n  \"password\": \"{{password_one}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Accounts",
 					"event": [
 						{
@@ -35,12 +86,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts",
+							"raw": "{{apiurl}}/accounts",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts"
 							]
 						}
@@ -78,12 +128,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -129,12 +178,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -149,7 +197,7 @@
 				"bearer": [
 					{
 						"key": "token",
-						"value": "account-one",
+						"value": "{{token_one}}",
 						"type": "string"
 					}
 				]
@@ -179,6 +227,57 @@
 			"name": "Create and Cancel Order",
 			"item": [
 				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_3\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_3}}\",\n  \"password\": \"{{password_3}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Accounts",
 					"event": [
 						{
@@ -205,12 +304,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts",
+							"raw": "{{apiurl}}/accounts",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts"
 							]
 						}
@@ -248,12 +346,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -276,12 +373,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/webhook/funding",
+							"raw": "{{webhookurl}}/funding",
 							"host": [
-								"{{url}}"
+								"{{webhookurl}}"
 							],
 							"path": [
-								"webhook",
 								"funding"
 							]
 						}
@@ -324,12 +420,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -374,12 +469,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders/{{orderid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders/{{orderid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders",
@@ -415,15 +509,58 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Deleted Hold",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance updated\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"ETH\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"20.000000000000000000\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
 							]
 						}
 					},
@@ -435,7 +572,7 @@
 				"bearer": [
 					{
 						"key": "token",
-						"value": "account-three",
+						"value": "{{token_3}}",
 						"type": "string"
 					}
 				]
@@ -465,6 +602,57 @@
 			"name": "Create Order: Balance Update (AccountOne) ETH LIMIT SELL",
 			"item": [
 				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_one\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_one}}\",\n  \"password\": \"{{password_one}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Accounts",
 					"event": [
 						{
@@ -491,12 +679,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts",
+							"raw": "{{apiurl}}/accounts",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts"
 							]
 						}
@@ -534,12 +721,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -562,12 +748,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/webhook/funding",
+							"raw": "{{webhookurl}}/funding",
 							"host": [
-								"{{url}}"
+								"{{webhookurl}}"
 							],
 							"path": [
-								"webhook",
 								"funding"
 							]
 						}
@@ -610,12 +795,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -656,12 +840,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -695,12 +878,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -745,12 +927,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -791,12 +972,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -830,12 +1010,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -850,7 +1029,7 @@
 				"bearer": [
 					{
 						"key": "token",
-						"value": "account-one",
+						"value": "{{token_one}}",
 						"type": "string"
 					}
 				]
@@ -880,6 +1059,57 @@
 			"name": "Create Order: Balance Update (AccountTwo) BTC MARKET BUY",
 			"item": [
 				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_2\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_2}}\",\n  \"password\": \"{{password_2}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Accounts",
 					"event": [
 						{
@@ -906,12 +1136,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts",
+							"raw": "{{apiurl}}/accounts",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts"
 							]
 						}
@@ -949,12 +1178,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -977,12 +1205,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/webhook/funding",
+							"raw": "{{webhookurl}}/funding",
 							"host": [
-								"{{url}}"
+								"{{webhookurl}}"
 							],
 							"path": [
-								"webhook",
 								"funding"
 							]
 						}
@@ -1025,12 +1252,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -1071,12 +1297,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -1110,12 +1335,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -1152,7 +1376,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"BUY\",\n    \"type\": {\n        \"name\": \"MARKET\",\n        \"base\": \"BTC\",\n        \"quantity\": \"0.25000\"\n    }\n}",
+							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"BUY\",\n    \"type\": {\n        \"name\": \"MARKET\",\n        \"base\": \"BTC\",\n        \"quantity\": \"0.21000\"\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1160,12 +1384,11 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -1192,7 +1415,7 @@
 									"        var balances = jsonData.data.balances;",
 									"        for (i = 0; i < balances.length; i++) {",
 									"            if (balances[i].symbol == \"BTC\") {",
-									"                pm.expect(balances[i].quantity).to.eq(\"1.25000000\")",
+									"                pm.expect(balances[i].quantity).to.eq(\"1.29000000\")",
 									"            }",
 									"        }",
 									"    });",
@@ -1206,12 +1429,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -1245,12 +1467,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -1265,7 +1486,7 @@
 				"bearer": [
 					{
 						"key": "token",
-						"value": "account-two",
+						"value": "{{token_2}}",
 						"type": "string"
 					}
 				]
@@ -1295,6 +1516,57 @@
 			"name": "Verify Order Completion (AccountOne)",
 			"item": [
 				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_one\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_one}}\",\n  \"password\": \"{{password_one}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Accounts",
 					"event": [
 						{
@@ -1321,12 +1593,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts",
+							"raw": "{{apiurl}}/accounts",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts"
 							]
 						}
@@ -1351,7 +1622,7 @@
 									"        var balances = jsonData.data.balances;",
 									"        for (i = 0; i < balances.length; i++) {",
 									"            if (balances[i].symbol == \"BTC\") {",
-									"                pm.expect(balances[i].quantity).to.eq(\"0.74962500\")",
+									"                pm.expect(balances[i].quantity).to.eq(\"0.70964500\")",
 									"            }",
 									"        }",
 									"    });",
@@ -1365,12 +1636,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -1453,12 +1723,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -1493,12 +1762,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/transactions",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/transactions",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"transactions"
@@ -1513,7 +1781,7 @@
 				"bearer": [
 					{
 						"key": "token",
-						"value": "account-one",
+						"value": "{{token_one}}",
 						"type": "string"
 					}
 				]
@@ -1543,6 +1811,57 @@
 			"name": "Verify Order Completion (AccountTwo)",
 			"item": [
 				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_2\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_2}}\",\n  \"password\": \"{{password_2}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Accounts",
 					"event": [
 						{
@@ -1569,12 +1888,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts",
+							"raw": "{{apiurl}}/accounts",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts"
 							]
 						}
@@ -1599,7 +1917,7 @@
 									"        var balances = jsonData.data.balances;",
 									"        for (i = 0; i < balances.length; i++) {",
 									"            if (balances[i].symbol == \"ETH\") {",
-									"                pm.expect(balances[i].quantity).to.eq(\"6.656666666666666700\")",
+									"                pm.expect(balances[i].quantity).to.eq(\"6.390400000000000000\")",
 									"            }",
 									"        }",
 									"    });",
@@ -1613,12 +1931,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}"
 							]
@@ -1657,7 +1974,7 @@
 									"            }",
 									"        }",
 									"",
-									"        pm.expect(filled).to.eq(1);",
+									"        pm.expect(filled).to.eq(2);",
 									"    });",
 									"",
 									"    pm.test(\"Partial Order Count\", function () {",
@@ -1673,7 +1990,7 @@
 									"            }",
 									"        }",
 									"",
-									"        pm.expect(partial).to.eq(1);",
+									"        pm.expect(partial).to.eq(0);",
 									"    });",
 									"",
 									"    pm.test(\"Open Order Count\", function () {",
@@ -1701,12 +2018,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders"
@@ -1741,12 +2057,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/transactions",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/transactions",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"transactions"
@@ -1761,12 +2076,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/api/accounts/{{accountid}}/orders/{{orderid}}",
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders/{{orderid}}",
 							"host": [
-								"{{url}}"
+								"{{apiurl}}"
 							],
 							"path": [
-								"api",
 								"accounts",
 								"{{accountid}}",
 								"orders",
@@ -1782,7 +2096,7 @@
 				"bearer": [
 					{
 						"key": "token",
-						"value": "account-two",
+						"value": "{{token_2}}",
 						"type": "string"
 					}
 				]
@@ -1807,6 +2121,48 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Audit Balances and Ledger",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if(responseCode.code == 200){",
+							"    var jsonData = pm.response.json();",
+							"",
+							"    pm.test(\"Balance should be zero\", function () {",
+							"        pm.expect(jsonData.data.balance.BTC).to.eq(\"0.00000000\")",
+							"        pm.expect(jsonData.data.balance.ETH).to.eq(\"0.000000000000000000\")",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{toolsurl}}/audit",
+					"host": [
+						"{{toolsurl}}"
+					],
+					"path": [
+						"audit"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"auth": {

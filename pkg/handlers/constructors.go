@@ -81,6 +81,7 @@ func NewAuditRouter(client *firestore.Client) *AuditRouter {
 	a := firebase.NewAccountRepository(client)
 	u := firebase.NewAuthorizationRepository(client)
 	l := firebase.NewLedgerRepository(client)
+	b := firebase.NewBookRepository(client)
 
-	return &AuditRouter{Audit: NewAuditHandler(a, u, l)}
+	return &AuditRouter{Audit: NewAuditHandler(a, u, l, b)}
 }

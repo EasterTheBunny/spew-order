@@ -125,9 +125,8 @@ func (m *BalanceManager) GetAvailableBalance(ctx context.Context, a *Account, s 
 }
 
 // GetPostedBalance returns total balance for a single Symbol apart from holds and
-// returns both a balance and/or an error. Because multiple threads could call this
-// function at the same time, one will succeed and one will fail however a failure
-// will still return a balance but the balance may not be accurate.
+// returns both a balance and/or an error. This function relies on the repository
+// to be thread safe
 func (m *BalanceManager) GetPostedBalance(ctx context.Context, a *Account, s types.Symbol) (balance decimal.Decimal, err error) {
 
 	acct := &persist.Account{ID: a.ID.String()}
@@ -136,41 +135,6 @@ func (m *BalanceManager) GetPostedBalance(ctx context.Context, a *Account, s typ
 	if err != nil {
 		err = fmt.Errorf("BalanceManager.GetPostedBalance::%w", err)
 		return
-	}
-
-	p, err := r.FindPosts(ctx)
-	if err != nil {
-		err = fmt.Errorf("BalanceManager.GetPostedBalance::%w", err)
-		return
-	}
-
-	changeBal := decimal.NewFromInt(0)
-	// for each post, remove the posting from the account,
-	// update the balance variable
-	for _, post := range p {
-		balance = balance.Add(post.Amount)
-		changeBal = changeBal.Add(post.Amount)
-
-		err = r.DeletePost(ctx, post)
-		if err != nil {
-			changeBal = changeBal.Sub(post.Amount)
-		}
-	}
-
-	// update the balance if posts were found
-	if len(p) > 0 {
-		err = r.UpdateBalance(ctx, balance)
-		if err != nil {
-
-			// at this point, the balance has not been updated
-			// some of the posts might have been deleted
-			// don't attempt to update the balance again
-			// re-add the amount of all deleted posts
-
-			newPost := persist.NewBalanceItem(changeBal)
-			err = r.CreatePost(ctx, newPost)
-			return
-		}
 	}
 
 	return
@@ -246,13 +210,7 @@ func (m *BalanceManager) PostAmtToBalance(ctx context.Context, a *Account, s typ
 
 	acct := &persist.Account{ID: a.ID.String()}
 	r := m.acct.Balances(acct, s)
-	newPost := persist.NewBalanceItem(amt)
-	err := r.CreatePost(ctx, newPost)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.AddToBalance(ctx, amt)
 }
 
 func (m *BalanceManager) WithdrawFunds(ctx context.Context, a *Account, s types.Symbol, amt decimal.Decimal, hash string) (t *persist.Transaction, err error) {
@@ -314,8 +272,7 @@ func (m *BalanceManager) FundAccountByID(ctx context.Context, id uuid.UUID, s ty
 	}
 
 	r := m.acct.Balances(a, s)
-	newPost := persist.NewBalanceItem(amt)
-	err = r.CreatePost(ctx, newPost)
+	err = r.AddToBalance(ctx, amt)
 	if err != nil {
 		return err
 	}
@@ -348,8 +305,7 @@ func (m *BalanceManager) FundAccountByAddress(ctx context.Context, hash string, 
 	}
 
 	r := m.acct.Balances(a, s)
-	newPost := persist.NewBalanceItem(amt)
-	err = r.CreatePost(ctx, newPost)
+	err = r.AddToBalance(ctx, amt)
 	if err != nil {
 		return err
 	}
@@ -453,6 +409,11 @@ func (m *BalanceManager) makeOrderRecords(ctx context.Context, entry types.Balan
 		Fee:       "",
 		Timestamp: persist.NanoTime(time.Now()),
 	})
+	if err != nil {
+		return err
+	}
+
+	err = m.PostAmtToBalance(ctx, a, entry.AddSymbol, entry.FeeQuantity.Mul(decimal.NewFromInt(-1)))
 	if err != nil {
 		return err
 	}

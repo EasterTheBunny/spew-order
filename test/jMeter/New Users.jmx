@@ -87,6 +87,17 @@
           <stringProp name="variableNames">user,password</stringProp>
         </CSVDataSet>
         <hashTree/>
+        <com.blazemeter.jmeter.RandomCSVDataSetConfig guiclass="com.blazemeter.jmeter.RandomCSVDataSetConfigGui" testclass="com.blazemeter.jmeter.RandomCSVDataSetConfig" testname="Random Order Data" enabled="true">
+          <stringProp name="filename">/Users/Awbrey.Hughlett/go/src/github.com/easterthebunny/spew-order/test/orders.csv</stringProp>
+          <stringProp name="fileEncoding">UTF-8</stringProp>
+          <stringProp name="delimiter">,</stringProp>
+          <stringProp name="variableNames">base,target,action,type,type_base,price,amount</stringProp>
+          <boolProp name="randomOrder">true</boolProp>
+          <boolProp name="ignoreFirstLine">true</boolProp>
+          <boolProp name="rewindOnTheEndOfList">true</boolProp>
+          <boolProp name="independentListPerThread">false</boolProp>
+        </com.blazemeter.jmeter.RandomCSVDataSetConfig>
+        <hashTree/>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get Bearer Token" enabled="true">
           <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
@@ -241,9 +252,9 @@
           <stringProp name="HTTPSampler.response_timeout"></stringProp>
         </HTTPSamplerProxy>
         <hashTree/>
-        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="10% Conversion Rate" enabled="true">
-          <stringProp name="TestPlan.comments">Only run this group 10% of all onboarded accounts</stringProp>
-          <stringProp name="IfController.condition">${__javaScript(Math.random() &lt; 0.1)}</stringProp>
+        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="30% Conversion Rate" enabled="true">
+          <stringProp name="TestPlan.comments">Only run this group 30% of all onboarded accounts</stringProp>
+          <stringProp name="IfController.condition">${__javaScript(Math.random() &lt; 0.3)}</stringProp>
           <boolProp name="IfController.evaluateAll">false</boolProp>
           <boolProp name="IfController.useExpression">true</boolProp>
         </IfController>
@@ -258,7 +269,7 @@
 	&quot;Symbol&quot;: &quot;ETH&quot;,&#xd;
 	&quot;TransactionHash&quot;: &quot;${eth_hash}&quot;,&#xd;
 	&quot;Address&quot;: &quot;${eth_hash}&quot;,&#xd;
-	&quot;Amount&quot;: &quot;100.00000&quot;&#xd;
+	&quot;Amount&quot;: &quot;25.00000&quot;&#xd;
 }</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
@@ -289,7 +300,7 @@
 	&quot;Symbol&quot;: &quot;BTC&quot;,&#xd;
 	&quot;TransactionHash&quot;: &quot;${btc_hash}&quot;,&#xd;
 	&quot;Address&quot;: &quot;${btc_hash}&quot;,&#xd;
-	&quot;Amount&quot;: &quot;100.00000&quot;&#xd;
+	&quot;Amount&quot;: &quot;2.50000&quot;&#xd;
 }</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
@@ -315,17 +326,6 @@
             <stringProp name="LoopController.loops">5</stringProp>
           </LoopController>
           <hashTree>
-            <com.blazemeter.jmeter.RandomCSVDataSetConfig guiclass="com.blazemeter.jmeter.RandomCSVDataSetConfigGui" testclass="com.blazemeter.jmeter.RandomCSVDataSetConfig" testname="Random Order Data" enabled="true">
-              <stringProp name="filename">/Users/Awbrey.Hughlett/go/src/github.com/easterthebunny/spew-order/test/orders.csv</stringProp>
-              <stringProp name="fileEncoding">UTF-8</stringProp>
-              <stringProp name="delimiter">,</stringProp>
-              <stringProp name="variableNames">base,target,action,type,type_base,price,amount</stringProp>
-              <boolProp name="randomOrder">true</boolProp>
-              <boolProp name="ignoreFirstLine">true</boolProp>
-              <boolProp name="rewindOnTheEndOfList">true</boolProp>
-              <boolProp name="independentListPerThread">true</boolProp>
-            </com.blazemeter.jmeter.RandomCSVDataSetConfig>
-            <hashTree/>
             <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Create New Order" enabled="true">
               <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
               <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
@@ -388,7 +388,7 @@
               <stringProp name="HTTPSampler.response_timeout"></stringProp>
             </HTTPSamplerProxy>
             <hashTree/>
-            <IfController guiclass="IfControllerPanel" testclass="IfController" testname="!0% Chance of Cancel" enabled="true">
+            <IfController guiclass="IfControllerPanel" testclass="IfController" testname="10% Chance of Cancel" enabled="true">
               <stringProp name="IfController.condition">${__javaScript(Math.random() &lt; 0.1)}</stringProp>
               <boolProp name="IfController.evaluateAll">false</boolProp>
               <boolProp name="IfController.useExpression">true</boolProp>

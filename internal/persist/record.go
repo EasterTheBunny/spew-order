@@ -69,14 +69,12 @@ func (a *Account) Decode(b []byte, enc EncodingType) error {
 
 type BalanceRepository interface {
 	GetBalance(context.Context) (decimal.Decimal, error)
+	AddToBalance(context.Context, decimal.Decimal) error
 	UpdateBalance(context.Context, decimal.Decimal) error
 	FindHolds(context.Context) ([]*BalanceItem, error)
 	CreateHold(context.Context, *BalanceItem) error
 	DeleteHold(context.Context, Key) error
 	UpdateHold(context.Context, Key, decimal.Decimal) error
-	FindPosts(context.Context) ([]*BalanceItem, error)
-	CreatePost(context.Context, *BalanceItem) error
-	DeletePost(context.Context, *BalanceItem) error
 }
 
 type BalanceItem struct {

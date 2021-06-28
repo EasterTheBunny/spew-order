@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/easterthebunny/render"
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -16,13 +17,15 @@ type AuditHandler struct {
 	accounts persist.AccountRepository
 	auths    persist.AuthorizationRepository
 	ledger   persist.LedgerRepository
+	book     persist.BookRepository
 }
 
-func NewAuditHandler(a persist.AccountRepository, t persist.AuthorizationRepository, l persist.LedgerRepository) *AuditHandler {
+func NewAuditHandler(a persist.AccountRepository, t persist.AuthorizationRepository, l persist.LedgerRepository, b persist.BookRepository) *AuditHandler {
 	return &AuditHandler{
 		accounts: a,
 		auths:    t,
-		ledger:   l}
+		ledger:   l,
+		book:     b}
 }
 
 func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Request) {
@@ -38,11 +41,12 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 
 		ctx := r.Context()
 		symbols := []types.Symbol{types.SymbolBitcoin, types.SymbolEthereum}
-		accountBalances, err := h.getAccountBalances(ctx, symbols)
+		accountBalances, msgs, err := h.getAccountBalances(ctx, symbols)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
 		}
+		response.Errors = append(response.Errors, msgs...)
 
 		aBal := make(map[types.Symbol]decimal.Decimal)
 		lBal := make(map[types.Symbol]decimal.Decimal)
@@ -156,8 +160,9 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.Symbol) (map[types.Symbol]decimal.Decimal, error) {
+func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.Symbol) (map[types.Symbol]decimal.Decimal, []string, error) {
 	var err error
+	var msgs []string
 	var auths []*persist.Authorization
 
 	accountBalances := make(map[types.Symbol]decimal.Decimal)
@@ -167,7 +172,7 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 
 	auths, err = h.auths.GetAuthorizations(ctx)
 	if err != nil {
-		return accountBalances, err
+		return accountBalances, msgs, err
 	}
 
 	// calculate totals for all symbols for all accounts
@@ -175,31 +180,100 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 		for _, acc := range auth.Accounts {
 			a := &persist.Account{ID: acc}
 
+			trbals := map[types.Symbol]decimal.Decimal{
+				types.SymbolBitcoin:  decimal.NewFromInt(0),
+				types.SymbolEthereum: decimal.NewFromInt(0),
+			}
+
+			trepo := h.accounts.Transactions(a)
+			transactions, err := trepo.GetTransactions(ctx)
+			if err != nil {
+				return accountBalances, msgs, err
+			}
+
+			sort.Slice(transactions, func(i, j int) bool {
+				return transactions[i].Timestamp.Value() < transactions[j].Timestamp.Value()
+			})
+
+			for _, tr := range transactions {
+				var sym types.Symbol
+				switch tr.Symbol {
+				case "BTC":
+					sym = types.SymbolBitcoin
+				case "ETH":
+					sym = types.SymbolEthereum
+				}
+
+				qty, _ := decimal.NewFromString(tr.Quantity)
+				fee := decimal.NewFromInt(0)
+				if tr.Fee != "" {
+					fee, _ = decimal.NewFromString(tr.Fee)
+				}
+				trbals[sym] = trbals[sym].Add(qty).Sub(fee)
+			}
+
+			orepo := h.accounts.Orders(a)
+			orders, err := orepo.GetOrdersByStatus(ctx, persist.StatusFilled, persist.StatusOpen, persist.StatusPartial, persist.StatusCanceled)
+			if err != nil {
+				return accountBalances, msgs, err
+			}
+
+			for _, order := range orders {
+				bi := persist.NewBookItem(order.Base)
+				exists, err := h.book.BookItemExists(ctx, &bi)
+
+				key := fmt.Sprintf("%s.%d", bi.Order.Type.KeyString(bi.Order.Action), bi.Order.Timestamp.UnixNano())
+
+				if err != nil {
+					return accountBalances, msgs, err
+				}
+				switch order.Status {
+				case persist.StatusCanceled:
+				case persist.StatusFilled:
+					// order should not be on the book
+					if exists {
+						msgs = append(msgs, fmt.Sprintf("account %s order %s exists on order book with key %s", acc, order.Base.ID, key))
+					}
+				case persist.StatusOpen:
+				case persist.StatusPartial:
+					// order should be on the book
+					if !exists {
+						msgs = append(msgs, fmt.Sprintf("account %s order %s does not exist on order book", acc, order.Base.ID))
+					}
+				}
+
+				switch order.Base.Type.(type) {
+				case *types.MarketOrderType:
+					// market orders should not appear on the book
+					if exists {
+						msgs = append(msgs, fmt.Sprintf("account %s order %s is a market order and is on the order book with key %s", acc, order.Base.ID, key))
+					}
+				}
+			}
+
 			for _, s := range symbols {
 				br := h.accounts.Balances(a, s)
 
 				var bal decimal.Decimal
 				bal, err = br.GetBalance(ctx)
 				if err != nil {
-					return accountBalances, err
+					return accountBalances, msgs, err
 				}
 
 				accountBalances[s] = accountBalances[s].Add(bal)
 
-				var bi []*persist.BalanceItem
-				bi, err = br.FindPosts(ctx)
-				if err != nil {
-					return accountBalances, err
-				}
-
-				for _, b := range bi {
-					accountBalances[s] = accountBalances[s].Add(b.Amount)
+				if !bal.Equal(trbals[s]) {
+					msgs = append(msgs,
+						fmt.Sprintf(`account balance "%s" does not match transaction balance "%s" for account %s`,
+							accountBalances[s].StringFixedBank(s.RoundingPlace()),
+							trbals[s].StringFixedBank(s.RoundingPlace()),
+							acc))
 				}
 			}
 		}
 	}
 
-	return accountBalances, nil
+	return accountBalances, msgs, nil
 }
 
 type AuditResponse struct {
