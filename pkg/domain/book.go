@@ -100,24 +100,32 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					if o.ID == bookOrder.ID {
 						// update the account hold for the book order to
 						// match the new order amount
+						var updateError error
+
 						smb, amt := o.Type.HoldAmount(o.Action, o.Base, o.Target)
 						err = ob.bm.UpdateHoldOnAccount(ctx, &Account{ID: o.Account}, smb, amt, ky(o.HoldID))
 						if err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::update hold::%w", err)
+							// errors should not be hard errors
+							updateError = fmt.Errorf("update hold::%w, ", err)
 						}
 
 						// remove hold on incoming order since that order is filled
 						smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 						if err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
+							updateError = fmt.Errorf("remove hold::%w, ", err)
 						}
 
 						bi := persist.NewBookItem(*o)
 						err = ob.bir.SetBookItem(ctx, &bi)
 						if err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+							updateError = fmt.Errorf("update book item::%w", err)
 						}
+
+						if updateError != nil {
+							return fmt.Errorf("ExecuteOrInsertOrder::partial match on book order:%w", updateError)
+						}
+
 						return nil
 					}
 
@@ -125,27 +133,32 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					// partially filled and needs to continue through the
 					// book
 					if o.ID != bookOrder.ID {
-						// TODO: remove hold on book order
-						// TODO: update hold on incoming order
+						var updateError error
+
 						order = *o
 						// update the account hold for the incoming order to
 						// match the new order amount
 						smb, amt := o.Type.HoldAmount(order.Action, order.Base, order.Target)
 						err = ob.bm.UpdateHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt, ky(order.HoldID))
 						if err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::update hold::%w", err)
+							updateError = fmt.Errorf("update hold::%w, ", err)
 						}
 
 						// remove hold on book order since that order is filled
 						smb, _ = book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 						if err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
+							updateError = fmt.Errorf("remove hold::%w, ", err)
 						}
 
 						if err := ob.bir.DeleteBookItem(ctx, book); err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+							updateError = fmt.Errorf("delete book item::%w", err)
 						}
+
+						if updateError != nil {
+							return fmt.Errorf("ExecuteOrInsertOrder::partial match on incoming order:%w", updateError)
+						}
+
 						continue
 					}
 				}
@@ -153,24 +166,31 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 				// in the case that there is no order returned from resolve
 				// delete the book order because both orders were closed
 				if o == nil {
+					var updateError error
+
 					// remove hold on book order since that order is filled
 					smb, _ := book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 					if err != nil {
-						return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
+						updateError = fmt.Errorf("remove hold::%w, ", err)
 					}
 
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 					if err != nil {
-						return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
+						updateError = fmt.Errorf("remove hold::%w, ", err)
 					}
 
 					err = ob.bir.DeleteBookItem(ctx, book)
 					if err != nil {
-						return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+						updateError = fmt.Errorf("delete book item::%w", err)
 					}
+
+					if updateError != nil {
+						return fmt.Errorf("ExecuteOrInsertOrder::total match on both orders:%w", updateError)
+					}
+
 					return nil
 				}
 

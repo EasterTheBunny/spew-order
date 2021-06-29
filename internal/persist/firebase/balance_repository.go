@@ -353,29 +353,32 @@ func (b *BalanceRepository) DeleteHold(ctx context.Context, id persist.Key) erro
 		return err
 	}
 
+	item := balanceItemDocument{
+		Version:   99999,
+		ID:        id.String(),
+		Timestamp: time.Now(),
+		Created:   time.Now(),
+		Amount:    "0",
+	}
+
 	for _, doc := range docs {
 		if doc.ID == id.String() {
 			// insert new version of item as a zero amount item
 			// this will allow it to be deleted later
-			item := balanceItemDocument{
-				Version:   doc.Version + 1,
-				ID:        doc.ID,
-				Timestamp: doc.Timestamp,
-				Created:   time.Now(),
-				Amount:    "0",
-			}
+			item.Version = doc.Version + 1
+			item.Timestamp = doc.Timestamp
 
-			col := fmt.Sprintf("accounts/%s/symbols/%s/holds", b.account.ID, b.symbol)
-			_, _, err := b.getClient(ctx).Collection(col).Add(ctx, &item)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			break
 		}
 	}
 
-	return fmt.Errorf("%w for account %s and id %s", ErrHoldNotFound, b.account.ID, id)
+	col := fmt.Sprintf("accounts/%s/symbols/%s/holds", b.account.ID, b.symbol)
+	_, _, err = b.getClient(ctx).Collection(col).Add(ctx, &item)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *BalanceRepository) getClient(ctx context.Context) *firestore.Client {
