@@ -133,14 +133,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						smb, amt := o.Type.HoldAmount(order.Action, order.Base, order.Target)
 						err = ob.bm.UpdateHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt, ky(order.HoldID))
 						if err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+							return fmt.Errorf("ExecuteOrInsertOrder::update hold::%w", err)
 						}
 
 						// remove hold on book order since that order is filled
 						smb, _ = book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 						if err != nil {
-							return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+							return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
 						}
 
 						if err := ob.bir.DeleteBookItem(ctx, book); err != nil {
@@ -157,14 +157,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					smb, _ := book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
 					if err != nil {
-						return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+						return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
 					}
 
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
 					if err != nil {
-						return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+						return fmt.Errorf("ExecuteOrInsertOrder::remove hold::%w", err)
 					}
 
 					err = ob.bir.DeleteBookItem(ctx, book)

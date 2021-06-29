@@ -343,7 +343,7 @@ func (b *BalanceRepository) UpdateHold(ctx context.Context, id persist.Key, amt 
 		}
 	}
 
-	return ErrHoldNotFound
+	return fmt.Errorf("%w for account %s and id %s", ErrHoldNotFound, b.account.ID, id)
 }
 
 func (b *BalanceRepository) DeleteHold(ctx context.Context, id persist.Key) error {
@@ -375,7 +375,7 @@ func (b *BalanceRepository) DeleteHold(ctx context.Context, id persist.Key) erro
 		}
 	}
 
-	return ErrHoldNotFound
+	return fmt.Errorf("%w for account %s and id %s", ErrHoldNotFound, b.account.ID, id)
 }
 
 func (b *BalanceRepository) getClient(ctx context.Context) *firestore.Client {
