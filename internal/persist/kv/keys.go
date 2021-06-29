@@ -150,6 +150,7 @@ func bookItemSubspace(b persist.BookItem, t *types.ActionType) key.Subspace {
 // are sorted smallest/oldest to largest/newest
 func bookItemKey(b persist.BookItem) string {
 	// /root/book/{base}/{target}/{BUY|SELL}/{decimal_price}{timestamp}
+
 	p := b.Order.Type.KeyTuple(b.Order.Action)
 	p = append(p, key.Tuple{b.Order.Timestamp.UnixNano()}...)
 	return bookItemSubspace(b, nil).Pack(p).String()

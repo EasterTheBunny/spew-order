@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -188,7 +189,16 @@ snapshots:
 		}
 	}
 
-	for _, docs := range keep {
+	keys := make([]string, 0, len(keep))
+	for k := range keep {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] > keys[j]
+	})
+
+	for _, key := range keys {
+		docs := keep[key]
 		var current *bookItemDocument
 		var ref *firestore.DocumentRef
 
@@ -275,10 +285,13 @@ func (br *BookRepository) getClient(ctx context.Context) *firestore.Client {
 	return client
 }
 
+// itemKey generates a key that will sort ASC lexicographically, but remain in
+// type sorted order: buys are sorted largest/oldest to smallest/newest and sells
+// are sorted smallest/oldest to largest/newest
 func itemKey(item *persist.BookItem) string {
 	price := item.Order.Type.KeyString(item.Order.Action)
 	timestamp := item.Order.Timestamp.UnixNano()
-	return fmt.Sprintf("%s.%d", price, timestamp)
+	return fmt.Sprintf("%s.%011d", price, timestamp)
 }
 
 func market(item *persist.BookItem) string {

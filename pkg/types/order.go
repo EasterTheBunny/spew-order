@@ -336,9 +336,6 @@ func (m MarketOrderType) KeyTuple(t ActionType) key.Tuple {
 // KeyString ...
 func (m MarketOrderType) KeyString(t ActionType) string {
 	pr := decimal.NewFromInt(0)
-	if t == ActionTypeBuy {
-		pr = decimal.NewFromInt(SortSwitch)
-	}
 	return pr.StringFixedBank(m.Base.RoundingPlace())
 }
 
