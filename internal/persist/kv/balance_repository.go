@@ -44,7 +44,9 @@ func (b *BalanceRepository) GetBalance(ctx context.Context) (balance decimal.Dec
 }
 
 func (b *BalanceRepository) AddToBalance(ctx context.Context, amt decimal.Decimal) error {
-	return nil
+	bal, _ := b.GetBalance(ctx)
+	bal = bal.Add(amt)
+	return b.UpdateBalance(ctx, bal)
 }
 
 func (b *BalanceRepository) UpdateBalance(ctx context.Context, bal decimal.Decimal) error {
