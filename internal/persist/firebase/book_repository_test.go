@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestItemKey(t *testing.T) {
+func TestItemKey_Buys(t *testing.T) {
 
 	/*
 		BUY
