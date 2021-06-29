@@ -413,11 +413,6 @@ func (m *BalanceManager) makeOrderRecords(ctx context.Context, entry types.Balan
 		return err
 	}
 
-	err = m.PostAmtToBalance(ctx, a, entry.AddSymbol, entry.FeeQuantity.Mul(decimal.NewFromInt(-1)))
-	if err != nil {
-		return err
-	}
-
 	err = m.ledger.RecordFee(ctx, entry.AddSymbol, entry.FeeQuantity)
 	if err != nil {
 		return err

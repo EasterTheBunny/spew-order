@@ -135,10 +135,7 @@ func newSeededRepo() (persist.AccountRepository, persist.LedgerRepository, fundi
 
 	for _, s := range seedData {
 		acct := &persist.Account{ID: s.acct.ID.String()}
-		b := repo.Balances(acct, s.sym)
-		bal, _ := b.GetBalance(ctx)
-		bal = bal.Add(s.amt)
-		b.UpdateBalance(ctx, bal)
+		repo.Balances(acct, s.sym).AddToBalance(ctx, s.amt)
 	}
 
 	return repo, l, f

@@ -88,7 +88,7 @@ func (b *BalanceRepository) GetBalance(ctx context.Context) (balance decimal.Dec
 
 	// should the balance document be updated?
 	// firestore documentation suggests not updating a record more than once per second
-	update := time.Duration(time.Now().Unix()-doc.Updated.Unix()) > time.Second
+	update := canChange(doc.Updated)
 
 	// for every post, add the amount to the balance
 	for i, post := range posts {
@@ -102,7 +102,7 @@ func (b *BalanceRepository) GetBalance(ctx context.Context) (balance decimal.Dec
 		// if the balance document can be updated and the current post
 		// can be deleted, add the post to the update balance and delete
 		// the post
-		if update && time.Duration(time.Now().Unix()-post.Created.Unix()) > time.Second {
+		if update && canChange(post.Created) {
 			updateBalance = updateBalance.Add(amt)
 			batch.Delete(refs[i])
 			batchItems = true
@@ -134,26 +134,6 @@ func (b *BalanceRepository) AddToBalance(ctx context.Context, amt decimal.Decima
 	_, _, err := b.getClient(ctx).Collection(col).Add(ctx, &item)
 
 	return err
-}
-
-// UpdateBalance ...
-// Deprecated
-func (b *BalanceRepository) UpdateBalance(ctx context.Context, bal decimal.Decimal) error {
-
-	balance := decimal.NewFromInt(0)
-
-	_, doc, err := b.getBalanceDocument(ctx)
-	if err != nil {
-		if errors.Is(err, ErrBalanceDocumentNotFound) {
-			err = b.UpdateBalance(ctx, balance)
-		}
-		return err
-	}
-
-	doc.Balance = bal.StringFixedBank(b.symbol.RoundingPlace())
-	doc.Updated = time.Now()
-
-	return b.setBalanceDocument(ctx, doc)
 }
 
 func (b *BalanceRepository) getBalanceDocument(ctx context.Context) (*firestore.DocumentRef, *balanceDocument, error) {
@@ -231,30 +211,30 @@ func (b *BalanceRepository) getBalanceItemDocuments(ctx context.Context, collect
 			break
 		}
 
-		var item balanceItemDocument
-		doc.DataTo(&item)
+		var current balanceItemDocument
+		doc.DataTo(&current)
 
 		// build key for looking up last encountered item version
-		vStr := fmt.Sprintf("%d-%s", item.Version, item.ID)
-		ver, ok := versions[vStr]
+		vStr := current.ID
+		version, ok := versions[vStr]
 		if !ok { // add the current item to the version lookup if its not there
-			versions[vStr] = &item
+			versions[vStr] = &current
 			vRefs[vStr] = doc.Ref
 		} else {
 			// if the current item version is greater than the lookup version
 			// update the lookup version with the current version
 			// and delete the lesser version
-			if item.Version > ver.Version {
-				versions[vStr] = &item
-				vRefs[vStr] = doc.Ref
-
+			if current.Version > version.Version {
 				// delete old version if possible
 				r, ok := vRefs[vStr]
-				if ok && time.Duration(time.Now().Unix()-ver.Created.Unix()) > time.Second {
+				if ok && canChange(version.Created) {
 					batch.Delete(r)
 					batchedItems = true
 				}
-			} else if time.Duration(time.Now().Unix()-item.Created.Unix()) > time.Second {
+
+				versions[vStr] = &current
+				vRefs[vStr] = doc.Ref
+			} else if canChange(current.Created) {
 				// delete old version if possible
 				batch.Delete(doc.Ref)
 				batchedItems = true
@@ -277,7 +257,7 @@ func (b *BalanceRepository) getBalanceItemDocuments(ctx context.Context, collect
 				return
 			}
 
-			if amt.Equal(zero) && time.Duration(time.Now().Unix()-v.Created.Unix()) > time.Second {
+			if amt.Equal(zero) && canChange(v.Created) {
 				batch.Delete(r)
 				batchedItems = true
 			} else if !amt.Equal(zero) {
@@ -288,7 +268,7 @@ func (b *BalanceRepository) getBalanceItemDocuments(ctx context.Context, collect
 	}
 
 	if batchedItems {
-		batch.Commit(ctx)
+		_, err = batch.Commit(ctx)
 	}
 
 	return
@@ -298,20 +278,18 @@ func (b *BalanceRepository) getBalanceItemDocuments(ctx context.Context, collect
 // of the same hold to prevent write contention.
 func (b *BalanceRepository) FindHolds(ctx context.Context) (holds []*persist.BalanceItem, err error) {
 
-	versions := make(map[string]int)
-
 	_, docs, err := b.getBalanceItemDocuments(ctx, b.getHoldCollection(ctx))
 
-	for _, v := range versions {
+	for _, doc := range docs {
 		var amt decimal.Decimal
-		amt, err = decimal.NewFromString(docs[v].Amount)
+		amt, err = decimal.NewFromString(doc.Amount)
 		if err != nil {
 			return
 		}
 
 		hold := persist.BalanceItem{
-			ID:        docs[v].ID,
-			Timestamp: persist.NanoTime(docs[v].Created),
+			ID:        doc.ID,
+			Timestamp: persist.NanoTime(doc.Created),
 			Amount:    amt,
 		}
 		holds = append(holds, &hold)
@@ -400,24 +378,6 @@ func (b *BalanceRepository) DeleteHold(ctx context.Context, id persist.Key) erro
 	return ErrHoldNotFound
 }
 
-func (b *BalanceRepository) getBalanceItems(ctx context.Context, collection *firestore.CollectionRef) (items []*persist.BalanceItem, err error) {
-	iter := collection.OrderBy("timestamp", firestore.Desc).Documents(ctx)
-	var doc *firestore.DocumentSnapshot
-	for {
-		doc, err = iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				err = nil
-			}
-
-			break
-		}
-
-		items = append(items, documentToBalanceItem(doc.Data()))
-	}
-	return
-}
-
 func (b *BalanceRepository) getClient(ctx context.Context) *firestore.Client {
 
 	var client *firestore.Client
@@ -427,33 +387,4 @@ func (b *BalanceRepository) getClient(ctx context.Context) *firestore.Client {
 		client = b.client
 	}
 	return client
-}
-
-func balanceItemToDocument(sym types.Symbol, a *persist.BalanceItem) map[string]interface{} {
-	m := map[string]interface{}{
-		"id":        a.ID,
-		"timestamp": a.Timestamp.Value(),
-		"amount":    a.Amount.StringFixedBank(sym.RoundingPlace()),
-	}
-
-	return m
-}
-
-func documentToBalanceItem(doc map[string]interface{}) *persist.BalanceItem {
-	item := &persist.BalanceItem{}
-
-	if v, ok := doc["id"]; ok {
-		item.ID = v.(string)
-	}
-
-	if v, ok := doc["timestamp"]; ok {
-		item.Timestamp = persist.NanoTime(time.Unix(0, v.(int64)))
-	}
-
-	if v, ok := doc["amount"]; ok {
-		amt, _ := decimal.NewFromString(v.(string))
-		item.Amount = amt
-	}
-
-	return item
 }

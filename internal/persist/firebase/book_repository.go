@@ -20,40 +20,103 @@ func NewBookRepository(client *firestore.Client) *BookRepository {
 	return &BookRepository{client: client}
 }
 
-// /root/book/{base}-{target}/{BUY|SELL}/{decimal_price}{timestamp}
+type bookItemDocument struct {
+	Version    int64     `firestore:"version"`
+	Delete     bool      `firestore:"remove"`
+	Created    time.Time `firestore:"created"`
+	SortKey    string    `firestore:"sort_key"`
+	Timestamp  time.Time `firestore:"timestamp"`
+	ActionType []byte    `firestore:"action_type"`
+	Order      []byte    `firestore:"order"`
+}
+
+// BookItemExists searches the data store by the item key. Returns true if the item does exist.
 func (br *BookRepository) BookItemExists(ctx context.Context, item *persist.BookItem) (bool, error) {
+
+	_, doc, err := br.getBookItemDocument(ctx, item)
+
+	if err != nil {
+		err = fmt.Errorf("BookItemExists::%w", err)
+	}
+	return doc != nil, err
+}
+
+func (br *BookRepository) SetBookItem(ctx context.Context, item *persist.BookItem) error {
+
+	_, doc, err := br.getBookItemDocument(ctx, item)
+	if err != nil {
+		return err
+	}
+
+	newDoc := bookitemToDocument(item)
+	if doc != nil {
+		newDoc.Version = doc.Version + 1
+	}
+
+	_, _, err = br.getClient(ctx).Collection("book").
+		Doc(market(item)).
+		Collection(item.Order.Action.String()).Add(ctx, &newDoc)
+
+	if err != nil {
+		err = fmt.Errorf("SetBookItem::%w", err)
+	}
+
+	return err
+}
+
+func (br *BookRepository) getBookItemDocument(ctx context.Context, item *persist.BookItem) (*firestore.DocumentRef, *bookItemDocument, error) {
 
 	iter := br.getClient(ctx).Collection("book").
 		Doc(market(item)).
 		Collection(item.Order.Action.String()).
 		Where("sort_key", "==", itemKey(item)).
-		Limit(1).
 		Documents(ctx)
 
 	var err error
+	var document *bookItemDocument
+	var ref *firestore.DocumentRef
+	batch := br.getClient(ctx).Batch()
+	batchedItems := false
 
-	_, err = iter.Next()
-	if err != nil {
-		if errors.Is(err, iterator.Done) {
-			return false, nil
+	var doc *firestore.DocumentSnapshot
+	for {
+		doc, err = iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.Done) {
+				err = nil
+			} else {
+				return nil, nil, err
+			}
+
+			break
 		}
-		return false, fmt.Errorf("BookItemExists: %w", err)
+
+		var current bookItemDocument
+		doc.DataTo(&current)
+
+		if document == nil || current.Version > document.Version {
+			document = &current
+			ref = doc.Ref
+		} else if canChange(current.Created) {
+			// delete current from database if possible
+			batch.Delete(doc.Ref)
+			batchedItems = true
+		}
+
+		if document != nil && document.Delete {
+			batch.Delete(doc.Ref)
+			batchedItems = true
+			document = nil
+			ref = nil
+		}
 	}
 
-	return true, nil
-}
-
-func (br *BookRepository) SetBookItem(ctx context.Context, item *persist.BookItem) error {
-	collection := br.getClient(ctx).Collection("book").
-		Doc(fmt.Sprintf("%s-%s", item.Order.Base, item.Order.Target)).
-		Collection(item.Order.Action.String())
-
-	_, _, err := collection.Add(ctx, bookitemToDocument(item))
-	if err != nil {
-		return fmt.Errorf("SetBookItem: %w", err)
+	if batchedItems {
+		_, err = batch.Commit(ctx)
 	}
 
-	return nil
+	return ref, document, err
+
 }
 
 func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
@@ -62,10 +125,17 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 		Doc(market(item)).
 		Collection(item.ActionType.String()).
 		OrderBy("sort_key", firestore.Asc).
-		Limit(limit).
+		Limit(limit * 3).
 		Documents(ctx)
 
+	keep := make(map[string][]*firestore.DocumentSnapshot)
+	remove := make(map[string][]*firestore.DocumentSnapshot)
+
+	batch := br.getClient(ctx).Batch()
+	batchedItems := false
+
 	var doc *firestore.DocumentSnapshot
+snapshots:
 	for {
 		doc, err = iter.Next()
 		if err != nil {
@@ -78,32 +148,117 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 			break
 		}
 
-		items = append(items, documentToBookItem(doc.Data()))
+		var interfaceKey interface{}
+		interfaceKey, err = doc.DataAt("sort_key")
+		if err != nil {
+			return
+		}
+		sortKey := interfaceKey.(string)
+
+		kp, inKeep := keep[sortKey]
+		dl, inDel := remove[sortKey]
+
+		switch {
+		case inKeep:
+			// if the item id exists in the keep or delete bucket, add the item to the list for processing
+			keep[sortKey] = append(kp, doc)
+
+			var deleteVal interface{}
+			deleteVal, err = doc.DataAt("remove")
+			if err != nil {
+				return
+			}
+			deleteKey := deleteVal.(bool)
+
+			if deleteKey {
+				remove[sortKey] = keep[sortKey]
+				delete(keep, sortKey)
+			}
+			continue
+		case inDel:
+			remove[sortKey] = append(dl, doc)
+			continue
+		case len(keep) < limit:
+			// if the length of the keep bucket is less than the limit add the item to the list for processing
+			keep[sortKey] = []*firestore.DocumentSnapshot{doc}
+			continue
+		default:
+			// if the length of the keep bucket is equal to the limit, break from the loop
+			break snapshots
+		}
+	}
+
+	for _, docs := range keep {
+		var current *bookItemDocument
+		var ref *firestore.DocumentRef
+
+		for _, doc = range docs {
+			var item bookItemDocument
+			doc.DataTo(&item)
+
+			switch {
+			case current == nil:
+				current = &item
+				ref = doc.Ref
+			case item.Version > current.Version:
+				current = &item
+				batch.Delete(ref)
+				ref = doc.Ref
+				batchedItems = true
+			}
+		}
+
+		items = append(items, documentToBookItem(current))
+	}
+
+	for _, docs := range remove {
+		for _, doc = range docs {
+			batch.Delete(doc.Ref)
+			batchedItems = true
+		}
+	}
+
+	if batchedItems {
+		_, err = batch.Commit(ctx)
+	}
+
+	if err != nil {
+		err = fmt.Errorf("GetHeadBatch::%w", err)
 	}
 
 	return
 }
 
 func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.BookItem) error {
-	iter := br.getClient(ctx).Collection("book").
-		Doc(market(item)).
-		Collection(item.Order.Action.String()).
-		Where("sort_key", "==", itemKey(item)).
-		Limit(1).Documents(ctx)
 
-	batch := br.client.Batch()
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			break
-		}
-
-		batch.Delete(doc.Ref)
+	ref, doc, err := br.getBookItemDocument(ctx, item)
+	if err != nil {
+		return err
 	}
 
-	_, err := batch.Commit(ctx)
+	batch := br.getClient(ctx).Batch()
+	batchedItems := false
+	if doc != nil && canChange(doc.Created) {
+		batch.Delete(ref)
+		batchedItems = true
+	}
+
+	if batchedItems {
+		_, err = batch.Commit(ctx)
+	} else {
+		newDoc := bookitemToDocument(item)
+		if doc != nil {
+			newDoc.Version = doc.Version + 1
+			newDoc.Delete = true
+		}
+
+		_, _, err = br.getClient(ctx).Collection("book").
+			Doc(market(item)).
+			Collection(item.Order.Action.String()).Add(ctx, &newDoc)
+	}
+
 	if err != nil {
-		err = fmt.Errorf("DeleteBookItem: %w", err)
+		err = fmt.Errorf("DeleteBookItem::%w", err)
 	}
 
 	return err
@@ -130,34 +285,28 @@ func market(item *persist.BookItem) string {
 	return fmt.Sprintf("%s-%s", item.Order.Base, item.Order.Target)
 }
 
-func bookitemToDocument(b *persist.BookItem) map[string]interface{} {
+func bookitemToDocument(b *persist.BookItem) *bookItemDocument {
 	at, _ := json.Marshal(b.ActionType)
 	order, _ := json.Marshal(b.Order)
-
-	m := map[string]interface{}{
-		"sort_key":    itemKey(b),
-		"timestamp":   b.Timestamp.Value(),
-		"action_type": at,
-		"order":       order,
+	return &bookItemDocument{
+		Version:    0,
+		Delete:     false,
+		Created:    time.Now(),
+		SortKey:    itemKey(b),
+		Timestamp:  time.Time(b.Timestamp),
+		ActionType: at,
+		Order:      order,
 	}
-
-	return m
 }
 
-func documentToBookItem(m map[string]interface{}) *persist.BookItem {
-	b := &persist.BookItem{}
+func documentToBookItem(doc *bookItemDocument) *persist.BookItem {
 
-	if v, ok := m["timestamp"]; ok {
-		b.Timestamp = persist.NanoTime(time.Unix(0, v.(int64)))
+	b := &persist.BookItem{
+		Timestamp: persist.NanoTime(doc.Timestamp),
 	}
 
-	if v, ok := m["action_type"]; ok {
-		json.Unmarshal(v.([]byte), &b.ActionType)
-	}
-
-	if v, ok := m["order"]; ok {
-		json.Unmarshal(v.([]byte), &b.Order)
-	}
+	json.Unmarshal(doc.ActionType, &b.ActionType)
+	json.Unmarshal(doc.Order, &b.Order)
 
 	return b
 }

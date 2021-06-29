@@ -92,7 +92,7 @@ func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.F
 		if _, ok := versionMap[order.Base.ID.String()]; !ok {
 			versionMap[order.Base.ID.String()] = true
 			orders = append(orders, order)
-		} else {
+		} else if canChange(doc.UpdateTime) {
 			// delete the older version
 			batch.Delete(doc.Ref)
 			batchedItems = true
@@ -176,7 +176,7 @@ func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persis
 				version, _ = strconv.Atoi(v.(string))
 			}
 			order = documentToOrder(m2)
-		} else {
+		} else if canChange(doc.UpdateTime) {
 			batch.Delete(doc.Ref)
 			batchedItems = true
 		}

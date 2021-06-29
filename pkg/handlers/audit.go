@@ -205,11 +205,7 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 				}
 
 				qty, _ := decimal.NewFromString(tr.Quantity)
-				fee := decimal.NewFromInt(0)
-				if tr.Fee != "" {
-					fee, _ = decimal.NewFromString(tr.Fee)
-				}
-				trbals[sym] = trbals[sym].Add(qty).Sub(fee)
+				trbals[sym] = trbals[sym].Add(qty)
 			}
 
 			orepo := h.accounts.Orders(a)

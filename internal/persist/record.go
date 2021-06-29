@@ -70,7 +70,6 @@ func (a *Account) Decode(b []byte, enc EncodingType) error {
 type BalanceRepository interface {
 	GetBalance(context.Context) (decimal.Decimal, error)
 	AddToBalance(context.Context, decimal.Decimal) error
-	UpdateBalance(context.Context, decimal.Decimal) error
 	FindHolds(context.Context) ([]*BalanceItem, error)
 	CreateHold(context.Context, *BalanceItem) error
 	DeleteHold(context.Context, Key) error
