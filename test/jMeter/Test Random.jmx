@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.4.1">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan" enabled="true">
+      <stringProp name="TestPlan.comments"></stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">2</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+          <stringProp name="LoopController.loops">5</stringProp>
+        </LoopController>
+        <hashTree>
+          <com.blazemeter.jmeter.RandomCSVDataSetConfig guiclass="com.blazemeter.jmeter.RandomCSVDataSetConfigGui" testclass="com.blazemeter.jmeter.RandomCSVDataSetConfig" testname="bzm - Random CSV Data Set Config" enabled="true">
+            <stringProp name="filename">/Users/Awbrey.Hughlett/go/src/github.com/easterthebunny/spew-order/test/orders.csv</stringProp>
+            <stringProp name="fileEncoding">UTF-8</stringProp>
+            <stringProp name="delimiter">,</stringProp>
+            <stringProp name="variableNames">base,target,action,type,type_base,price,amount</stringProp>
+            <boolProp name="randomOrder">true</boolProp>
+            <boolProp name="ignoreFirstLine">true</boolProp>
+            <boolProp name="rewindOnTheEndOfList">true</boolProp>
+            <boolProp name="independentListPerThread">false</boolProp>
+          </com.blazemeter.jmeter.RandomCSVDataSetConfig>
+          <hashTree/>
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">log.info(vars.get(&quot;base&quot;));
+log.info(vars.get(&quot;target&quot;));
+log.info(vars.get(&quot;action&quot;));
+log.info(vars.get(&quot;type&quot;));
+log.info(vars.get(&quot;type_base&quot;));
+log.info(vars.get(&quot;price&quot;));
+log.info(vars.get(&quot;amount&quot;));
+log.info(&quot;-------&quot;);</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223Sampler>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

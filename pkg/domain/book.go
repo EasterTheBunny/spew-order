@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
@@ -211,6 +212,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 }
 
 func (ob *OrderBook) pairOrders(ctx context.Context, tr *types.Transaction) error {
+	log.Printf("maker order/account %s/%s :: taker order/account %s/%s", tr.A.Order.ID, tr.A.AccountID, tr.B.Order.ID, tr.B.AccountID)
 	return ob.bm.PostTransactionToBalance(ctx, tr)
 }
 

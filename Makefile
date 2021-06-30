@@ -30,6 +30,11 @@ build: openapi
 build-google-storage-test:
 	go build -o $(GOBIN)/tools/google-storage-test ./cmd/tools/google-storage-test/*.go || exit
 
+build-tools:
+	go build -o $(GOBIN)/tools/account-detail ./cmd/tools/account-detail/*.go && \
+	go build -o $(GOBIN)/tools/book-items ./cmd/tools/book-items/*.go && \
+	go build -o $(GOBIN)/tools/order-items ./cmd/tools/order-items/*.go || exit
+
 build-all: fmt test build
 
 run: build-all

@@ -12,6 +12,7 @@ require (
 	github.com/go-chi/chi v1.5.4
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/lestrrat-go/jwx v1.0.6
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/stretchr/testify v1.7.0

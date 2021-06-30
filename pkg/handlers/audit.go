@@ -260,8 +260,8 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 
 				if !bal.Equal(trbals[s]) {
 					msgs = append(msgs,
-						fmt.Sprintf(`account balance "%s" does not match transaction balance "%s" for account %s`,
-							accountBalances[s].StringFixedBank(s.RoundingPlace()),
+						fmt.Sprintf(`account balance '%s' does not match transaction balance '%s' for account %s`,
+							bal.StringFixedBank(s.RoundingPlace()),
 							trbals[s].StringFixedBank(s.RoundingPlace()),
 							acc))
 				}

@@ -87,17 +87,6 @@
           <stringProp name="variableNames">user,password</stringProp>
         </CSVDataSet>
         <hashTree/>
-        <com.blazemeter.jmeter.RandomCSVDataSetConfig guiclass="com.blazemeter.jmeter.RandomCSVDataSetConfigGui" testclass="com.blazemeter.jmeter.RandomCSVDataSetConfig" testname="Random Order Data" enabled="true">
-          <stringProp name="filename">/Users/Awbrey.Hughlett/go/src/github.com/easterthebunny/spew-order/test/orders.csv</stringProp>
-          <stringProp name="fileEncoding">UTF-8</stringProp>
-          <stringProp name="delimiter">,</stringProp>
-          <stringProp name="variableNames">base,target,action,type,type_base,price,amount</stringProp>
-          <boolProp name="randomOrder">true</boolProp>
-          <boolProp name="ignoreFirstLine">true</boolProp>
-          <boolProp name="rewindOnTheEndOfList">true</boolProp>
-          <boolProp name="independentListPerThread">false</boolProp>
-        </com.blazemeter.jmeter.RandomCSVDataSetConfig>
-        <hashTree/>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get Bearer Token" enabled="true">
           <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
@@ -326,6 +315,17 @@
             <stringProp name="LoopController.loops">5</stringProp>
           </LoopController>
           <hashTree>
+            <com.blazemeter.jmeter.RandomCSVDataSetConfig guiclass="com.blazemeter.jmeter.RandomCSVDataSetConfigGui" testclass="com.blazemeter.jmeter.RandomCSVDataSetConfig" testname="Random Order Data" enabled="true">
+              <stringProp name="filename">/Users/Awbrey.Hughlett/go/src/github.com/easterthebunny/spew-order/test/orders.csv</stringProp>
+              <stringProp name="fileEncoding">UTF-8</stringProp>
+              <stringProp name="delimiter">,</stringProp>
+              <stringProp name="variableNames">base,target,action,type,type_base,price,amount</stringProp>
+              <boolProp name="randomOrder">true</boolProp>
+              <boolProp name="ignoreFirstLine">true</boolProp>
+              <boolProp name="rewindOnTheEndOfList">true</boolProp>
+              <boolProp name="independentListPerThread">false</boolProp>
+            </com.blazemeter.jmeter.RandomCSVDataSetConfig>
+            <hashTree/>
             <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Create New Order" enabled="true">
               <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
               <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
