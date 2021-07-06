@@ -56,68 +56,93 @@ type balanceItemDocument struct {
 func (b *BalanceRepository) GetBalance(ctx context.Context) (balance decimal.Decimal, err error) {
 
 	balance = decimal.NewFromInt(0)
+	storeBalance := decimal.NewFromInt(0)
 
-	// get the balance document from storage
-	// if the document is not found, attempt to create it
-	docRef, doc, err := b.getBalanceDocument(ctx)
-	if err != nil {
-		if errors.Is(err, ErrBalanceDocumentNotFound) {
-			err = b.setBalanceDocument(ctx, nil)
-		}
-		return balance, err
-	}
+	balRef := b.getSymbolDocumentRef(ctx)
+	err = b.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		var txErr error
+		execUpdate := false
 
-	// collect all post items with their document refs
-	refs, posts, err := b.getBalanceItemDocuments(ctx, b.getPostCollection(ctx))
-	if err != nil {
-		return balance, err
-	}
+		// get the balance document from storage
+		// if the document is not found, attempt to create it
+		balDoc, txErr := tx.Get(balRef)
+		if txErr != nil {
+			if status.Code(txErr) != codes.NotFound {
+				return txErr
+			}
 
-	// the update balance is the balance to set in the balance document
-	// at the end of the function
-	updateBalance, err := decimal.NewFromString(doc.Balance)
-	if err != nil {
-		return balance, err
-	}
+			newDoc := &balanceDocument{
+				Balance: "0",
+				Created: time.Now(),
+				Updated: time.Now(),
+			}
 
-	// to start, both balance and update balance are the same
-	balance = updateBalance
-
-	batch := b.getClient(ctx).Batch()
-	batchItems := false
-
-	// should the balance document be updated?
-	// firestore documentation suggests not updating a record more than once per second
-	update := canChange(doc.Updated)
-
-	// for every post, add the amount to the balance
-	for i, post := range posts {
-		amt, err := decimal.NewFromString(post.Amount)
-		if err != nil {
-			break
+			return tx.Set(balRef, newDoc)
 		}
 
-		balance = balance.Add(amt)
-
-		// if the balance document can be updated and the current post
-		// can be deleted, add the post to the update balance and delete
-		// the post
-		if update && canChange(post.Created) {
-			updateBalance = updateBalance.Add(amt)
-			batch.Delete(refs[i])
-			batchItems = true
+		docBalString, txErr := balDoc.DataAt("balance")
+		if txErr != nil {
+			return txErr
 		}
-	}
 
-	// if batch items exist, commit the batch
-	if batchItems {
-		doc.Updated = time.Now()
-		doc.Balance = updateBalance.StringFixedBank(b.symbol.RoundingPlace())
-		batch.Set(docRef, &doc)
-		batch.Commit(ctx)
-	}
+		balance, txErr = decimal.NewFromString(docBalString.(string))
+		if txErr != nil {
+			return txErr
+		}
 
-	return balance, nil
+		// collect all post items with their document refs
+		iter := tx.Documents(b.getPostCollection(ctx))
+		var doc *firestore.DocumentSnapshot
+		for {
+			doc, txErr = iter.Next()
+			if txErr != nil {
+				if errors.Is(txErr, iterator.Done) {
+					txErr = nil
+				}
+
+				break
+			}
+			execUpdate = true
+
+			amtStr, txErr := doc.DataAt("amount")
+			if txErr != nil {
+				return txErr
+			}
+
+			amt, txErr := decimal.NewFromString(amtStr.(string))
+			if txErr != nil {
+				return txErr
+			}
+
+			// the returned balance amount should have all posts applied to it
+			balance = balance.Add(amt)
+
+			// the post is allowed to be deleted only if the balance document AND
+			// the post document are last updated more than 1 second ago
+			// if they can both be edited, add the post amount to the change
+			// amount and delete the post
+			if canChange(doc.UpdateTime) && canChange(balDoc.UpdateTime) {
+				storeBalance = storeBalance.Add(amt)
+				txErr = tx.Delete(doc.Ref)
+				if txErr != nil {
+					return txErr
+				}
+			}
+		}
+
+		// if the balance document can be updated and it needs to be updated
+		// execute the update
+		if execUpdate && canChange(balDoc.UpdateTime) {
+			return tx.Set(balRef, map[string]interface{}{
+				"balance": storeBalance.StringFixedBank(b.symbol.RoundingPlace()),
+				"updated": time.Now(),
+			}, firestore.MergeAll)
+		} else {
+			return nil
+		}
+	})
+
+	return balance, err
 }
 
 func (b *BalanceRepository) AddToBalance(ctx context.Context, amt decimal.Decimal) error {
@@ -136,50 +161,6 @@ func (b *BalanceRepository) AddToBalance(ctx context.Context, amt decimal.Decima
 	return err
 }
 
-func (b *BalanceRepository) getBalanceDocument(ctx context.Context) (*firestore.DocumentRef, *balanceDocument, error) {
-
-	doc := balanceDocument{
-		Balance: "0",
-		Updated: time.Now(),
-		Created: time.Now(),
-	}
-
-	dsnap, err := b.getSymbolDocumentRef(ctx).Get(ctx)
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			err = ErrBalanceDocumentNotFound
-		}
-		return nil, nil, err
-	}
-
-	if !dsnap.Exists() {
-		return nil, nil, err
-	}
-
-	dsnap.DataTo(&doc)
-
-	return dsnap.Ref, &doc, err
-}
-
-func (b *BalanceRepository) setBalanceDocument(ctx context.Context, doc *balanceDocument) error {
-	if doc == nil {
-		doc = &balanceDocument{
-			Balance: "0",
-			Created: time.Now(),
-		}
-	}
-
-	doc.Updated = time.Now()
-	collection := b.getClient(ctx).Collection("accounts").Doc(b.account.ID).Collection("symbols")
-
-	_, err := collection.Doc(b.symbol.String()).Set(ctx, doc)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (b *BalanceRepository) getPostCollection(ctx context.Context) *firestore.CollectionRef {
 	return b.getSymbolDocumentRef(ctx).Collection("posts")
 }
@@ -195,81 +176,75 @@ func (b *BalanceRepository) getSymbolDocumentRef(ctx context.Context) *firestore
 func (b *BalanceRepository) getBalanceItemDocuments(ctx context.Context, collection *firestore.CollectionRef) (refs []*firestore.DocumentRef, items []*balanceItemDocument, err error) {
 	versions := make(map[string]*balanceItemDocument)
 	vRefs := make(map[string]*firestore.DocumentRef)
-	batch := b.getClient(ctx).Batch()
-	batchedItems := false
 
-	// get a list of balance items sorted oldest to newest
-	iter := collection.OrderBy("timestamp", firestore.Asc).Documents(ctx)
-	var doc *firestore.DocumentSnapshot
-	for {
-		doc, err = iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				err = nil
+	err = b.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		var txErr error
+		iter := collection.OrderBy("timestamp", firestore.Asc).Documents(ctx)
+		var doc *firestore.DocumentSnapshot
+		for {
+			doc, txErr = iter.Next()
+			if txErr != nil {
+				if errors.Is(txErr, iterator.Done) {
+					txErr = nil
+				}
+				break
 			}
 
-			break
-		}
+			var current balanceItemDocument
+			doc.DataTo(&current)
 
-		var current balanceItemDocument
-		doc.DataTo(&current)
-
-		// build key for looking up last encountered item version
-		vStr := current.ID
-		version, ok := versions[vStr]
-		if !ok { // add the current item to the version lookup if its not there
-			versions[vStr] = &current
-			vRefs[vStr] = doc.Ref
-		} else {
-			// if the current item version is greater than the lookup version
-			// update the lookup version with the current version
-			// and delete the lesser version
-			if current.Version > version.Version {
-				// delete old version if possible
-				r, ok := vRefs[vStr]
-				if ok && canChange(version.Created) {
-					batch.Delete(r)
-					batchedItems = true
-				}
-
+			// build key for looking up last encountered item version
+			vStr := current.ID
+			version, ok := versions[vStr]
+			if !ok { // add the current item to the version lookup if its not there
 				versions[vStr] = &current
 				vRefs[vStr] = doc.Ref
-			} else if canChange(current.Created) {
-				// delete old version if possible
-				batch.Delete(doc.Ref)
-				batchedItems = true
+			} else {
+				// if the current item version is greater than the lookup version
+				// update the lookup version with the current version
+				// and delete the lesser version
+				if current.Version > version.Version {
+					// delete old version if possible
+					r, ok := vRefs[vStr]
+					if ok && canChange(version.Created) {
+						tx.Delete(r)
+					}
+
+					versions[vStr] = &current
+					vRefs[vStr] = doc.Ref
+				} else if canChange(current.Created) {
+					// delete old version if possible
+					tx.Delete(doc.Ref)
+				}
 			}
 		}
-	}
 
-	zero := decimal.NewFromInt(0)
-	for k, v := range versions {
-		r, ok := vRefs[k]
-		if ok {
+		zero := decimal.NewFromInt(0)
+		for k, v := range versions {
+			r, ok := vRefs[k]
+			if ok {
 
-			// the latest version could still be a 0 value item
-			// in this case, the version should be deleted
-			// if it cannot be deleted, do not include it in the
-			// returned slice
-			var amt decimal.Decimal
-			amt, err = decimal.NewFromString(v.Amount)
-			if err != nil {
-				return
-			}
+				// the latest version could still be a 0 value item
+				// in this case, the version should be deleted
+				// if it cannot be deleted, do not include it in the
+				// returned slice
+				var amt decimal.Decimal
+				amt, txErr = decimal.NewFromString(v.Amount)
+				if txErr != nil {
+					return txErr
+				}
 
-			if amt.Equal(zero) && canChange(v.Created) {
-				batch.Delete(r)
-				batchedItems = true
-			} else if !amt.Equal(zero) {
-				refs = append(refs, r)
-				items = append(items, v)
+				if amt.Equal(zero) && canChange(v.Created) {
+					tx.Delete(r)
+				} else if !amt.Equal(zero) {
+					refs = append(refs, r)
+					items = append(items, v)
+				}
 			}
 		}
-	}
 
-	if batchedItems {
-		_, err = batch.Commit(ctx)
-	}
+		return nil
+	})
 
 	return
 }
