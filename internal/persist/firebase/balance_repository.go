@@ -89,6 +89,7 @@ func (b *BalanceRepository) GetBalance(ctx context.Context) (balance decimal.Dec
 		if txErr != nil {
 			return txErr
 		}
+		storeBalance = balance
 
 		// collect all post items with their document refs
 		iter := tx.Documents(b.getPostCollection(ctx))

@@ -174,7 +174,7 @@ func printTransactions(ctx context.Context, repo persist.AccountRepository) {
 			return data[i][5] < data[j][5]
 		}
 
-		return data[i][1] == data[j][1]
+		return data[i][1] < data[j][1]
 	})
 
 	data = append(data, []string{"balance", "BTC", btcBal.StringFixedBank(types.SymbolBitcoin.RoundingPlace()), "", "", ""})
