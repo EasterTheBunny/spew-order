@@ -1,6 +1,6 @@
 <script type="ts">
-  import Textfield from '@smui/textfield'
-  import HelperText from '@smui/textfield/helper-text/index'
+  import Textfield from '@smui/textfield/styled'
+  import HelperText from '@smui/textfield/helper-text/styled'
   import { createEventDispatcher } from 'svelte'
   import type { Currency } from '../constants'
 

@@ -1,7 +1,7 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
   import dayjs from 'dayjs'
-  import DataTable, { Head, Body, Row, Cell } from '@smui/data-table'
+  import DataTable, { Head, Body, Row, Cell } from '@smui/data-table/styled'
   import { getDataCtx } from "../exchange";
   import { TransactionType } from '../constants';
 

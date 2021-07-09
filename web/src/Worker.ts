@@ -25,6 +25,9 @@ _self.addEventListener('message', function(e) {
           const msg: IfcTickerMessage = {
             type: WorkerMessageType.Ticker,
             price: lastTick.price,
+            high_24h: lastTick.high_24h,
+            low_24h: lastTick.low_24h,
+            open_24h: lastTick.open_24h,
           }
           _self.postMessage(msg)
         }

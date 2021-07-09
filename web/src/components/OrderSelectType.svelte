@@ -1,5 +1,5 @@
 <script type="ts">
-  import Select, { Option } from '@smui/select';
+  import Select, { Option } from '@smui/select/styled';
   import { createEventDispatcher } from 'svelte';
 
   import { OrderType } from "../constants"
@@ -20,7 +20,7 @@
   }
 </script>
 
-<Select bind:value label="Order Type">
+<Select bind:value label="Order Type" style="width: 100%;">
   {#each orderTypes as tp}
     <Option value={tp.value}>{tp.label}</Option>
   {/each}

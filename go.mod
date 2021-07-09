@@ -10,6 +10,7 @@ require (
 	github.com/deepmap/oapi-codegen v1.8.1 // indirect
 	github.com/easterthebunny/render v1.0.2
 	github.com/go-chi/chi v1.5.4
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/lestrrat-go/jwx v1.0.6
 	github.com/olekukonko/tablewriter v0.0.5

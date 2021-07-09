@@ -1,6 +1,6 @@
 <script type="ts">
-  import { Icon } from '@smui/common'
-  import Tooltip, { Wrapper } from '@smui/tooltip'
+  import { Icon } from '@smui/common/styled'
+  import Tooltip, { Wrapper } from '@smui/tooltip/styled'
   import { OrderStatus } from '../constants'
 
   export let value: IfcOrderResource

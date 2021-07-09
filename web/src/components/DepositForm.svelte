@@ -1,8 +1,8 @@
 <script type="ts">
-  import LayoutGrid, { Cell } from '@smui/layout-grid'
+  import LayoutGrid, { Cell } from '@smui/layout-grid/styled'
   import CurrencySelect from '../components/CurrencySelect.svelte'
-  import Textfield from '@smui/textfield'
-  import Icon from '@smui/textfield/icon'
+  import Textfield from '@smui/textfield/styled'
+  import Icon from '@smui/textfield/icon/styled'
   import CopyClipBoard from '../components/CopyClipBoard.svelte'
   import type { Currency } from '../constants'
 

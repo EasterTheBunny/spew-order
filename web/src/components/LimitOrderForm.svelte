@@ -1,6 +1,6 @@
 <script type="ts">
   import type { Writable } from "svelte/store"
-  import Button, { Label } from '@smui/button';
+  import Button, { Label } from '@smui/button/styled';
   import AmountInputField from "./AmountInputField.svelte"
   import { getDataCtx } from "../exchange"
   import { OrderType, Currency, ActionType } from "../constants"

@@ -75,6 +75,8 @@ interface IfcBookProductSpread {
   maxDepth: number
   ask: string
   bid: string
+  change24hr: string
+  range24hr: string
   asks: string[][]
   bids: string[][]
 }

@@ -1,7 +1,7 @@
 <script type="ts">
   import type { Writable } from "svelte/store"
-  import LayoutGrid, { Cell } from '@smui/layout-grid';
-  import Button, { Label } from '@smui/button';
+  import LayoutGrid, { Cell } from '@smui/layout-grid/styled';
+  import Button, { Label } from '@smui/button/styled';
   import AddressInputField from "../components/AddressInputField.svelte"
   import AmountInputField from '../components/AmountInputField.svelte'
   import CurrencySelect from '../components/CurrencySelect.svelte'

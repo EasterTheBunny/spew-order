@@ -65,47 +65,45 @@ func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.F
 
 	client := or.getClient(ctx)
 	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	iter := client.Collection(col).
-		Where("status", "in", ops).
-		OrderBy("version", firestore.Desc).
-		Documents(ctx)
 
 	versionMap := make(map[string]bool)
 
-	batch := client.Batch()
-	batchedItems := false
-	var doc *firestore.DocumentSnapshot
-	var order *persist.Order
-	for {
-		doc, err = iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				err = nil
-			} else {
-				err = fmt.Errorf("GetOrdersByStatus: %w", err)
+	err = client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		var txErr error
+		iter := tx.Documents(client.Collection(col).
+			Where("status", "in", ops).
+			OrderBy("version", firestore.Desc))
+
+		var doc *firestore.DocumentSnapshot
+		var order *persist.Order
+		for {
+			doc, txErr = iter.Next()
+			if txErr != nil {
+				if errors.Is(txErr, iterator.Done) {
+					txErr = nil
+				} else {
+					txErr = fmt.Errorf("GetOrdersByStatus: %w", txErr)
+				}
+
+				break
 			}
 
-			break
+			order = documentToOrder(doc.Data())
+			if _, ok := versionMap[order.Base.ID.String()]; !ok {
+				versionMap[order.Base.ID.String()] = true
+				orders = append(orders, order)
+			} else if canChange(doc.UpdateTime) {
+				// delete the older version
+				txErr = tx.Delete(doc.Ref)
+				if txErr != nil {
+					return txErr
+				}
+			}
 		}
+		iter.Stop()
 
-		order = documentToOrder(doc.Data())
-		if _, ok := versionMap[order.Base.ID.String()]; !ok {
-			versionMap[order.Base.ID.String()] = true
-			orders = append(orders, order)
-		} else if canChange(doc.UpdateTime) {
-			// delete the older version
-			batch.Delete(doc.Ref)
-			batchedItems = true
-		}
-	}
-	iter.Stop()
-
-	if batchedItems {
-		_, err = batch.Commit(ctx)
-		if err != nil {
-			err = fmt.Errorf("GetOrdersByStatus: %w", err)
-		}
-	}
+		return txErr
+	})
 
 	return
 }
@@ -146,45 +144,45 @@ func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
 func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persist.Order, int, error) {
 	var err error
 	client := or.getClient(ctx)
-	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	iter := client.Collection(col).
-		Where("id", "==", k.String()).
-		OrderBy("version", firestore.Desc).
-		Documents(ctx)
-
-	batch := client.Batch()
-	batchedItems := false
-	var version int = 0
 	var order *persist.Order
-	var doc *firestore.DocumentSnapshot
-	for {
-		doc, err = iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				err = nil
-				if order == nil {
-					err = fmt.Errorf("%w for id %s", ErrOrderNotFound, k)
+	var version int = 0
+
+	err = client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		var txErr error
+
+		col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
+		iter := tx.Documents(client.Collection(col).Where("id", "==", k.String()).OrderBy("version", firestore.Desc))
+
+		var doc *firestore.DocumentSnapshot
+		for {
+			doc, txErr = iter.Next()
+			if txErr != nil {
+				if errors.Is(txErr, iterator.Done) {
+					txErr = nil
+					if order == nil {
+						txErr = fmt.Errorf("%w for id %s", ErrOrderNotFound, k)
+					}
+				}
+
+				break
+			}
+
+			if order == nil {
+				m2 := doc.Data()
+				if v, ok := m2["version"]; ok {
+					version, _ = strconv.Atoi(v.(string))
+				}
+				order = documentToOrder(m2)
+			} else if canChange(doc.UpdateTime) {
+				txErr = tx.Delete(doc.Ref)
+				if txErr != nil {
+					return txErr
 				}
 			}
-
-			break
 		}
 
-		if order == nil {
-			m2 := doc.Data()
-			if v, ok := m2["version"]; ok {
-				version, _ = strconv.Atoi(v.(string))
-			}
-			order = documentToOrder(m2)
-		} else if canChange(doc.UpdateTime) {
-			batch.Delete(doc.Ref)
-			batchedItems = true
-		}
-	}
-
-	if batchedItems {
-		_, err = batch.Commit(ctx)
-	}
+		return txErr
+	})
 
 	return order, version, err
 }

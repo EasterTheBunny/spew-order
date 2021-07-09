@@ -85,7 +85,7 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
     event.preventDefault()
     const pointer = d3.pointer(event, this)
     const xm = xScale.invert(pointer[0])
-    const ym = yScale.invert(pointer[1]-margin.bottom)
+    // const ym = yScale.invert(pointer[1]-margin.bottom)
     const i = bisectDate(data, xm)
     // recover coordinate we need
     
@@ -151,7 +151,7 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
     focus = svg
       .append('g')
       .append('circle')
-      .style("fill", "steelblue")
+      .style("fill", "#ffbb00")
       .attr("stroke", "#fff")
       .attr("stroke-width", 2)
       .attr('r', 4.5)
@@ -161,6 +161,7 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
       .append('g')
       .append('text')
       .style("opacity", 0)
+      .style("fill", "#fff")
       .attr("text-anchor", "left")
       .attr("alignment-baseline", "middle")
 
@@ -214,7 +215,7 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
         .datum(items)
         .attr("class", "line")  // I add the class line to be able to modify this line later on.
         .attr("fill", "none")
-        .attr("stroke", "steelblue")
+        .attr("stroke", "#ffbb00")
         .attr("stroke-width", 1.5)
         .attr("d", lineGenerator(xScale, yScale))
 

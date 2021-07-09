@@ -14,12 +14,12 @@
   let chart: PriceDepthChart
 
   export let src = "asks"
-  export let color = "green"
+  export let name = "asks"
   export let yAxis = true
   export let height = 200
 
   const resizeDone = () => {
-    chart.draw(el.offsetWidth, height, color, yAxis)
+    chart.draw(el.offsetWidth, height, name, yAxis)
   }
 
   let timeout
@@ -37,7 +37,7 @@
 
 	onMount(() => {
     chart = PriceDepthChartFactory(el)
-    chart.draw(el.offsetWidth, height, color, yAxis)
+    chart.draw(el.offsetWidth, height, name, yAxis)
 
     price.subscribe((b) => {
       let x: PriceDepthItem[]

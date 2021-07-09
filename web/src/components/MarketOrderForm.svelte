@@ -1,8 +1,8 @@
 <script type="ts">
   import type { Writable } from "svelte/store"
-  import FormField from '@smui/form-field';
-  import Radio from '@smui/radio';
-  import Button, { Label } from '@smui/button';
+  import FormField from '@smui/form-field/styled';
+  import Radio from '@smui/radio/styled';
+  import Button, { Label } from '@smui/button/styled';
   import AmountInputField from "./AmountInputField.svelte"
   import { getDataCtx } from "../exchange"
   import { OrderType, Currency, ActionType } from "../constants"
@@ -112,10 +112,6 @@
       <span slot="label">{symbol}</span>
     </FormField>
   {/each}
-</div>
-
-<div class="form-section">
-  Current Price: {currentPrice}
 </div>
 
 <div class="form-section">

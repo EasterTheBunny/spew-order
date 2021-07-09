@@ -1,9 +1,9 @@
 <script type="ts">
-  import Fab, { Icon } from '@smui/fab'
-  import { Anchor } from '@smui/menu-surface'
-  import Menu from '@smui/menu'
+  import Fab, { Icon } from '@smui/fab/styled'
+  import { Anchor } from '@smui/menu-surface/styled'
+  import Menu from '@smui/menu/styled'
   import { getOidc } from "../oidc";
-  import List, { Item, Text } from '@smui/list'
+  import List, { Item, Text } from '@smui/list/styled'
 
   let menu
   let anchor;

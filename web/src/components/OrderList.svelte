@@ -1,9 +1,9 @@
 <script type="ts">
   import type { Writable } from "svelte/store"
   import { onDestroy, onMount } from "svelte"
-  import DataTable, { Head, Body, Row, Cell } from '@smui/data-table'
-  import { Icon } from '@smui/common'
-  import Tooltip, { Wrapper } from '@smui/tooltip'
+  import DataTable, { Head, Body, Row, Cell } from '@smui/data-table/styled'
+  import { Icon } from '@smui/common/styled'
+  import Tooltip, { Wrapper } from '@smui/tooltip/styled'
   import OrderStatusIcon from './OrderStatusIcon.svelte'
   import { OrderStatus, OrderType } from '../constants'
   import { getDataCtx } from "../exchange";

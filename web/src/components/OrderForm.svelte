@@ -1,6 +1,5 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
-  import { Link } from "svelte-routing"
   import OrderSelectAction from "./OrderSelectAction.svelte"
   import OrderSelectType from "./OrderSelectType.svelte"
   import { OrderType, ActionType } from "../constants"
@@ -12,8 +11,6 @@
 
   let selectedAction: ActionType = ActionType.Buy
   let selectedType: OrderType = OrderType.Market
-
-  let selectedSymbol = "ETH";
 
   const {
     account,
@@ -33,15 +30,7 @@
 
 {#if $account}
   <div class="form-section">
-    <OrderSelectAction bind:selected={selectedAction} />
-  </div>
-
-  <div class="form-section">
-    <div class="mdc-typography--subtitle2"><small>Available to trade:</small></div>
-    {#each $account.balances as balance}
-    <div class="mdc-typography--caption"><small><b>{balance.symbol}</b>: {balance.quantity} {balance.symbol}</small></div>
-    {/each}
-    <Link to="funding">Add Funds</Link>
+    <OrderSelectAction bind:active={selectedAction} />
   </div>
 
   <div class="form-section">

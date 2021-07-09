@@ -4,16 +4,21 @@ import WebWorker from 'web-worker:../Worker.ts'
 import { WorkerMessageType } from '../constants'
 
 const PriceWritable = (): Writable<IfcBookProductSpread> => {
-  const { subscribe, set, update } = writable<IfcBookProductSpread>({ maxDepth: 0, ask: "0.000", bid: "0.000", asks: [], bids: []})
+  const { subscribe, set, update } = writable<IfcBookProductSpread>({ maxDepth: 0, ask: "0.000", bid: "0.000", change24hr: "", range24hr: "", asks: [], bids: []})
   const worker = new WebWorker()
 
   worker.onmessage = (evt) => {
     if (isTicker(evt.data)) {
       const msg: IfcTickerMessage = evt.data
 
+      const open = parseFloat(msg.open_24h)
+      const price = parseFloat(msg.price)
+
       update((v) => {
         v.ask = msg.price
         v.bid = msg.price
+        v.change24hr = (price - open).toFixed(8) + " (" + (((price / open) - 1) * 100).toFixed(2) + "%)"
+        v.range24hr = msg.low_24h + " - " + msg.high_24h
 
         return v
       })
