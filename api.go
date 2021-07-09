@@ -15,6 +15,7 @@ import (
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
+	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
 const (
@@ -71,6 +72,9 @@ func init() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	types.MakerFee = 0.0025
+	types.TakerFee = 0.0050
 
 	Router = rh.Routes()
 	Webhooks = handlers.NewWebhookRouter(client, f).Routes()

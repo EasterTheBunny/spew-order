@@ -16,8 +16,11 @@ import (
 // a price larger than this current value
 const (
 	SortSwitch = math.MaxInt32
-	MakerFee   = 0.0005
-	TakerFee   = 0.0015
+)
+
+var (
+	MakerFee = 0.0005
+	TakerFee = 0.0015
 )
 
 // Order is the complete order representation. Built by composition of the Request.
@@ -100,8 +103,8 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 		// TODO: calculate fee schedule from order history
 		// 30 day volume	-	taker	-	maker
 		// promotion		-	0.150%	-	0.050%
-		// <  20 BTC		-	0.350%	-	0.100%
-		// >= 200 BTC		-	0.250%	-	0.100%
+		// <  20 BTC		-	0.350%	-	0.150%
+		// >= 200 BTC		-	0.250%	-	0.150%
 		// >= 500 BTC		-	0.200%	-	0.100%
 		// >= 1500 BTC		-	0.150%	-	0.090%
 		// >= 3000 BTC		-	0.100%	-	0.075%
