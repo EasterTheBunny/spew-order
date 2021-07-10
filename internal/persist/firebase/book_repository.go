@@ -101,6 +101,7 @@ func (br *BookRepository) getBookItemDocument(ctx context.Context, tx *firestore
 	var document *bookItemDocument
 	var ref *firestore.DocumentRef
 
+	// get the most recent version of the document from storage
 	var doc *firestore.DocumentSnapshot
 	for {
 		doc, err = iter.Next()
@@ -117,7 +118,17 @@ func (br *BookRepository) getBookItemDocument(ctx context.Context, tx *firestore
 		var current bookItemDocument
 		doc.DataTo(&current)
 
+		// if the current has a version number larger than the last
+		// document, replace it and delete the replaced document
+		// otherwise delete the current document if possible
 		if document == nil || current.Version > document.Version {
+			if document != nil && canChange(document.Created) {
+				err = tx.Delete(doc.Ref)
+				if err != nil {
+					break
+				}
+			}
+
 			document = &current
 			ref = doc.Ref
 		} else if canChange(current.Created) {
@@ -127,19 +138,19 @@ func (br *BookRepository) getBookItemDocument(ctx context.Context, tx *firestore
 				break
 			}
 		}
+	}
 
-		if document != nil && document.Delete {
+	// if the document is supposed to be deleted, do so if possible
+	// and set the return values as null
+	if document != nil && document.Delete {
+		if canChange(document.Created) {
 			err = tx.Delete(doc.Ref)
-			if err != nil {
-				break
-			}
-			document = nil
-			ref = nil
 		}
+		document = nil
+		ref = nil
 	}
 
 	return ref, document, err
-
 }
 
 func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
