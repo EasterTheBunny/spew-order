@@ -1,6 +1,7 @@
 package firebase
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -9,11 +10,12 @@ import (
 
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/types"
+	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestItemKey_Buys(t *testing.T) {
+func TestItemKey_Buys_Order(t *testing.T) {
 
 	/*
 		BUY
@@ -94,10 +96,9 @@ func TestItemKey_Buys(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedOrder, sb.String())
-
 }
 
-func TestItemKey_Sells(t *testing.T) {
+func TestItemKey_Sells_Order(t *testing.T) {
 
 	/*
 		SELL
@@ -112,7 +113,7 @@ func TestItemKey_Sells(t *testing.T) {
 	sells := []*persist.BookItem{
 		{
 			Order: types.Order{
-				Timestamp: time.Unix(10, 0),
+				Timestamp: time.Unix(0, 1625857979098625710),
 				OrderRequest: types.OrderRequest{
 					Action: types.ActionTypeSell,
 					Type:   &types.MarketOrderType{},
@@ -121,7 +122,7 @@ func TestItemKey_Sells(t *testing.T) {
 		},
 		{
 			Order: types.Order{
-				Timestamp: time.Unix(9, 0),
+				Timestamp: time.Unix(0, 1625857979098625709),
 				OrderRequest: types.OrderRequest{
 					Action: types.ActionTypeSell,
 					Type:   &types.MarketOrderType{},
@@ -130,7 +131,7 @@ func TestItemKey_Sells(t *testing.T) {
 		},
 		{
 			Order: types.Order{
-				Timestamp: time.Unix(10, 0),
+				Timestamp: time.Unix(0, 1625857979098625710),
 				OrderRequest: types.OrderRequest{
 					Action: types.ActionTypeSell,
 					Type: &types.LimitOrderType{
@@ -141,7 +142,7 @@ func TestItemKey_Sells(t *testing.T) {
 		},
 		{
 			Order: types.Order{
-				Timestamp: time.Unix(8, 0),
+				Timestamp: time.Unix(0, 1625857979098625708),
 				OrderRequest: types.OrderRequest{
 					Action: types.ActionTypeSell,
 					Type: &types.LimitOrderType{
@@ -152,7 +153,7 @@ func TestItemKey_Sells(t *testing.T) {
 		},
 		{
 			Order: types.Order{
-				Timestamp: time.Unix(7, 0),
+				Timestamp: time.Unix(0, 1625857979098625707),
 				OrderRequest: types.OrderRequest{
 					Action: types.ActionTypeSell,
 					Type: &types.LimitOrderType{
@@ -163,7 +164,7 @@ func TestItemKey_Sells(t *testing.T) {
 		},
 		{
 			Order: types.Order{
-				Timestamp: time.Unix(10, 0),
+				Timestamp: time.Unix(0, 1625857979098625710),
 				OrderRequest: types.OrderRequest{
 					Action: types.ActionTypeSell,
 					Type: &types.LimitOrderType{
@@ -190,4 +191,52 @@ func TestItemKey_Sells(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedOrder, sb.String())
+}
+
+func TestItemKey(t *testing.T) {
+
+	item := &persist.BookItem{
+		Order: types.Order{
+			Timestamp: time.Unix(0, 1625857979098625710),
+			OrderRequest: types.OrderRequest{
+				Action: types.ActionTypeSell,
+				Type:   &types.MarketOrderType{},
+			},
+		},
+	}
+
+	key := itemKey(item)
+
+	assert.Equal(t, "0.00000000.1625857979098625710", key)
+}
+
+func TestItemKeyFromMarshaledSource(t *testing.T) {
+	order := types.Order{
+		OrderRequest: types.OrderRequest{
+			Base:    types.SymbolBitcoin,
+			Target:  types.SymbolEthereum,
+			Action:  types.ActionTypeSell,
+			HoldID:  "",
+			Owner:   "",
+			Account: uuid.NewV4(),
+			Type: &types.MarketOrderType{
+				Base:     types.SymbolBitcoin,
+				Quantity: decimal.NewFromInt(1),
+			},
+		},
+		ID:        uuid.NewV4(),
+		Timestamp: time.Unix(0, 1625857979098625710),
+	}
+
+	bytes, err := json.Marshal(order)
+	assert.NoError(t, err)
+
+	var test types.Order
+	err = json.Unmarshal(bytes, &test)
+	assert.NoError(t, err)
+
+	bi := persist.NewBookItem(test)
+	key := itemKey(&bi)
+
+	assert.Equal(t, "0.00000000.1625857979098625710", key)
 }

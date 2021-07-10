@@ -31,14 +31,6 @@ func main() {
 	brepo := firebase.NewBookRepository(client)
 
 	if *print {
-
-		/*
-		   BUY
-		   0.0056 ------> 60
-		   0.0055 --->    32
-
-		   SELL
-		*/
 		item := persist.BookItem{
 			Order: types.Order{
 				OrderRequest: types.OrderRequest{
@@ -54,9 +46,22 @@ func main() {
 		for _, h := range head {
 			switch j := h.Order.Type.(type) {
 			case *types.MarketOrderType:
-				fmt.Printf("MARKET:%s %30s\n", j.Base, j.Quantity)
+				fmt.Printf("MARKET:%s %30s %s\n", j.Base, j.Quantity, h.Order.ID)
 			case *types.LimitOrderType:
-				fmt.Printf("%-10s %30s\n", j.Price, j.Quantity)
+				fmt.Printf("%-10s %30s %s\n", j.Price, j.Quantity, h.Order.ID)
+			}
+		}
+
+		item.ActionType = types.ActionTypeSell
+
+		fmt.Printf("%s\n", item.ActionType.String())
+		head, _ = brepo.GetHeadBatch(ctx, &item, 50)
+		for _, h := range head {
+			switch j := h.Order.Type.(type) {
+			case *types.MarketOrderType:
+				fmt.Printf("MARKET:%s %30s %s\n", j.Base, j.Quantity, h.Order.ID)
+			case *types.LimitOrderType:
+				fmt.Printf("%-10s %30s %s\n", j.Price, j.Quantity, h.Order.ID)
 			}
 		}
 	}

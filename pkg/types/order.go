@@ -43,7 +43,7 @@ func (o Order) MarshalJSON() ([]byte, error) {
 	or["owner"] = o.Owner
 	or["holdID"] = o.HoldID
 	or["account"] = o.OrderRequest.Account.String()
-	or["timestamp"] = o.Timestamp.Unix()
+	or["timestamp"] = o.Timestamp.UnixNano()
 
 	for k, v := range o.OrderRequest.MarshalMap() {
 		or[k] = v
@@ -75,7 +75,7 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 	o.OrderRequest.Owner = tp.Owner
 	o.OrderRequest.HoldID = tp.HoldID
 	o.ID = tp.ID
-	o.Timestamp = time.Unix(tp.Timestamp, 0)
+	o.Timestamp = time.Unix(0, tp.Timestamp)
 
 	return nil
 }

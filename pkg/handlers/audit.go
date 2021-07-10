@@ -224,14 +224,12 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 					return accountBalances, msgs, err
 				}
 				switch order.Status {
-				case persist.StatusCanceled:
-				case persist.StatusFilled:
+				case persist.StatusCanceled, persist.StatusFilled:
 					// order should not be on the book
 					if exists {
 						msgs = append(msgs, fmt.Sprintf("account %s order %s exists on order book with key %s", acc, order.Base.ID, key))
 					}
-				case persist.StatusOpen:
-				case persist.StatusPartial:
+				case persist.StatusOpen, persist.StatusPartial:
 					// order should be on the book
 					if !exists {
 						msgs = append(msgs, fmt.Sprintf("account %s order %s does not exist on order book", acc, order.Base.ID))
