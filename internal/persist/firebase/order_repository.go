@@ -9,6 +9,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/persist"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/api/iterator"
 )
 
@@ -27,33 +28,47 @@ func NewOrderRepository(client *firestore.Client, account *persist.Account) *Ord
 
 // /root/account/{accountid}/order/{orderid}
 func (or *OrderRepository) GetOrder(ctx context.Context, k persist.Key) (*persist.Order, error) {
-	order, _, err := or.getOrder(ctx, k)
-	if err != nil {
-		err = fmt.Errorf("GetOrder: %w", err)
-	}
+	var err error
+	var order *persist.Order
+
+	err = or.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		var txErr error
+
+		order, _, txErr = or.getOrder(ctx, tx, k)
+		if txErr != nil {
+			txErr = fmt.Errorf("GetOrder: %w", txErr)
+		}
+
+		return txErr
+	})
+
 	return order, err
 }
 
 func (or *OrderRepository) SetOrder(ctx context.Context, o *persist.Order) error {
+	return or.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		var txErr error
 
-	_, version, err := or.getOrder(ctx, o.Base.ID)
-	if err != nil {
-		if errors.Is(err, ErrOrderNotFound) {
-			err = nil
-			version = 0
-		} else {
-			return fmt.Errorf("SetOrder: %w", err)
+		_, version, txErr := or.getOrder(ctx, tx, o.Base.ID)
+		if txErr != nil {
+			if errors.Is(txErr, ErrOrderNotFound) {
+				txErr = nil
+				version = 0
+			} else {
+				return fmt.Errorf("SetOrder: %w", txErr)
+			}
 		}
-	}
-	version++
+		version++
 
-	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	_, _, err = or.getClient(ctx).Collection(col).Add(ctx, orderToDocument(o, 0))
-	if err != nil {
-		return fmt.Errorf("SetOrder: %w", err)
-	}
+		col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
+		d := or.getClient(ctx).Collection(col).Doc(uuid.NewV4().String())
+		txErr = tx.Create(d, orderToDocument(o, 0))
+		if txErr != nil {
+			return fmt.Errorf("SetOrder: %w", txErr)
+		}
 
-	return nil
+		return txErr
+	})
 }
 
 func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.FillStatus) (orders []*persist.Order, err error) {
@@ -109,25 +124,31 @@ func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.F
 }
 
 func (or *OrderRepository) UpdateOrderStatus(ctx context.Context, k persist.Key, s persist.FillStatus, tr []string) error {
-	o, version, err := or.getOrder(ctx, k)
-	if err != nil {
-		return fmt.Errorf("UpdateOrderStatus: %w", err)
-	}
-	version++
+	return or.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		var txErr error
+		var o *persist.Order
+		var version int
 
-	o.Status = s
-	if len(tr) > 0 {
-		o.Transactions = append(o.Transactions, tr)
-	}
+		o, version, txErr = or.getOrder(ctx, tx, k)
+		if txErr != nil {
+			return fmt.Errorf("UpdateOrderStatus: %w", txErr)
+		}
+		version++
 
-	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-	_, _, err = or.getClient(ctx).Collection(col).Add(ctx, orderToDocument(o, version))
-	if err != nil {
-		return fmt.Errorf("UpdateOrderStatus: %w", err)
-	}
+		o.Status = s
+		if len(tr) > 0 {
+			o.Transactions = append(o.Transactions, tr)
+		}
 
-	return nil
+		col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
+		d := or.getClient(ctx).Collection(col).Doc(uuid.NewV4().String())
+		txErr = tx.Create(d, orderToDocument(o, version))
+		if txErr != nil {
+			return fmt.Errorf("UpdateOrderStatus: %w", txErr)
+		}
 
+		return txErr
+	})
 }
 
 func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
@@ -141,48 +162,42 @@ func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
 	return client
 }
 
-func (or *OrderRepository) getOrder(ctx context.Context, k persist.Key) (*persist.Order, int, error) {
+func (or *OrderRepository) getOrder(ctx context.Context, tx *firestore.Transaction, k persist.Key) (*persist.Order, int, error) {
 	var err error
 	client := or.getClient(ctx)
 	var order *persist.Order
 	var version int = 0
 
-	err = client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
-		var txErr error
+	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
+	iter := tx.Documents(client.Collection(col).Where("id", "==", k.String()).OrderBy("version", firestore.Desc))
 
-		col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
-		iter := tx.Documents(client.Collection(col).Where("id", "==", k.String()).OrderBy("version", firestore.Desc))
-
-		var doc *firestore.DocumentSnapshot
-		for {
-			doc, txErr = iter.Next()
-			if txErr != nil {
-				if errors.Is(txErr, iterator.Done) {
-					txErr = nil
-					if order == nil {
-						txErr = fmt.Errorf("%w for id %s", ErrOrderNotFound, k)
-					}
-				}
-
-				break
-			}
-
-			if order == nil {
-				m2 := doc.Data()
-				if v, ok := m2["version"]; ok {
-					version, _ = strconv.Atoi(v.(string))
-				}
-				order = documentToOrder(m2)
-			} else if canChange(doc.UpdateTime) {
-				txErr = tx.Delete(doc.Ref)
-				if txErr != nil {
-					return txErr
+	var doc *firestore.DocumentSnapshot
+	for {
+		doc, err = iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.Done) {
+				err = nil
+				if order == nil {
+					err = fmt.Errorf("%w for id %s", ErrOrderNotFound, k)
 				}
 			}
+
+			break
 		}
 
-		return txErr
-	})
+		if order == nil {
+			m2 := doc.Data()
+			if v, ok := m2["version"]; ok {
+				version, _ = strconv.Atoi(v.(string))
+			}
+			order = documentToOrder(m2)
+		} else if canChange(doc.UpdateTime) {
+			err = tx.Delete(doc.Ref)
+			if err != nil {
+				return order, version, err
+			}
+		}
+	}
 
 	return order, version, err
 }
