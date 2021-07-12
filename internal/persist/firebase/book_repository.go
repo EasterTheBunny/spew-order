@@ -144,7 +144,7 @@ func (br *BookRepository) getBookItemDocument(ctx context.Context, tx *firestore
 	// and set the return values as null
 	if document != nil && document.Delete {
 		if canChange(document.Created) {
-			err = tx.Delete(doc.Ref)
+			err = tx.Delete(ref)
 		}
 		document = nil
 		ref = nil
