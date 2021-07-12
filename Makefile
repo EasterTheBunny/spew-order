@@ -34,6 +34,7 @@ build-tools:
 	go build -o $(GOBIN)/tools/account-detail ./cmd/tools/account-detail/*.go && \
 	go build -o $(GOBIN)/tools/book-items ./cmd/tools/book-items/*.go && \
 	go build -o $(GOBIN)/tools/balance-test ./cmd/tools/balance-test/*.go && \
+	go build -o $(GOBIN)/tools/book-test ./cmd/tools/book-test/*.go && \
 	go build -o $(GOBIN)/tools/order-items ./cmd/tools/order-items/*.go || exit
 
 build-all: fmt test build

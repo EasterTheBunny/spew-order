@@ -23,6 +23,7 @@ func (ob *OrderBook) CancelOrder(ctx context.Context, order types.Order) error {
 
 	// a cancel order is defined as an executable order that already exists
 	// on the order book. remove the book item and update the order
+	log.Printf("deleting book item as book item was canceled: %s", item.Order.ID)
 	err := ob.bir.DeleteBookItem(ctx, &item)
 	if err != nil {
 		return err
@@ -143,6 +144,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 							updateError = fmt.Errorf("remove hold::%w, ", err)
 						}
 
+						log.Printf("deleting book item as book item was closed: %s; and matched by %s", bookOrder.ID, o.ID)
 						if err := ob.bir.DeleteBookItem(ctx, book); err != nil {
 							updateError = fmt.Errorf("delete book item::%w", err)
 						}
@@ -174,6 +176,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						updateError = fmt.Errorf("remove hold::%w, ", err)
 					}
 
+					log.Printf("deleting book item as both orders were closed: %s; and matched by %s", bookOrder.ID, order.ID)
 					err = ob.bir.DeleteBookItem(ctx, book)
 					if err != nil {
 						updateError = fmt.Errorf("delete book item::%w", err)
@@ -189,6 +192,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 				return nil
 			} else {
 				// TODO: not sure why this is here; should it really re-save the book item???
+				log.Printf("re-saved the book item on nil transaction: %s", book.Order.ID)
 				return ob.bir.SetBookItem(ctx, book)
 			}
 		}
