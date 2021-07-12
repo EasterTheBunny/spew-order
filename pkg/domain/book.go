@@ -21,25 +21,16 @@ func NewOrderBook(br persist.BookRepository, bm *BalanceManager) *OrderBook {
 func (ob *OrderBook) CancelOrder(ctx context.Context, order types.Order) error {
 	item := persist.NewBookItem(order)
 
-	ok, err := ob.bir.BookItemExists(ctx, &item)
+	// a cancel order is defined as an executable order that already exists
+	// on the order book. remove the book item and update the order
+	err := ob.bir.DeleteBookItem(ctx, &item)
 	if err != nil {
 		return err
 	}
 
-	// a cancel order is defined as an executable order that already exists
-	// on the order book. remove the book item and update the order
-	if ok {
-		err := ob.bir.DeleteBookItem(ctx, &item)
-		if err != nil {
-			return err
-		}
-
-		err = ob.bm.CancelOrder(ctx, order)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	err = ob.bm.CancelOrder(ctx, order)
+	if err != nil {
+		return err
 	}
 
 	return nil

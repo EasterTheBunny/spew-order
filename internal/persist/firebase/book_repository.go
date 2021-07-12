@@ -15,6 +15,10 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+var (
+	errProcessLimitReached = errors.New("defined limit reached")
+)
+
 type BookRepository struct {
 	client *firestore.Client
 }
@@ -98,13 +102,14 @@ func (br *BookRepository) getBookItemDocument(ctx context.Context, tx *firestore
 	iter := tx.Documents(col)
 
 	var err error
-	var document *bookItemDocument
-	var ref *firestore.DocumentRef
+	var highestVersion *bookItemDocument
+	var highestVersionRef *firestore.DocumentRef
+	var highestVersionUpdateTime time.Time
 
 	// get the most recent version of the document from storage
-	var doc *firestore.DocumentSnapshot
+	var snapshot *firestore.DocumentSnapshot
 	for {
-		doc, err = iter.Next()
+		snapshot, err = iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
 				err = nil
@@ -115,25 +120,33 @@ func (br *BookRepository) getBookItemDocument(ctx context.Context, tx *firestore
 			break
 		}
 
-		var current bookItemDocument
-		doc.DataTo(&current)
+		var document bookItemDocument
+		snapshot.DataTo(&document)
 
 		// if the current has a version number larger than the last
 		// document, replace it and delete the replaced document
 		// otherwise delete the current document if possible
-		if document == nil || current.Version > document.Version {
-			if document != nil && canChange(document.Created) {
-				err = tx.Delete(doc.Ref)
+		if highestVersion == nil || document.Version > highestVersion.Version {
+			var deleteable *firestore.DocumentRef
+			// don't do the delete operation until after the version swap
+			// is done in case of an error in the delete
+			if highestVersion != nil && canChange(highestVersionUpdateTime) {
+				deleteable = highestVersionRef
+			}
+
+			highestVersion = &document
+			highestVersionRef = snapshot.Ref
+			highestVersionUpdateTime = snapshot.UpdateTime
+
+			if deleteable != nil {
+				err = tx.Delete(deleteable)
 				if err != nil {
 					break
 				}
 			}
-
-			document = &current
-			ref = doc.Ref
-		} else if canChange(current.Created) {
+		} else if canChange(snapshot.UpdateTime) {
 			// delete current from database if possible
-			err = tx.Delete(doc.Ref)
+			err = tx.Delete(snapshot.Ref)
 			if err != nil {
 				break
 			}
@@ -142,15 +155,116 @@ func (br *BookRepository) getBookItemDocument(ctx context.Context, tx *firestore
 
 	// if the document is supposed to be deleted, do so if possible
 	// and set the return values as null
-	if document != nil && document.Delete {
-		if canChange(document.Created) {
-			err = tx.Delete(ref)
+	if highestVersion != nil && highestVersion.Delete {
+		if canChange(highestVersionUpdateTime) {
+			err = tx.Delete(highestVersionRef)
 		}
-		document = nil
-		ref = nil
+		highestVersion = nil
+		highestVersionRef = nil
 	}
 
-	return ref, document, err
+	return highestVersionRef, highestVersion, err
+}
+
+func (br *BookRepository) sortBatchSnapshot(snapshot *firestore.DocumentSnapshot, keep, remove map[string][]*firestore.DocumentSnapshot, limit int) error {
+	var err error
+
+	var interfaceKey interface{}
+	interfaceKey, err = snapshot.DataAt("sort_key")
+	if err != nil {
+		return err
+	}
+	sortKey := interfaceKey.(string)
+
+	kp, inKeep := keep[sortKey]
+	dl, inDel := remove[sortKey]
+
+	switch {
+	case inKeep:
+		// if the item key already exists in the keep bucket, the incoming
+		// snapshot is also a keep by default
+		keep[sortKey] = append(kp, snapshot)
+
+		// evaluate the remove flag for the incoming snapshot
+		var deleteVal interface{}
+		deleteVal, err = snapshot.DataAt("remove")
+		if err != nil {
+			return err
+		}
+		deleteKey := deleteVal.(bool)
+
+		// if the remove flag is set, the book item is closed and should be
+		// removed from the book along with all of its versions
+		if deleteKey {
+			remove[sortKey] = keep[sortKey]
+			delete(keep, sortKey)
+		}
+		return nil
+	case inDel:
+		// if the item key exists in the remove bucket, add this version
+		// for cleanup
+		remove[sortKey] = append(dl, snapshot)
+		return nil
+	case len(keep) < limit:
+		// for an item key that doesn't exist in either bucket and the total
+		// limit has not been reached, add the item to the keep bucket to start
+
+		// evaluate the remove flag for the incoming snapshot
+		var deleteVal interface{}
+		deleteVal, err = snapshot.DataAt("remove")
+		if err != nil {
+			return err
+		}
+		deleteKey := deleteVal.(bool)
+
+		// if the item is to be removed, put it in the remove bucket
+		if deleteKey {
+			remove[sortKey] = []*firestore.DocumentSnapshot{snapshot}
+		} else {
+			keep[sortKey] = []*firestore.DocumentSnapshot{snapshot}
+		}
+
+		return nil
+	default:
+		// if the length of the keep bucket is equal to the limit, break from the loop
+		return errProcessLimitReached
+	}
+}
+
+func (br *BookRepository) selectHighestVersionSnapshot(docs []*firestore.DocumentSnapshot, tx *firestore.Transaction) (*bookItemDocument, error) {
+	var err error
+	var highestVersion *bookItemDocument
+	var highestVersionRef *firestore.DocumentRef
+	var highestVersionUpdateTime time.Time
+
+	for _, snapshot := range docs {
+		var currentItem bookItemDocument
+		snapshot.DataTo(&currentItem)
+
+		switch {
+		case highestVersion == nil:
+			highestVersion = &currentItem
+			highestVersionRef = snapshot.Ref
+			highestVersionUpdateTime = snapshot.UpdateTime
+		case currentItem.Version > highestVersion.Version:
+			var deletable *firestore.DocumentRef
+			if canChange(highestVersionUpdateTime) {
+				deletable = highestVersionRef
+			}
+
+			highestVersion = &currentItem
+			highestVersionRef = snapshot.Ref
+
+			if deletable != nil {
+				err = tx.Delete(deletable)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	return highestVersion, err
 }
 
 func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
@@ -158,18 +272,18 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 	err = br.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		var txErr error
 
+		// TODO: getting the entire order book is inefficient; refactor into a cursor
 		col := br.baseCollection(ctx, item, item.ActionType).
-			OrderBy("sort_key", firestore.Asc).
-			Limit(limit * 3)
+			OrderBy("sort_key", firestore.Asc)
+			//Limit(limit * 3)
 		iter := tx.Documents(col)
 
 		keep := make(map[string][]*firestore.DocumentSnapshot)
 		remove := make(map[string][]*firestore.DocumentSnapshot)
 
-		var doc *firestore.DocumentSnapshot
-	snapshots:
+		var snapshot *firestore.DocumentSnapshot
 		for {
-			doc, txErr = iter.Next()
+			snapshot, txErr = iter.Next()
 			if txErr != nil {
 				if errors.Is(txErr, iterator.Done) {
 					txErr = nil
@@ -180,43 +294,10 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 				break
 			}
 
-			var interfaceKey interface{}
-			interfaceKey, txErr = doc.DataAt("sort_key")
-			if err != nil {
-				return txErr
-			}
-			sortKey := interfaceKey.(string)
-
-			kp, inKeep := keep[sortKey]
-			dl, inDel := remove[sortKey]
-
-			switch {
-			case inKeep:
-				// if the item id exists in the keep or delete bucket, add the item to the list for processing
-				keep[sortKey] = append(kp, doc)
-
-				var deleteVal interface{}
-				deleteVal, txErr = doc.DataAt("remove")
-				if err != nil {
-					return txErr
-				}
-				deleteKey := deleteVal.(bool)
-
-				if deleteKey {
-					remove[sortKey] = keep[sortKey]
-					delete(keep, sortKey)
-				}
-				continue
-			case inDel:
-				remove[sortKey] = append(dl, doc)
-				continue
-			case len(keep) < limit:
-				// if the length of the keep bucket is less than the limit add the item to the list for processing
-				keep[sortKey] = []*firestore.DocumentSnapshot{doc}
-				continue
-			default:
-				// if the length of the keep bucket is equal to the limit, break from the loop
-				break snapshots
+			err = br.sortBatchSnapshot(snapshot, keep, remove, limit)
+			if errors.Is(err, errProcessLimitReached) {
+				err = nil
+				break
 			}
 		}
 
@@ -227,36 +308,22 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 		sort.Strings(keys)
 
 		for _, key := range keys {
-			docs := keep[key]
-			var current *bookItemDocument
-			var ref *firestore.DocumentRef
-
-			for _, doc = range docs {
-				var item bookItemDocument
-				doc.DataTo(&item)
-
-				switch {
-				case current == nil:
-					current = &item
-					ref = doc.Ref
-				case item.Version > current.Version:
-					current = &item
-					txErr = tx.Delete(ref)
-					if txErr != nil {
-						break
-					}
-					ref = doc.Ref
-				}
+			var highestVersion *bookItemDocument
+			highestVersion, txErr = br.selectHighestVersionSnapshot(keep[key], tx)
+			if txErr != nil {
+				return txErr
 			}
 
-			items = append(items, documentToBookItem(current))
+			items = append(items, documentToBookItem(highestVersion))
 		}
 
 		for _, docs := range remove {
-			for _, doc = range docs {
-				txErr = tx.Delete(doc.Ref)
-				if txErr != nil {
-					return txErr
+			for _, snapshot = range docs {
+				if canChange(snapshot.UpdateTime) {
+					txErr = tx.Delete(snapshot.Ref)
+					if txErr != nil {
+						return txErr
+					}
 				}
 			}
 		}
@@ -271,6 +338,8 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 	return
 }
 
+// DeleteBookItem attempts to delete the book item if it exists. Does not return an error if
+// no book item is found.
 func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.BookItem) error {
 	var err error
 
@@ -278,12 +347,16 @@ func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.Book
 		var txErr error
 
 		ref, doc, txErr := br.getBookItemDocument(ctx, tx, item)
-		if err != nil {
-			return err
+		if txErr != nil {
+			return txErr
 		}
 
-		if doc != nil && canChange(doc.Created) {
-			tx.Delete(ref)
+		if doc == nil {
+			return nil
+		}
+
+		if canChange(doc.Created) {
+			txErr = tx.Delete(ref)
 		} else {
 			newDoc := bookitemToDocument(item)
 			if doc != nil {
