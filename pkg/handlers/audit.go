@@ -36,12 +36,13 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 			UserAccounts:   make(map[string]string),
 			LedgerAccounts: make(map[string]map[string]string), // map[symbol][account]balance
 			Balance:        make(map[string]string),
+			Throughput:     make(map[string]string),
 			Errors:         []string{},
 		}
 
 		ctx := r.Context()
 		symbols := []types.Symbol{types.SymbolBitcoin, types.SymbolEthereum}
-		accountBalances, msgs, err := h.getAccountBalances(ctx, symbols)
+		accountBalances, orderBalances, msgs, err := h.getAccountBalances(ctx, symbols)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
@@ -106,6 +107,10 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 			}
 		}
 
+		for k, x := range orderBalances {
+			response.Throughput[k.String()] = x.StringFixedBank(k.RoundingPlace())
+		}
+
 		cashAssets, err := h.ledger.GetAssetBalance(ctx, persist.Cash)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
@@ -160,19 +165,21 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.Symbol) (map[types.Symbol]decimal.Decimal, []string, error) {
+func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.Symbol) (map[types.Symbol]decimal.Decimal, map[types.Symbol]decimal.Decimal, []string, error) {
 	var err error
 	var msgs []string
 	var auths []*persist.Authorization
 
 	accountBalances := make(map[types.Symbol]decimal.Decimal)
+	orderBalance := make(map[types.Symbol]decimal.Decimal)
 	for _, s := range symbols {
 		accountBalances[s] = decimal.NewFromInt(0)
+		orderBalance[s] = decimal.NewFromInt(0)
 	}
 
 	auths, err = h.auths.GetAuthorizations(ctx)
 	if err != nil {
-		return accountBalances, msgs, err
+		return accountBalances, orderBalance, msgs, err
 	}
 
 	// calculate totals for all symbols for all accounts
@@ -188,7 +195,7 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 			trepo := h.accounts.Transactions(a)
 			transactions, err := trepo.GetTransactions(ctx)
 			if err != nil {
-				return accountBalances, msgs, err
+				return accountBalances, orderBalance, msgs, err
 			}
 
 			sort.Slice(transactions, func(i, j int) bool {
@@ -211,17 +218,20 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 			orepo := h.accounts.Orders(a)
 			orders, err := orepo.GetOrdersByStatus(ctx, persist.StatusFilled, persist.StatusOpen, persist.StatusPartial, persist.StatusCanceled)
 			if err != nil {
-				return accountBalances, msgs, err
+				return accountBalances, orderBalance, msgs, err
 			}
 
 			for _, order := range orders {
 				bi := persist.NewBookItem(order.Base)
 				exists, err := h.book.BookItemExists(ctx, &bi)
 
+				s, a := order.Base.Type.HoldAmount(order.Base.Action, order.Base.Base, order.Base.Target)
+				orderBalance[s] = orderBalance[s].Add(a)
+
 				key := fmt.Sprintf("%s.%d", bi.Order.Type.KeyString(bi.Order.Action), bi.Order.Timestamp.UnixNano())
 
 				if err != nil {
-					return accountBalances, msgs, err
+					return accountBalances, orderBalance, msgs, err
 				}
 				switch order.Status {
 				case persist.StatusCanceled, persist.StatusFilled:
@@ -253,7 +263,7 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 				var bal decimal.Decimal
 				bal, err = br.GetBalance(ctx)
 				if err != nil {
-					return accountBalances, msgs, err
+					return accountBalances, orderBalance, msgs, err
 				}
 
 				accountBalances[s] = accountBalances[s].Add(bal)
@@ -269,13 +279,14 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 		}
 	}
 
-	return accountBalances, msgs, nil
+	return accountBalances, orderBalance, msgs, nil
 }
 
 type AuditResponse struct {
 	UserAccounts   map[string]string            `json:"user_accounts"`
 	LedgerAccounts map[string]map[string]string `json:"ledger_accounts"`
 	Balance        map[string]string            `json:"balance"`
+	Throughput     map[string]string            `json:"order_throughput"`
 	Errors         []string                     `json:"errors"`
 }
 
