@@ -142,7 +142,7 @@ func (a *Authorization) Decode(b []byte, enc EncodingType) error {
 type BookRepository interface {
 	SetBookItem(context.Context, *BookItem) error
 	BookItemExists(context.Context, *BookItem) (bool, error)
-	GetHeadBatch(context.Context, *BookItem, int) ([]*BookItem, error)
+	GetHeadBatch(ctx context.Context, item *BookItem, limit int, offset *BookItem) ([]*BookItem, error)
 	DeleteBookItem(context.Context, *BookItem) error
 }
 

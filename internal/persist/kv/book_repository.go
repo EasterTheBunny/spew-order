@@ -51,7 +51,7 @@ func (br *BookRepository) SetBookItem(ctx context.Context, bi *persist.BookItem)
 	return br.kvstore.Set(bookItemKey(*bi), b, &attrs)
 }
 
-func (br *BookRepository) GetHeadBatch(ctx context.Context, bi *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
+func (br *BookRepository) GetHeadBatch(ctx context.Context, bi *persist.BookItem, limit int, offset *persist.BookItem) (items []*persist.BookItem, err error) {
 	query := &persist.KVStoreQuery{
 		StartOffset: bookItemSubspace(*bi, &bi.ActionType).Pack(key.Tuple{}).String()}
 	attrs, err := br.kvstore.RangeGet(query, 10)

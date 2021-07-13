@@ -102,7 +102,7 @@ func TestGetHeadBatch(t *testing.T) {
 	assert.Equal(t, count, s.Len())
 	assert.Len(t, expected, count)
 
-	batch, err := r.GetHeadBatch(ctx, &expected[len(expected)-1], count/2)
+	batch, err := r.GetHeadBatch(ctx, &expected[len(expected)-1], count/2, nil)
 	assert.NoError(t, err)
 
 	// reverse the expected array

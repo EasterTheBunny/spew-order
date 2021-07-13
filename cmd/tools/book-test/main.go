@@ -53,14 +53,14 @@ func main() {
 	}
 	item := persist.NewBookItem(order)
 
-	batch, err := repo.GetHeadBatch(ctx, &item, 5)
+	batch, err := repo.GetHeadBatch(ctx, &item, 5, nil)
 	if err != nil {
 		log.Println(err)
 	}
 
 	log.Printf("batch size %d; expected 5", len(batch))
 
-	batch, err = repo.GetHeadBatch(ctx, &item, 10)
+	batch, err = repo.GetHeadBatch(ctx, &item, 10, nil)
 	if err != nil {
 		log.Println(err)
 	}
@@ -74,7 +74,7 @@ func main() {
 		}
 	}
 
-	batch, err = repo.GetHeadBatch(ctx, &item, 10)
+	batch, err = repo.GetHeadBatch(ctx, &item, 10, nil)
 	if err != nil {
 		log.Println(err)
 	}

@@ -268,16 +268,23 @@ func (br *BookRepository) selectHighestVersionSnapshot(docs []*firestore.Documen
 	return highestVersion, err
 }
 
-func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookItem, limit int) (items []*persist.BookItem, err error) {
+func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookItem, limit int, offset *persist.BookItem) (items []*persist.BookItem, err error) {
 
 	err = br.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		var txErr error
 
 		// TODO: getting the entire order book is inefficient; refactor into a cursor
-		col := br.baseCollection(ctx, item, item.ActionType).
-			OrderBy("sort_key", firestore.Asc)
+		col := br.baseCollection(ctx, item, item.ActionType)
+		var qry firestore.Query
+
+		if offset != nil {
+			qry = col.Where("sort_key", ">", itemKey(offset)).OrderBy("sort_key", firestore.Asc)
+		} else {
+			qry = col.OrderBy("sort_key", firestore.Asc)
 			//Limit(limit * 3)
-		iter := tx.Documents(col)
+		}
+
+		iter := tx.Documents(qry)
 
 		keep := make(map[string][]*firestore.DocumentSnapshot)
 		remove := make(map[string][]*firestore.DocumentSnapshot)

@@ -42,7 +42,7 @@ func main() {
 		}
 
 		fmt.Printf("%s\n", item.ActionType.String())
-		head, _ := brepo.GetHeadBatch(ctx, &item, 50)
+		head, _ := brepo.GetHeadBatch(ctx, &item, 50, nil)
 		for _, h := range head {
 			switch j := h.Order.Type.(type) {
 			case *types.MarketOrderType:
@@ -55,7 +55,7 @@ func main() {
 		item.ActionType = types.ActionTypeSell
 
 		fmt.Printf("%s\n", item.ActionType.String())
-		head, _ = brepo.GetHeadBatch(ctx, &item, 50)
+		head, _ = brepo.GetHeadBatch(ctx, &item, 50, nil)
 		for _, h := range head {
 			switch j := h.Order.Type.(type) {
 			case *types.MarketOrderType:
@@ -90,7 +90,7 @@ func main() {
 			}
 
 			if order.Status == persist.StatusOpen || order.Status == persist.StatusPartial {
-				items, err := brepo.GetHeadBatch(ctx, &bitem, 10)
+				items, err := brepo.GetHeadBatch(ctx, &bitem, 10, nil)
 				if err != nil {
 					panic(err)
 				}

@@ -236,6 +236,7 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 					}
 				}
 
+				/* TODO: market orders are allowed on the order book if there are no matching orders on the opposite book
 				switch order.Base.Type.(type) {
 				case *types.MarketOrderType:
 					// market orders should not appear on the book
@@ -243,6 +244,7 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 						msgs = append(msgs, fmt.Sprintf("account %s order %s is a market order and is on the order book with key %s", acc, order.Base.ID, key))
 					}
 				}
+				*/
 			}
 
 			for _, s := range symbols {
