@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/persist"
@@ -127,13 +127,11 @@ func (or *OrderRepository) UpdateOrderStatus(ctx context.Context, k persist.Key,
 	return or.getClient(ctx).RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		var txErr error
 		var o *persist.Order
-		var version int
 
-		o, version, txErr = or.getOrder(ctx, tx, k)
+		o, _, txErr = or.getOrder(ctx, tx, k)
 		if txErr != nil {
 			return fmt.Errorf("UpdateOrderStatus: %w", txErr)
 		}
-		version++
 
 		o.Status = s
 		if len(tr) > 0 {
@@ -142,7 +140,7 @@ func (or *OrderRepository) UpdateOrderStatus(ctx context.Context, k persist.Key,
 
 		col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
 		d := or.getClient(ctx).Collection(col).Doc(uuid.NewV4().String())
-		txErr = tx.Create(d, orderToDocument(o, version))
+		txErr = tx.Create(d, orderToDocument(o, time.Now().UnixNano()))
 		if txErr != nil {
 			return fmt.Errorf("UpdateOrderStatus: %w", txErr)
 		}
@@ -162,11 +160,11 @@ func (or *OrderRepository) getClient(ctx context.Context) *firestore.Client {
 	return client
 }
 
-func (or *OrderRepository) getOrder(ctx context.Context, tx *firestore.Transaction, k persist.Key) (*persist.Order, int, error) {
+func (or *OrderRepository) getOrder(ctx context.Context, tx *firestore.Transaction, k persist.Key) (*persist.Order, int64, error) {
 	var err error
 	client := or.getClient(ctx)
 	var order *persist.Order
-	var version int = 0
+	var version int64 = 0
 
 	col := fmt.Sprintf("accounts/%s/orders", or.account.ID)
 	iter := tx.Documents(client.Collection(col).Where("id", "==", k.String()).OrderBy("version", firestore.Desc))
@@ -188,7 +186,7 @@ func (or *OrderRepository) getOrder(ctx context.Context, tx *firestore.Transacti
 		if order == nil {
 			m2 := doc.Data()
 			if v, ok := m2["version"]; ok {
-				version, _ = strconv.Atoi(v.(string))
+				version, _ = v.(int64)
 			}
 			order = documentToOrder(m2)
 		} else if canChange(doc.UpdateTime) {
@@ -202,14 +200,14 @@ func (or *OrderRepository) getOrder(ctx context.Context, tx *firestore.Transacti
 	return order, version, err
 }
 
-func orderToDocument(order *persist.Order, version int) map[string]interface{} {
+func orderToDocument(order *persist.Order, version int64) map[string]interface{} {
 	base, _ := json.Marshal(order.Base)
 	tr, _ := json.Marshal(order.Transactions)
 
 	m := map[string]interface{}{
 		"base":         base,
 		"id":           order.Base.ID.String(),
-		"version":      strconv.Itoa(version),
+		"version":      version,
 		"status":       order.Status.String(),
 		"transactions": tr,
 	}
