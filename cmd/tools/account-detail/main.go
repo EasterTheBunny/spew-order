@@ -91,7 +91,7 @@ func printOrders(ctx context.Context, orders []*persist.Order, repo persist.Acco
 
 		holdAmt = order.Base.HoldID
 
-		bals := repo.Balances(a, symbol)
+		bals := repo.Balances(a, types.SymbolBitcoin)
 		holds, err := bals.FindHolds(ctx)
 		if err != nil {
 			panic(err)
@@ -99,7 +99,20 @@ func printOrders(ctx context.Context, orders []*persist.Order, repo persist.Acco
 
 		for _, hold := range holds {
 			if hold.ID == holdAmt {
-				holdAmt = hold.Amount.StringFixedBank(symbol.RoundingPlace())
+				holdAmt = hold.Amount.StringFixedBank(types.SymbolBitcoin.RoundingPlace())
+				break
+			}
+		}
+
+		bals = repo.Balances(a, types.SymbolEthereum)
+		holds, err = bals.FindHolds(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, hold := range holds {
+			if hold.ID == holdAmt {
+				holdAmt = hold.Amount.StringFixedBank(types.SymbolEthereum.RoundingPlace())
 				break
 			}
 		}

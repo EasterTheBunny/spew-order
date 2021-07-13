@@ -74,7 +74,6 @@ func TestExecuteOrInsertOrder_EmptyBook(t *testing.T) {
 }
 
 func TestExecuteOrInsertOrder(t *testing.T) {
-	t.Skip()
 	// isolate the book repo from others
 	st := persist.NewMockKVStore()
 	// other repo to run tests only on book repo
@@ -245,9 +244,12 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		assert.Equal(t, expected, st.Len())
 	})
 
-	t.Run("CancelOrder", func(t *testing.T) {
+	t.Run("Multi-BatchMarketOrder", func(t *testing.T) {
+		// the expectation of this new order is to match 16 items from the order book
+		// and to remove two
+		expected = expected - 16
 
-		order := newLimitBookOrder(12700, 0.33, 1.2, types.ActionTypeBuy)
+		order := newMarketBookOrder(12800, 20.0, types.ActionTypeSell)
 
 		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
 			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
@@ -268,16 +270,10 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order.HoldID = id
 
-		// insert the order
 		err = s.ExecuteOrInsertOrder(ctx, order)
-		assert.NoError(t, err)
 
-		// cancel the order
-		err = s.ExecuteOrInsertOrder(ctx, order)
 		assert.NoError(t, err)
-
 		assert.Equal(t, expected, st.Len())
-
 	})
 }
 
@@ -288,6 +284,16 @@ var buyPrices = [][]float64{
 	{0.35, 0.04},
 	{0.35, 1.2},
 	{0.35, 1.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
 }
 
 var sellPrices = [][]float64{
@@ -297,6 +303,16 @@ var sellPrices = [][]float64{
 	{0.41, 0.2},
 	{0.42, 2.089},
 	{0.45, 1.12},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
 }
 
 var times = []int64{
@@ -306,4 +322,14 @@ var times = []int64{
 	12334,
 	12345,
 	12346,
+	12347,
+	12348,
+	12349,
+	12350,
+	12351,
+	12352,
+	12353,
+	12354,
+	12355,
+	12356,
 }

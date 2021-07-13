@@ -2,10 +2,12 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/easterthebunny/spew-order/internal/persist"
+	"github.com/easterthebunny/spew-order/internal/persist/firebase"
 	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
@@ -26,6 +28,9 @@ func (ob *OrderBook) CancelOrder(ctx context.Context, order types.Order) error {
 	log.Printf("deleting book item as book item was canceled: %s", item.Order.ID)
 	err := ob.bir.DeleteBookItem(ctx, &item)
 	if err != nil {
+		if errors.Is(err, firebase.ErrNotFound) {
+			return nil
+		}
 		return err
 	}
 
@@ -51,7 +56,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 	// maintain this function as idempotent and don't run the same action twice
 	// for the same record
 	if ok {
-		return nil
+		return fmt.Errorf("action not allowed; book item exists: %s", order.ID)
 	}
 
 	for {
@@ -59,6 +64,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 		if err != nil {
 			return fmt.Errorf("ExecuteOrInsertOrder::head batch::%w", err)
 		}
+
+		newBatch := false
 
 		for _, book := range batch {
 			bookOrder := &book.Order
@@ -153,6 +160,7 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 							return fmt.Errorf("ExecuteOrInsertOrder::partial match on incoming order:%w", updateError)
 						}
 
+						newBatch = true
 						continue
 					}
 				}
@@ -190,19 +198,17 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 				}
 
 				return nil
-			} else {
-				// TODO: not sure why this is here; should it really re-save the book item???
-				log.Printf("re-saved the book item on nil transaction: %s", book.Order.ID)
-				return ob.bir.SetBookItem(ctx, book)
 			}
 		}
 
-		// if the order book is empty, insert the order
-		err = ob.bir.SetBookItem(ctx, &item)
-		if err != nil {
-			return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+		if !newBatch {
+			// if the order book is empty, insert the order
+			err = ob.bir.SetBookItem(ctx, &item)
+			if err != nil {
+				return fmt.Errorf("ExecuteOrInsertOrder::%w", err)
+			}
+			return nil
 		}
-		return nil
 	}
 }
 

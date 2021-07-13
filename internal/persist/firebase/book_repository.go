@@ -17,6 +17,7 @@ import (
 
 var (
 	errProcessLimitReached = errors.New("defined limit reached")
+	ErrNotFound            = errors.New("book item does not exist")
 )
 
 type BookRepository struct {
@@ -338,7 +339,7 @@ func (br *BookRepository) GetHeadBatch(ctx context.Context, item *persist.BookIt
 	return
 }
 
-// DeleteBookItem attempts to delete the book item if it exists. Does not return an error if
+// DeleteBookItem attempts to delete the book item if it exists. Returns an error if
 // no book item is found.
 func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.BookItem) error {
 	var err error
@@ -352,7 +353,7 @@ func (br *BookRepository) DeleteBookItem(ctx context.Context, item *persist.Book
 		}
 
 		if doc == nil {
-			return nil
+			return ErrNotFound
 		}
 
 		if canChange(doc.Created) {
