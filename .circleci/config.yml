@@ -24,7 +24,6 @@ jobs:
       - run: apk add --update --no-cache git-secret
       - run: gpg --list-keys
       - run: echo $GPG_PRIVATE_KEY | tr ',' '\n' | gpg --batch --import
-      - run: git secret reveal
       - run: ./configurations/setup
       - run: ./configurations/deploy-rest
       - run: ./configurations/deploy-webhooks
