@@ -15,7 +15,7 @@ jobs:
       - run: go test -v ./...
   deploy:
     docker:
-      - image: google/cloud-sdk:slim
+      - image: google/cloud-sdk:latest
     working_directory: /go/src/github.com/easterthebunny/spew-order
     steps:
       - checkout
