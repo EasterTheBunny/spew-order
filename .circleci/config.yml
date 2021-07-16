@@ -22,6 +22,7 @@ jobs:
       - run: sh -c "echo 'https://gitsecret.jfrog.io/artifactory/git-secret-apk/all/main'" >> /etc/apk/repositories
       - run: wget -O /etc/apk/keys/git-secret-apk.rsa.pub 'https://gitsecret.jfrog.io/artifactory/api/security/keypair/public/repositories/git-secret-apk'
       - run: apk add --update --no-cache git-secret
+      - run: gpg --list-keys
       - run: echo $GPG_PRIVATE_KEY > ./private_key.gpg
       - run: gpg --import ./private_key.gpg
       - run: git secret reveal
