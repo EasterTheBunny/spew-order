@@ -19,14 +19,17 @@ jobs:
     working_directory: /go/src/github.com/easterthebunny/spew-order
     steps:
       - checkout
-      - run: echo $FunctionsServiceAccount > ./key.json
-      - run: gcloud config set project $ProjectID
-      - run: gcloud config list project
-      - run: gcloud auth activate-service-account --key-file=./key.json
-      - run: gcloud functions deploy order-api-$ENVIRONMENT-$LOCATION --entry-point RestAPI --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="$ORDER_TOPIC",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY",COINBASE_API_KEY="$COINBASE_API_KEY",COINBASE_API_SECRET="$COINBASE_API_SECRET" --runtime go113 --trigger-http --allow-unauthenticated
-      - run: gcloud functions deploy order-webhooks-$ENVIRONMENT-$LOCATION --entry-point FundingWebhooks --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="$ORDER_TOPIC",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY",COINBASE_API_KEY="$COINBASE_API_KEY",COINBASE_API_SECRET="$COINBASE_API_SECRET" --runtime go113 --trigger-http --allow-unauthenticated
-      - run: gcloud functions deploy order-audit-$ENVIRONMENT-$LOCATION --entry-point AuditAPI --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="$ORDER_TOPIC",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY",COINBASE_API_KEY="$COINBASE_API_KEY",COINBASE_API_SECRET="$COINBASE_API_SECRET" --runtime go113 --trigger-http --allow-unauthenticated
-      - run: gcloud functions deploy order-book-$ENVIRONMENT-$LOCATION --entry-point OrderPubSub --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="$ORDER_TOPIC",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY",COINBASE_API_KEY="$COINBASE_API_KEY",COINBASE_API_SECRET="$COINBASE_API_SECRET" --trigger-topic $ORDER_TOPIC --runtime go113 --max-instances=1
+	  - run: sh -c "echo 'deb https://gitsecret.jfrog.io/artifactory/git-secret-deb git-secret main' >> /etc/apt/sources.list"
+	  - run: wget -qO - 'https://gitsecret.jfrog.io/artifactory/api/gpg/key/public' | sudo apt-key add -
+	  - run: apt-get update && apt-get -y install gnupg git-secret
+	  - run: echo $GPG_PRIVATE_KEY > ./private_key.gpg
+	  - run: gpg --import ./private_key.gpg
+	  - run: git secret reveal
+	  - run: ./configurations/setup
+	  - run: ./configurations/deploy-rest
+	  - run: ./configurations/deploy-webhooks
+	  - run: ./configurations/deploy-audit
+	  - run: ./configurations/deploy-book-subscriber
 workflows:
   version: 2
   test-release:

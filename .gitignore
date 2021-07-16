@@ -2,3 +2,12 @@
 .vscode
 bin
 *.key.json
+configurations/config.yaml
+!*.secret-ci
+.gitsecret-ci/keys/random_seed
+.gitsecret-uat/keys/random_seed
+!*.secret-uat
+.gitsecret-prod/keys/random_seed
+!*.secret-prod
+configurations/key.json
+configurations/env.sh

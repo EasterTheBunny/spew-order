@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "deploying rest api for $ENVIRONMENT and $LOCATION"
+ENVLOC = "$ENVIRONMENT-$LOCATION"
+
+# deploy RestAPI
+gcloud functions deploy order-api-$ENVLOC \
+	--entry-point RestAPI \
+	--env-vars-file ./configurations/config.yaml \
+	--runtime go113 \
+	--trigger-http \
+	--allow-unauthenticated

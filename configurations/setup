@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# convert all properties in the env yaml file
+# into exported environment variables
+sed -e 's/^/export /g;s/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' config.yaml > vars
+source ./vars
+
+gcloud config set project $PROJECT_ID
+gcloud config set list project
+gcloud auth activate-service-account --key-file=./key.json

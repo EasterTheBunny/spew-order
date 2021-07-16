@@ -1,0 +1,17 @@
+#!/bin/bash
+
+ENVLOC="$ENVIRONMENT-$LOCATION"
+COINBASE_PUBLIC_KEY=$(cat ./coinbase.pub)
+RUNTIME=go113
+ENVPATH=./configurations/config.yaml
+
+echo "deploying book subscriber for $ENVIRONMENT and $LOCATION with runtime $RUNTIME"
+
+# deploy subscriber
+gcloud functions deploy order-book-$ENVLOC \
+	--entry-point OrderPubSub \
+	--env-vars-file $ENVPATH \
+	--update-env-vars COINBASE_RSA_PUBLIC_KEY="$COINBASE_PUBLIC_KEY" \
+	--trigger-topic $ORDER_TOPIC \
+	--runtime $RUNTIME \
+	--max-instances=1

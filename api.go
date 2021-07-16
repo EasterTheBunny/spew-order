@@ -22,9 +22,7 @@ const (
 	envIdentityURI       = "IDENTITY_PROVIDER" // identity provider as a URI path
 	envProjectID         = "GOOGLE_CLOUD_PROJECT"
 	envOrderTopic        = "ORDER_TOPIC"
-	envAppName           = "APP_NAME"                // application name used as prefix for named resources
 	envRuntimeEnv        = "DEPLOYMENT_ENV"          // deployment environment; CI, QA, PROD
-	envLocation          = "LOCATION"                // resources location for this function instanc
 	envCoinbasePubKey    = "COINBASE_RSA_PUBLIC_KEY" // rsa public key for verifying signature of coinbase notifications
 	envCoinbaseAPIKey    = "COINBASE_API_KEY"        // api key for coinbase
 	envCoinbaseAPISecret = "COINBASE_API_SECRET"     // api secret for coinbase

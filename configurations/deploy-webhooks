@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "deploying webhooks api for $ENVIRONMENT and $LOCATION"
+ENVLOC = "$ENVIRONMENT-$LOCATION"
+
+# deploy RestAPI
+gcloud functions deploy order-webhooks-$ENVLOC \
+	--entry-point FundingWebhooks \
+	--env-vars-file=./configurations/config.yaml \
+	--runtime go113 \
+	--trigger-http \
+	--allow-unauthenticated
