@@ -19,17 +19,17 @@ jobs:
     working_directory: /go/src/github.com/easterthebunny/spew-order
     steps:
       - checkout
-	  - run: sh -c "echo 'deb https://gitsecret.jfrog.io/artifactory/git-secret-deb git-secret main' >> /etc/apt/sources.list"
-	  - run: wget -qO - 'https://gitsecret.jfrog.io/artifactory/api/gpg/key/public' | sudo apt-key add -
-	  - run: apt-get update && apt-get -y install gnupg git-secret
-	  - run: echo $GPG_PRIVATE_KEY > ./private_key.gpg
-	  - run: gpg --import ./private_key.gpg
-	  - run: git secret reveal
-	  - run: ./configurations/setup
-	  - run: ./configurations/deploy-rest
-	  - run: ./configurations/deploy-webhooks
-	  - run: ./configurations/deploy-audit
-	  - run: ./configurations/deploy-book-subscriber
+      - run: sh -c "echo 'deb https://gitsecret.jfrog.io/artifactory/git-secret-deb git-secret main' >> /etc/apt/sources.list"
+      - run: wget -qO - 'https://gitsecret.jfrog.io/artifactory/api/gpg/key/public' | sudo apt-key add -
+      - run: apt-get update && apt-get -y install gnupg git-secret
+      - run: echo $GPG_PRIVATE_KEY > ./private_key.gpg
+      - run: gpg --import ./private_key.gpg
+      - run: git secret reveal
+      - run: ./configurations/setup
+      - run: ./configurations/deploy-rest
+      - run: ./configurations/deploy-webhooks
+      - run: ./configurations/deploy-audit
+      - run: ./configurations/deploy-book-subscriber
 workflows:
   version: 2
   test-release:
