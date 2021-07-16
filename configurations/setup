@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ENV=$(echo $ENVIRONMENT | awk '{print toLower($0)}')
+ENV=$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')
 
 echo "setting git secret variables for $ENV"
 export SECRETS_EXTENSION=".secret-$ENV"
