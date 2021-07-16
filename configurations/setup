@@ -3,6 +3,7 @@
 ENV=$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')
 
 echo "setting git secret variables for $ENV"
+export SECRETS_VERBOSE=true
 export SECRETS_EXTENSION=".secret-$ENV"
 export SECRETS_DIR=".gitsecret-$ENV"
 
