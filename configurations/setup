@@ -1,5 +1,13 @@
 #!/bin/bash
 
+ENV=$(echo $ENVIRONMENT | awk '{print toLower($0)}')
+
+echo "setting git secret variables for $ENV"
+export SECRETS_EXTENSION=".secret-$ENV"
+export SECRETS_DIR=".gitsecret-$ENV"
+
+git secret reveal
+
 # convert all properties in the env yaml file
 # into exported environment variables
 sed -e 's/^/export /g;s/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' config.yaml > vars
