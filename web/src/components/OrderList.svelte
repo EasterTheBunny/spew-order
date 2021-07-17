@@ -7,6 +7,7 @@
   import OrderStatusIcon from './OrderStatusIcon.svelte'
   import { OrderStatus, OrderType } from '../constants'
   import { getDataCtx } from "../exchange";
+  import { getLocalization } from '../i18n'
 
   let orderList: IfcOrderResource[] = []
   let unsubscribe_orders = () => {}
@@ -16,6 +17,7 @@
   }: {
     orders: Writable<IfcOrderResource[] | IfcOrderResource>
   } = getDataCtx()
+  const {t} = getLocalization()
 
   const price: (order: IfcOrderResource) => string = (order) => {
     if (isLimit(order.order.type)) {
@@ -52,11 +54,11 @@
 <DataTable table$aria-label="People list" style="width: 100%;">
   <Head>
     <Row>
-      <Cell>Action</Cell>
-      <Cell>Type</Cell>
-      <Cell>Price</Cell>
-      <Cell>Amount</Cell>
-      <Cell>Status</Cell>
+      <Cell>{$t('Action')}</Cell>
+      <Cell>{$t('Type')}</Cell>
+      <Cell>{$t('Price')}</Cell>
+      <Cell>{$t('Amount')}</Cell>
+      <Cell>{$t('Status')}</Cell>
       <Cell></Cell>
     </Row>
   </Head>

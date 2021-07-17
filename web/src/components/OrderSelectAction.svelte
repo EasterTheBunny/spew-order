@@ -1,15 +1,16 @@
 <script type="ts">
   import Tab, { Label } from '@smui/tab/styled'
   import TabBar from '@smui/tab-bar/styled'
-
   import { ActionType } from "../constants"
+  import { getLocalization } from '../i18n'
 
   export let active: ActionType = ActionType.Buy;
 
+  const {t} = getLocalization()
   const actionTypes = [ActionType.Buy, ActionType.Sell]
   const actionTypeLabels = {
-    [ActionType.Buy]: "Buy",
-    [ActionType.Sell]: "Sell",
+    [ActionType.Buy]: t("Buy"),
+    [ActionType.Sell]: t("Sell"),
   }
 </script>
 

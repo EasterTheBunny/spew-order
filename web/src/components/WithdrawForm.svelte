@@ -7,6 +7,7 @@
   import CurrencySelect from '../components/CurrencySelect.svelte'
   import { balanceMap } from '../util'
   import { getDataCtx } from "../exchange"
+  import { getLocalization } from '../i18n'
   
   export let balances: IfcBalanceResource[] = []
 
@@ -23,6 +24,7 @@
   }: {
     transactions: Writable<IfcTransactionRequest>
   } = getDataCtx()
+  const {t} = getLocalization()
 
   $: formValid = validAddress && validQuantity && validate(req, balanceMap(balances))
 
@@ -76,7 +78,7 @@
         style="width:100%"
         disabled={!formValid}
       >
-        <Label>Submit Withdrawal</Label>
+        <Label>{$t('Submit Withdrawal')}</Label>
       </Button>
     </div>
 

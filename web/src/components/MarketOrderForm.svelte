@@ -7,6 +7,7 @@
   import { getDataCtx } from "../exchange"
   import { OrderType, Currency, ActionType } from "../constants"
   import { calcTotal } from "../util"
+  import { getLocalization } from '../i18n'
 
   export let action: ActionType = ActionType.Buy
   export let base: Currency = Currency.Bitcoin
@@ -26,6 +27,7 @@
   }: {
     orders: Writable<IfcOrderResource[] | IfcOrderResource>
   } = getDataCtx()
+  const {t} = getLocalization()
 
   const balanceMap: (b: IfcBalanceResource[]) => object = (b) => {
     const mp = {}
@@ -131,7 +133,7 @@
     style="width:100%"
     disabled={!validOrder}
   >
-    <Label>Submit Order</Label>
+    <Label>{$t('SubmitOrder')}</Label>
   </Button>
 </div>
 

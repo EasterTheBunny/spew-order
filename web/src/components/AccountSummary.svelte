@@ -2,12 +2,14 @@
   import type { Readable } from "svelte/store"
   import { Link } from "svelte-routing"
   import { getDataCtx } from "../exchange"
+  import { getLocalization } from '../i18n'
 
   const {
     account,
   }: {
     account: Readable<IfcAccountResource>
   } = getDataCtx()
+  const {t} = getLocalization()
 
 </script>
 
@@ -17,7 +19,7 @@
   <dd>{balance.quantity} <i>{balance.symbol}</i></dd>
   {/each}
 </dl>
-<Link to="funding">Add Funds</Link>
+<Link to="funding">{$t('AddFunds')}</Link>
 
 <style lang="scss">
   .balance-list {

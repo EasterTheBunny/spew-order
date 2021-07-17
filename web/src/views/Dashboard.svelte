@@ -9,7 +9,8 @@
   import AccountSummary from "../components/AccountSummary.svelte"
   import OrderBook from "../components/OrderBook.svelte"
   import { getOidc } from "../oidc"
-  import { getDataCtx } from "../exchange";
+  import { getDataCtx } from "../exchange"
+  import { getLocalization } from '../i18n'
 
   let elevation = 1;
   let color = 'default';
@@ -21,6 +22,7 @@
   }: {
     account: Readable<IfcAccountResource>
   } = getDataCtx()
+  const {t} = getLocalization()
 </script>
 
 {#if $loggedIn && $account}
@@ -28,7 +30,7 @@
   <LayoutGrid>
     <Cell span={3}>
       <Paper transition {elevation} {color} class="paper-demo">
-        <Title>Account Summary</Title>
+        <Title>{$t('AccountSummary')}</Title>
         <Content>
           <AccountSummary />
         </Content>
@@ -37,8 +39,8 @@
       <Paper transition {elevation} {color} class="paper-demo">
         <Content>
           <div class="book-header">
-            <span style="width: 50%;">Price</span>
-            <span>Quantity</span>
+            <span style="width: 50%;">{$t('Price')}</span>
+            <span>{$t('Quantity')}</span>
           </div>
           <OrderBook src="asks" name="asks" yAxis={false} bind:height={bookHeight} />
           <OrderBook src="bids" name="bids" yAxis={false} bind:height={bookHeight} />
@@ -62,14 +64,14 @@
     
     <Cell span={3}>
       <Paper transition {elevation} {color} class="paper-demo">
-        <Title>Create New Order</Title>
+        <Title>{$t('CreateNewOrder')}</Title>
         <Content>
           <OrderForm />
         </Content>
       </Paper>
 
       <Paper transition {elevation} {color} class="paper-demo">
-        <Title>All Positions</Title>
+        <Title>{$t('AllPositions')}</Title>
         <Content>
           <OrderList />
         </Content>
