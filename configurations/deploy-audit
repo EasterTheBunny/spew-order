@@ -6,7 +6,7 @@ echo "deploying audit api for $ENVIRONMENT and $LOCATION"
 ENVLOC=$(echo "$ENVIRONMENT-$LOCATION")
 
 # deploy RestAPI
-gcloud functions deploy order-api-$ENVLOC \
+gcloud functions deploy order-audit-$ENVLOC \
 	--entry-point AuditAPI \
 	--env-vars-file=./configurations/config.yaml \
 	--runtime go113 \
