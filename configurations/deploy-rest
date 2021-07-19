@@ -3,6 +3,7 @@
 PROJECT=$(echo $PROJECT_ID)
 ENVLOC=$(echo "$ENVIRONMENT-$LOCATION")
 
+cat ./vars
 source ./vars
 
 echo "config gcloud"
