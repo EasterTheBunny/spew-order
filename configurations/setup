@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ENV=$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')
+PROJECT=$(echo $PROJECT_ID)
 
 echo "setting git secret variables for $ENV"
 export SECRETS_VERBOSE=true
@@ -17,6 +18,6 @@ sed -e 's/^/export /g;s/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' ./configurations/confi
 source ./vars
 
 echo "config gcloud"
-gcloud config set project $PROJECT_ID
+gcloud config set project $PROJECT
 gcloud config set list project
 gcloud auth activate-service-account --key-file=./configurations/key.json
