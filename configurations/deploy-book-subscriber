@@ -14,7 +14,9 @@ echo "deploying book subscriber for $ENVIRONMENT and $LOCATION with runtime $RUN
 gcloud functions deploy order-book-$ENVLOC \
 	--entry-point OrderPubSub \
 	--env-vars-file $ENVPATH \
-	--update-env-vars COINBASE_RSA_PUBLIC_KEY="$COINBASE_PUBLIC_KEY" \
 	--trigger-topic $TOPIC \
 	--runtime $RUNTIME \
 	--max-instances=1
+
+gcloud functions deploy order-book-$ENVLOC \
+	--update-env-vars COINBASE_RSA_PUBLIC_KEY="$COINBASE_PUBLIC_KEY"
