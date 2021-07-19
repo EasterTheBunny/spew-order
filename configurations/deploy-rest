@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT=$(echo $PROJECT_ID)
+PROJECT=$(echo $GOOGLE_CLOUD_PROJECT)
 ENVLOC=$(echo "$ENVIRONMENT-$LOCATION")
 
 cat ./vars
@@ -13,7 +13,6 @@ gcloud auth activate-service-account --key-file=./configurations/key.json
 # deploy RestAPI
 echo "deploying rest api for $ENVIRONMENT and $LOCATION"
 gcloud functions deploy order-api-$ENVLOC \
-	--project $PROJECT \
 	--entry-point RestAPI \
 	--env-vars-file ./configurations/config.yaml \
 	--runtime go113 \
