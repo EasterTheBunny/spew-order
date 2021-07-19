@@ -1,7 +1,6 @@
 #!/bin/bash
 
 ENV=$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')
-PROJECT=$(echo $PROJECT_ID)
 
 echo "setting git secret variables for $ENV"
 export SECRETS_VERBOSE=true
@@ -11,13 +10,7 @@ export SECRETS_DIR=".gitsecret-$ENV"
 echo "reveal secrets"
 git secret reveal
 
-echo "set source vars"
+echo "write source vars"
 # convert all properties in the env yaml file
 # into exported environment variables
 sed -e 's/^/export /g;s/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' ./configurations/config.yaml > vars
-source ./vars
-
-echo "config gcloud"
-gcloud config set project $PROJECT
-gcloud config set list project
-gcloud auth activate-service-account --key-file=./configurations/key.json
