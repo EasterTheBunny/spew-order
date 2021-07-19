@@ -3,10 +3,10 @@
 PROJECT=$(echo $GOOGLE_CLOUD_PROJECT)
 ENVLOC=$(echo "$ENVIRONMENT-$LOCATION")
 
-cat ./vars
 source ./vars
 
 echo "config gcloud"
+cat $PROJECT
 gcloud config set project $PROJECT
 gcloud auth activate-service-account --key-file=./configurations/key.json
 
