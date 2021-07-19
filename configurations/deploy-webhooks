@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source ./vars
+
 echo "deploying webhooks api for $ENVIRONMENT and $LOCATION"
 ENVLOC=$(echo "$ENVIRONMENT-$LOCATION")
 
