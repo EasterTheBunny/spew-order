@@ -1,12 +1,13 @@
 <script type="ts">
   import type { Writable } from "svelte/store"
-  import LayoutGrid, { Cell } from '@smui/layout-grid';
-  import Button, { Label } from '@smui/button';
+  import LayoutGrid, { Cell } from '@smui/layout-grid/styled';
+  import Button, { Label } from '@smui/button/styled';
   import AddressInputField from "../components/AddressInputField.svelte"
   import AmountInputField from '../components/AmountInputField.svelte'
   import CurrencySelect from '../components/CurrencySelect.svelte'
   import { balanceMap } from '../util'
   import { getDataCtx } from "../exchange"
+  import { getLocalization } from '../i18n'
   
   export let balances: IfcBalanceResource[] = []
 
@@ -23,6 +24,7 @@
   }: {
     transactions: Writable<IfcTransactionRequest>
   } = getDataCtx()
+  const {t} = getLocalization()
 
   $: formValid = validAddress && validQuantity && validate(req, balanceMap(balances))
 
@@ -76,7 +78,7 @@
         style="width:100%"
         disabled={!formValid}
       >
-        <Label>Submit Withdrawal</Label>
+        <Label>{$t('Submit Withdrawal')}</Label>
       </Button>
     </div>
 

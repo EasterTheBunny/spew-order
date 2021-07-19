@@ -1,5 +1,5 @@
 <script type="ts">
-  import Select, { Option } from '@smui/select';
+  import Select, { Option } from '@smui/select/styled';
   import { Currency } from '../constants';
 
   export let selected: Currency

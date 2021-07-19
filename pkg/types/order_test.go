@@ -1148,7 +1148,7 @@ func TestMarshalOrder(t *testing.T) {
 	assert.NoError(t, err)
 
 	e := `{"account":"%s","action":"BUY","base":"BTC","holdID":"%s","id":"%s","owner":"%s","target":"ETH","timestamp":%d,"type":{"base":"BTC","name":"MARKET","quantity":"0.001"}}`
-	expected := fmt.Sprintf(e, order.Account, order.HoldID, order.ID, order.Owner, order.Timestamp.Unix())
+	expected := fmt.Sprintf(e, order.Account, order.HoldID, order.ID, order.Owner, order.Timestamp.UnixNano())
 
 	assert.Equal(t, expected, string(b))
 }

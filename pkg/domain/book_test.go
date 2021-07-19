@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -66,7 +67,7 @@ func TestExecuteOrInsertOrder_EmptyBook(t *testing.T) {
 	s := &OrderBook{bir: br}
 
 	order := newMarketBookOrder(12700, 0.01, types.ActionTypeSell)
-	err := s.ExecuteOrInsertOrder(order)
+	err := s.ExecuteOrInsertOrder(context.Background(), order)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, st.Len())
@@ -86,18 +87,20 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 	bm := NewBalanceManager(ar, lr, f)
 	s := NewOrderBook(br, bm)
 
+	ctx := context.Background()
+
 	// setup the data set for the later match
 	base := newOrderBook(times, buyPrices, types.ActionTypeBuy)
 	base = append(base, newOrderBook(times, sellPrices, types.ActionTypeSell)...)
 	for _, b := range base {
 		smb, amt := b.Type.HoldAmount(b.Action, b.Base, b.Target)
 
-		err := bm.PostAmtToBalance(&Account{ID: b.Account}, smb, amt)
+		err := bm.PostAmtToBalance(ctx, &Account{ID: b.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
-		id, err := bm.SetHoldOnAccount(&Account{ID: b.Account}, smb, amt)
+		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: b.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
@@ -105,13 +108,13 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		b.HoldID = id
 
 		err = ar.Orders(&persist.Account{ID: b.Account.String()}).
-			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: b})
+			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: b})
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		bitem := persist.NewBookItem(b)
-		err = br.SetBookItem(&bitem)
+		err = br.SetBookItem(ctx, &bitem)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
@@ -125,25 +128,25 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		order := newMarketBookOrder(12700, 0.01, types.ActionTypeSell)
 
 		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
-			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
-		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
 
-		err = s.ExecuteOrInsertOrder(order)
+		err = s.ExecuteOrInsertOrder(ctx, order)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
@@ -157,25 +160,25 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		order := newMarketBookOrder(12700, 1.2, types.ActionTypeBuy)
 
 		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
-			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
-		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
 
-		err = s.ExecuteOrInsertOrder(order)
+		err = s.ExecuteOrInsertOrder(ctx, order)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
@@ -187,25 +190,25 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		order := newLimitBookOrder(12700, 0.47, 1.2, types.ActionTypeSell)
 
 		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
-			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
-		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
 
-		err = s.ExecuteOrInsertOrder(order)
+		err = s.ExecuteOrInsertOrder(ctx, order)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
@@ -217,63 +220,60 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 		order := newLimitBookOrder(12700, 0.33, 1.2, types.ActionTypeBuy)
 
 		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
-			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
-		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
 
-		err = s.ExecuteOrInsertOrder(order)
+		err = s.ExecuteOrInsertOrder(ctx, order)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, st.Len())
 	})
 
-	t.Run("CancelOrder", func(t *testing.T) {
+	t.Run("Multi-BatchMarketOrder", func(t *testing.T) {
+		// the expectation of this new order is to match 16 items from the order book
+		// and to remove two
+		expected = expected - 16
 
-		order := newLimitBookOrder(12700, 0.33, 1.2, types.ActionTypeBuy)
+		order := newMarketBookOrder(12800, 20.0, types.ActionTypeSell)
 
 		err := ar.Orders(&persist.Account{ID: order.Account.String()}).
-			SetOrder(&persist.Order{Status: persist.StatusOpen, Base: order})
+			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: order})
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		smb, amt := order.Type.HoldAmount(order.Action, order.Base, order.Target)
-		err = bm.PostAmtToBalance(&Account{ID: order.Account}, smb, amt)
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
-		id, err := bm.SetHoldOnAccount(&Account{ID: order.Account}, smb, amt)
+		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
 
-		// insert the order
-		err = s.ExecuteOrInsertOrder(order)
-		assert.NoError(t, err)
+		err = s.ExecuteOrInsertOrder(ctx, order)
 
-		// cancel the order
-		err = s.ExecuteOrInsertOrder(order)
 		assert.NoError(t, err)
-
 		assert.Equal(t, expected, st.Len())
-
 	})
 }
 
@@ -284,6 +284,16 @@ var buyPrices = [][]float64{
 	{0.35, 0.04},
 	{0.35, 1.2},
 	{0.35, 1.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
+	{0.35, 0.1},
 }
 
 var sellPrices = [][]float64{
@@ -293,6 +303,16 @@ var sellPrices = [][]float64{
 	{0.41, 0.2},
 	{0.42, 2.089},
 	{0.45, 1.12},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
+	{0.45, 0.1},
 }
 
 var times = []int64{
@@ -302,4 +322,14 @@ var times = []int64{
 	12334,
 	12345,
 	12346,
+	12347,
+	12348,
+	12349,
+	12350,
+	12351,
+	12352,
+	12353,
+	12354,
+	12355,
+	12356,
 }

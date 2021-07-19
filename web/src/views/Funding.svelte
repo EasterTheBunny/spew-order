@@ -1,8 +1,8 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
-  import Tab, { Label } from '@smui/tab'
-  import TabBar from '@smui/tab-bar'
-  import Paper, { Content } from '@smui/paper';
+  import Tab, { Label } from '@smui/tab/styled'
+  import TabBar from '@smui/tab-bar/styled'
+  import Paper, { Content } from '@smui/paper/styled';
   import TransactionList from '../components/TransactionList.svelte'
   import DepositForm from '../components/DepositForm.svelte'
   import WithdrawForm from "../components/WithdrawForm.svelte";

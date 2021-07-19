@@ -9,6 +9,9 @@ interface IfcWorkerMessage {
 
 interface IfcTickerMessage extends IfcWorkerMessage {
   price: string
+  high_24h: string
+  low_24h: string
+  open_24h: string
 }
 
 interface IfcBookMessage extends IfcWorkerMessage {

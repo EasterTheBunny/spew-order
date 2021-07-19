@@ -64,7 +64,7 @@ func (s *coinbaseSource) Name() string {
 
 func (s *coinbaseSource) Supports(sym types.Symbol) bool {
 	switch sym {
-	case types.SymbolBitcoin, types.SymbolEthereum:
+	case types.SymbolBitcoin, types.SymbolEthereum, types.SymbolBitcoinCash:
 		return true
 	default:
 		return false

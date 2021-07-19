@@ -16,8 +16,11 @@ import (
 // a price larger than this current value
 const (
 	SortSwitch = math.MaxInt32
-	MakerFee   = 0.0005
-	TakerFee   = 0.0015
+)
+
+var (
+	MakerFee = 0.0005
+	TakerFee = 0.0015
 )
 
 // Order is the complete order representation. Built by composition of the Request.
@@ -40,7 +43,7 @@ func (o Order) MarshalJSON() ([]byte, error) {
 	or["owner"] = o.Owner
 	or["holdID"] = o.HoldID
 	or["account"] = o.OrderRequest.Account.String()
-	or["timestamp"] = o.Timestamp.Unix()
+	or["timestamp"] = o.Timestamp.UnixNano()
 
 	for k, v := range o.OrderRequest.MarshalMap() {
 		or[k] = v
@@ -72,7 +75,7 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 	o.OrderRequest.Owner = tp.Owner
 	o.OrderRequest.HoldID = tp.HoldID
 	o.ID = tp.ID
-	o.Timestamp = time.Unix(tp.Timestamp, 0)
+	o.Timestamp = time.Unix(0, tp.Timestamp)
 
 	return nil
 }
@@ -100,8 +103,8 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 		// TODO: calculate fee schedule from order history
 		// 30 day volume	-	taker	-	maker
 		// promotion		-	0.150%	-	0.050%
-		// <  20 BTC		-	0.350%	-	0.100%
-		// >= 200 BTC		-	0.250%	-	0.100%
+		// <  20 BTC		-	0.350%	-	0.150%
+		// >= 200 BTC		-	0.250%	-	0.150%
 		// >= 500 BTC		-	0.200%	-	0.100%
 		// >= 1500 BTC		-	0.150%	-	0.090%
 		// >= 3000 BTC		-	0.100%	-	0.075%
@@ -185,6 +188,7 @@ type OrderType interface {
 	Name() string
 	FillWith(Order) (*Transaction, OrderType)
 	KeyTuple(ActionType) key.Tuple
+	KeyString(ActionType) string
 	HoldAmount(tp ActionType, base Symbol, target Symbol) (Symbol, decimal.Decimal)
 	String() string
 }
@@ -329,11 +333,13 @@ func (m MarketOrderType) Name() string {
 
 // KeyTuple ...
 func (m MarketOrderType) KeyTuple(t ActionType) key.Tuple {
+	return key.Tuple{m.KeyString(t)}
+}
+
+// KeyString ...
+func (m MarketOrderType) KeyString(t ActionType) string {
 	pr := decimal.NewFromInt(0)
-	if t == ActionTypeBuy {
-		pr = decimal.NewFromInt(SortSwitch)
-	}
-	return key.Tuple{pr.StringFixedBank(m.Base.RoundingPlace())}
+	return pr.StringFixedBank(m.Base.RoundingPlace())
 }
 
 // HoldAmount ...
@@ -492,11 +498,16 @@ func (l LimitOrderType) Name() string {
 
 // KeyTuple ...
 func (l LimitOrderType) KeyTuple(t ActionType) key.Tuple {
+	return key.Tuple{l.KeyString(t)}
+}
+
+// KeyString ...
+func (l LimitOrderType) KeyString(t ActionType) string {
 	pr := l.Price
 	if t == ActionTypeBuy {
 		pr = decimal.NewFromInt(SortSwitch).Sub(l.Price)
 	}
-	return key.Tuple{pr.StringFixedBank(l.Base.RoundingPlace())}
+	return pr.StringFixedBank(l.Base.RoundingPlace())
 }
 
 // HoldAmount ...

@@ -9,7 +9,10 @@
 			"VARIANT": "1.14",
 			// Options
 			"INSTALL_NODE": "true",
-			"NODE_VERSION": "lts/*"
+			"NODE_VERSION": "lts/*",
+      // environment settings for git-secret
+      "SECRETS_EXTENSION": ".secret-ci",
+      "SECRETS_DIR": ".gitsecret-ci"
 		}
 	},
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],

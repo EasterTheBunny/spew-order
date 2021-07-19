@@ -68,15 +68,12 @@ func (a *Account) Decode(b []byte, enc EncodingType) error {
 }
 
 type BalanceRepository interface {
-	GetBalance() (decimal.Decimal, error)
-	UpdateBalance(decimal.Decimal) error
-	FindHolds() ([]*BalanceItem, error)
-	CreateHold(*BalanceItem) error
-	DeleteHold(Key) error
-	UpdateHold(Key, decimal.Decimal) error
-	FindPosts() ([]*BalanceItem, error)
-	CreatePost(*BalanceItem) error
-	DeletePost(*BalanceItem) error
+	GetBalance(context.Context) (decimal.Decimal, error)
+	AddToBalance(context.Context, decimal.Decimal) error
+	FindHolds(context.Context) ([]*BalanceItem, error)
+	CreateHold(context.Context, *BalanceItem) error
+	DeleteHold(context.Context, Key) error
+	UpdateHold(context.Context, Key, decimal.Decimal) error
 }
 
 type BalanceItem struct {
@@ -105,19 +102,20 @@ func (bi *BalanceItem) Decode(b []byte, enc EncodingType) error {
 
 // AuthorizationRepository ...
 type AuthorizationRepository interface {
-	GetAuthorization(Key) (*Authorization, error)
-	SetAuthorization(*Authorization) error
-	DeleteAuthorization(*Authorization) error
+	GetAuthorization(context.Context, Key) (*Authorization, error)
+	GetAuthorizations(context.Context) ([]*Authorization, error)
+	SetAuthorization(context.Context, *Authorization) error
+	DeleteAuthorization(context.Context, *Authorization) error
 }
 
 // Authorization ...
 type Authorization struct {
-	ID       string   `json:"id"`
-	Username string   `json:"username"`
-	Email    string   `json:"email"`
-	Name     string   `json:"name"`
-	Avatar   string   `json:"avatar"`
-	Accounts []string `json:"accounts"`
+	ID       string   `json:"id" firestore:"id"`
+	Username string   `json:"username" firestore:"username"`
+	Email    string   `json:"email" firestore:"email"`
+	Name     string   `json:"name" firestore:"name"`
+	Avatar   string   `json:"avatar" firestore:"avatar"`
+	Accounts []string `json:"accounts" firestore:"accounts"`
 }
 
 // NewAuthorization returns a new auth with values set to defaults and a new
@@ -142,10 +140,10 @@ func (a *Authorization) Decode(b []byte, enc EncodingType) error {
 }
 
 type BookRepository interface {
-	SetBookItem(*BookItem) error
-	BookItemExists(*BookItem) (bool, error)
-	GetHeadBatch(*BookItem, int) ([]*BookItem, error)
-	DeleteBookItem(*BookItem) error
+	SetBookItem(context.Context, *BookItem) error
+	BookItemExists(context.Context, *BookItem) (bool, error)
+	GetHeadBatch(ctx context.Context, item *BookItem, limit int, offset *BookItem) ([]*BookItem, error)
+	DeleteBookItem(context.Context, *BookItem) error
 }
 
 // BookItem is a struct for holding an order in storage
@@ -181,10 +179,10 @@ func (bi *BookItem) Decode(b []byte, enc EncodingType) error {
 }
 
 type OrderRepository interface {
-	GetOrder(Key) (*Order, error)
-	SetOrder(*Order) error
-	GetOrdersByStatus(...FillStatus) ([]*Order, error)
-	UpdateOrderStatus(Key, FillStatus, []string) error
+	GetOrder(context.Context, Key) (*Order, error)
+	SetOrder(context.Context, *Order) error
+	GetOrdersByStatus(context.Context, ...FillStatus) ([]*Order, error)
+	UpdateOrderStatus(context.Context, Key, FillStatus, []string) error
 }
 
 type Order struct {
@@ -221,8 +219,8 @@ const (
 )
 
 type TransactionRepository interface {
-	SetTransaction(*Transaction) error
-	GetTransactions() ([]*Transaction, error)
+	SetTransaction(context.Context, *Transaction) error
+	GetTransactions(context.Context) ([]*Transaction, error)
 }
 
 func (t Transaction) Encode(enc EncodingType) ([]byte, error) {
@@ -233,7 +231,111 @@ func (t *Transaction) Decode(b []byte, enc EncodingType) error {
 	return decode(b, enc, t)
 }
 
+type AccountType int
+
+const (
+	Liability AccountType = iota
+	Asset
+)
+
+func (a AccountType) String() string {
+	switch a {
+	case Liability:
+		return "liabilities"
+	case Asset:
+		return "assets"
+	default:
+		return "unknown"
+	}
+}
+
+type LedgerAccount int
+
+const (
+	Cash LedgerAccount = iota
+	Sales
+	TransfersPayable
+	Transfers
+	DefaultAccount
+)
+
+const (
+	CashStr             = "cash"
+	SalesStr            = "sales"
+	TransfersPayableStr = "transfers_payable"
+	TransfersStr        = "transfers"
+	DefaultAccountStr   = "default"
+)
+
+func (a LedgerAccount) String() string {
+	switch a {
+	case Cash:
+		return CashStr
+	case Sales:
+		return SalesStr
+	case TransfersPayable:
+		return TransfersPayableStr
+	case Transfers:
+		return TransfersStr
+	default:
+		return DefaultAccountStr
+	}
+}
+
+func (a *LedgerAccount) FromString(s string) {
+	switch s {
+	case CashStr:
+		*a = Cash
+	case SalesStr:
+		*a = Sales
+	case TransfersPayableStr:
+		*a = TransfersPayable
+	case TransfersStr:
+		*a = Transfers
+	default:
+		*a = DefaultAccount
+	}
+}
+
+type EntryType int
+
+const (
+	Credit EntryType = iota
+	Debit
+	DefaultEntry
+)
+
+const (
+	CreditStr       = "credit"
+	DebitStr        = "debit"
+	DefaultEntryStr = "default"
+)
+
+func (e EntryType) String() string {
+	switch e {
+	case Credit:
+		return CreditStr
+	case Debit:
+		return DebitStr
+	default:
+		return DefaultEntryStr
+	}
+}
+
+func (e *EntryType) FromString(s string) {
+	switch s {
+	case CreditStr:
+		*e = Credit
+	case DebitStr:
+		*e = Debit
+	default:
+		*e = DefaultEntry
+	}
+}
+
 type LedgerEntry struct {
+	Account   LedgerAccount   `json:"account"`
+	Entry     EntryType       `json:"entry"`
 	Symbol    types.Symbol    `json:"symbol"`
 	Amount    decimal.Decimal `json:"amount"`
 	Timestamp NanoTime        `json:"timestamp"`
@@ -249,11 +351,15 @@ func (e *LedgerEntry) Decode(b []byte, enc EncodingType) error {
 
 type LedgerRepository interface {
 	// RecordDeposit saves a transfer to the exchange in the main ledger
-	RecordDeposit(types.Symbol, decimal.Decimal) error
+	RecordDeposit(context.Context, types.Symbol, decimal.Decimal) error
 	// RecordTransfer saves a transfer from the exchange in the main ledger
-	RecordTransfer(types.Symbol, decimal.Decimal) error
+	RecordTransfer(context.Context, types.Symbol, decimal.Decimal) error
+	// GetLiabilityBalance ...
+	GetLiabilityBalance(context.Context, LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
+	// GetAssetBalance ...
+	GetAssetBalance(context.Context, LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error)
 	// RecordFee saves a fee paid from a completed order in the main ledger
-	RecordFee(types.Symbol, decimal.Decimal) error
+	RecordFee(context.Context, types.Symbol, decimal.Decimal) error
 }
 
 type FillStatus int
@@ -263,7 +369,46 @@ const (
 	StatusPartial
 	StatusFilled
 	StatusCanceled
+	StatusDefault
 )
+
+const (
+	StatusOpenStr     = "open"
+	StatusPartialStr  = "partial"
+	StatusFilledStr   = "filled"
+	StatusCanceledStr = "canceled"
+	StatusDefaultStr  = "default"
+)
+
+func (s FillStatus) String() string {
+	switch s {
+	case StatusOpen:
+		return StatusOpenStr
+	case StatusPartial:
+		return StatusPartialStr
+	case StatusFilled:
+		return StatusFilledStr
+	case StatusCanceled:
+		return StatusCanceledStr
+	default:
+		return StatusDefaultStr
+	}
+}
+
+func (s *FillStatus) FromString(str string) {
+	switch str {
+	case StatusOpenStr:
+		*s = StatusOpen
+	case StatusPartialStr:
+		*s = StatusPartial
+	case StatusFilledStr:
+		*s = StatusFilled
+	case StatusCanceledStr:
+		*s = StatusCanceled
+	default:
+		*s = StatusDefault
+	}
+}
 
 func (s FillStatus) MarshalBinary() ([]byte, error) {
 	return s.MarshalJSON()
@@ -274,23 +419,24 @@ func (s *FillStatus) UnmarshalBinary(b []byte) error {
 }
 
 func (s FillStatus) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%d", s)), nil
+	return []byte(fmt.Sprintf(`"%s"`, s.String())), nil
 }
 
 func (s *FillStatus) UnmarshalJSON(b []byte) error {
-	val, err := strconv.ParseInt(string(b), 10, 64)
+	var str string
+	err := json.Unmarshal(b, &str)
 	if err != nil {
 		return err
 	}
 
-	switch int(val) {
-	case 0:
+	switch str {
+	case "open":
 		*s = StatusOpen
-	case 1:
+	case "partial":
 		*s = StatusPartial
-	case 2:
+	case "filled":
 		*s = StatusFilled
-	case 3:
+	case "canceled":
 		*s = StatusCanceled
 	}
 

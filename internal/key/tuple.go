@@ -42,6 +42,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -72,6 +73,31 @@ func (tuple Tuple) String() string {
 	sb := strings.Builder{}
 	printTuple(tuple, &sb)
 	return sb.String()
+}
+
+func simplePrint(tuple Tuple, sb *strings.Builder) {
+	for _, t := range tuple {
+		switch t := t.(type) {
+		case Tuple:
+			simplePrint(t, sb)
+		case nil:
+			sb.WriteString("<nil>")
+		case string:
+			sb.WriteString(url.PathEscape(t))
+		case UUID:
+			sb.WriteString("UUID(")
+			sb.WriteString(t.String())
+			sb.WriteString(")")
+		case []byte:
+			sb.WriteString("b\"")
+			sb.WriteString(Printable(t))
+			sb.WriteString("\"")
+		default:
+			// For user-defined and standard types, we use standard Go
+			// printer, which itself uses Stringer interface.
+			fmt.Fprintf(sb, "%v", t)
+		}
+	}
 }
 
 func printTuple(tuple Tuple, sb *strings.Builder) {

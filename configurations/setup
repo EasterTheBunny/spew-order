@@ -1,0 +1,16 @@
+#!/bin/bash
+
+ENV=$(echo $ENVIRONMENT | tr '[:upper:]' '[:lower:]')
+
+echo "setting git secret variables for $ENV"
+export SECRETS_VERBOSE=true
+export SECRETS_EXTENSION=".secret-$ENV"
+export SECRETS_DIR=".gitsecret-$ENV"
+
+echo "reveal secrets"
+git secret reveal
+
+echo "write source vars"
+# convert all properties in the env yaml file
+# into exported environment variables
+sed -e 's/^/export /g;s/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' ./configurations/config.yaml > vars

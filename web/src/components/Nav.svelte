@@ -5,9 +5,9 @@
     Section,
     Title,
     AutoAdjust,
-  } from "@smui/top-app-bar";
-  import IconButton from "@smui/icon-button"
-  import Button, { Label } from '@smui/button'
+  } from "@smui/top-app-bar/styled";
+  import IconButton from "@smui/icon-button/styled"
+  import Button, { Label } from '@smui/button/styled'
   import UserMenu from './UserMenu.svelte'
   import { getOidc } from "../oidc";
   import { getLocalization } from '../i18n';
@@ -46,13 +46,3 @@
 <AutoAdjust {topAppBar}>
   <slot></slot>
 </AutoAdjust>
-  
-<style>
-  /* Hide everything above this component. */
-  :global(app, body, html) {
-    display: block !important;
-    height: auto !important;
-    width: auto !important;
-    position: static !important;
-  }
-</style>

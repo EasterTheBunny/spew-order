@@ -1,9 +1,10 @@
 <script type="ts">
   import type { Writable } from "svelte/store"
-  import Button, { Label } from '@smui/button';
+  import Button, { Label } from '@smui/button/styled';
   import AmountInputField from "./AmountInputField.svelte"
   import { getDataCtx } from "../exchange"
   import { OrderType, Currency, ActionType } from "../constants"
+  import { getLocalization } from '../i18n'
   
   export let action: ActionType = ActionType.Buy
   export let base: Currency = Currency.Bitcoin
@@ -25,6 +26,7 @@
   }: {
     orders: Writable<IfcOrderResource[] | IfcOrderResource>
   } = getDataCtx()
+  const {t} = getLocalization()
   
   $: validOrder = validate(order, total, action, balanceMap(balances))
 
@@ -128,7 +130,7 @@
     style="width:100%"
     disabled={!validOrder}
   >
-    <Label>Submit Order</Label>
+    <Label>{$t('SubmitOrder')}</Label>
   </Button>
 </div>
 

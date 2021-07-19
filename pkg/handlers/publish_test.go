@@ -47,7 +47,7 @@ func TestPostOrder(t *testing.T) {
 	}
 	f := funding.NewMockSource()
 	svc := domain.NewBalanceManager(repo, l, f)
-	svc.PostAmtToBalance(dmnAcct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
+	svc.PostAmtToBalance(context.Background(), dmnAcct, types.SymbolBitcoin, decimal.NewFromFloat(5.5))
 
 	oq := queue.NewOrderQueue(mps, svc)
 

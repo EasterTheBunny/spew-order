@@ -19,12 +19,16 @@ jobs:
     working_directory: /go/src/github.com/easterthebunny/spew-order
     steps:
       - checkout
-      - run: echo $FunctionsServiceAccount > ./key.json
-      - run: gcloud config set project $ProjectID
-      - run: gcloud config list project
-      - run: gcloud auth activate-service-account --key-file=./key.json
-      - run: gcloud functions deploy order-api-$ENVIRONMENT-$LOCATION --entry-point RestAPI --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY",COINBASE_API_KEY="$COINBASE_API_KEY",COINBASE_API_SECRET="$COINBASE_API_SECRET" --runtime go113 --trigger-http --allow-unauthenticated
-      - run: gcloud functions deploy order-book-$ENVIRONMENT-$LOCATION --entry-point OrderPubSub --set-env-vars APP_NAME=order,DEPLOYMENT_ENV=$ENVIRONMENT,LOCATION=$LOCATION,IDENTITY_PROVIDER=$IDENTITY_PROVIDER_URI,GOOGLE_CLOUD_PROJECT=$ProjectID,ORDER_TOPIC="TestTopic",COINBASE_RSA_PUBLIC_KEY="$COINBASE_RSA_PUBLIC_KEY",COINBASE_API_KEY="$COINBASE_API_KEY",COINBASE_API_SECRET="$COINBASE_API_SECRET" --trigger-topic TestTopic --runtime go113
+      - run: sh -c "echo 'https://gitsecret.jfrog.io/artifactory/git-secret-apk/all/main'" >> /etc/apk/repositories
+      - run: wget -O /etc/apk/keys/git-secret-apk.rsa.pub 'https://gitsecret.jfrog.io/artifactory/api/security/keypair/public/repositories/git-secret-apk'
+      - run: apk add --update --no-cache git-secret
+      - run: gpg --list-keys
+      - run: echo $GPG_PRIVATE_KEY | tr ',' '\n' | gpg --batch --import
+      - run: ./configurations/setup
+      - run: ./configurations/deploy-rest
+      - run: ./configurations/deploy-webhooks
+      - run: ./configurations/deploy-audit
+      - run: ./configurations/deploy-book-subscriber
 workflows:
   version: 2
   test-release:
@@ -53,5 +57,19 @@ workflows:
           filters:
             branches:
               only: ci
+          requires:
+            - test
+  deploy-uat:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only: uat
+      - deploy:
+          context:
+            - UAT
+          filters:
+            branches:
+              only: uat
           requires:
             - test

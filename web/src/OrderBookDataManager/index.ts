@@ -45,14 +45,14 @@ export class OrderBookDataManager {
     if (!this.bids) {
       return []
     }
-    return this.bids.top(20)
+    return this.bids.top(10)
   }
 
   public topAsks(): string[][] {
     if (!this.asks) {
       return []
     }
-    return this.asks.top(20)
+    return this.asks.top(10)
   }
 }
 

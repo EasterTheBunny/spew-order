@@ -149,11 +149,11 @@ func TestFillStatusMarshalJSON(t *testing.T) {
 		t.Fatalf("no error expected; encountered: %s", err)
 	}
 
-	assert.Equal(t, "3", string(b))
+	assert.Equal(t, `"canceled"`, string(b))
 }
 
 func TestFillStatusUnmarshalJSON(t *testing.T) {
-	bts := []byte("2")
+	bts := []byte(`"filled"`)
 
 	var fs FillStatus
 	err := fs.UnmarshalJSON(bts)

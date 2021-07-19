@@ -1,10 +1,11 @@
 <script type="ts">
-  import LayoutGrid, { Cell } from '@smui/layout-grid'
+  import LayoutGrid, { Cell } from '@smui/layout-grid/styled'
   import CurrencySelect from '../components/CurrencySelect.svelte'
-  import Textfield from '@smui/textfield'
-  import Icon from '@smui/textfield/icon'
+  import Textfield from '@smui/textfield/styled'
+  import Icon from '@smui/textfield/icon/styled'
   import CopyClipBoard from '../components/CopyClipBoard.svelte'
   import type { Currency } from '../constants'
+  import { getLocalization } from '../i18n'
 
   export let balances: IfcBalanceResource[] = []
 
@@ -19,6 +20,7 @@
     return ""
   }
 
+  const {t} = getLocalization()
   const copyHash = () => {
     const app = new CopyClipBoard({
 			target: document.getElementById('clipboard'),
@@ -42,10 +44,7 @@
         <Icon class="material-icons" slot="trailingIcon">content_copy</Icon>
       </Textfield>
     </div>
-    <p>
-      Copy the deposit address above or scan the code to the right with your wallet app to transfer
-      funds.
-    </p>
+    <p>{$t('CopyAddressInstruction')}</p>
     {/if}
   
   </Cell>

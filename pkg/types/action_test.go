@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 )
 
@@ -31,7 +32,7 @@ func TestActionTypeMarshalJSON(t *testing.T) {
 	var notValidActionType ActionType = 100000000
 	r, err := notValidActionType.MarshalJSON()
 
-	if err != ErrActionTypeUnrecognized {
+	if !errors.Is(err, ErrActionTypeUnrecognized) {
 		t.Errorf("error expected: action type is not in the valid set; received %v", err)
 	}
 
@@ -68,7 +69,7 @@ func TestActionTypeUnmarshalJSON(t *testing.T) {
 	var r ActionType
 	err := r.UnmarshalJSON([]byte(invalid))
 
-	if err != ErrActionTypeUnrecognized {
+	if !errors.Is(err, ErrActionTypeUnrecognized) {
 		t.Errorf("error expected: action type is not in the valid set; received %v", err)
 	}
 }

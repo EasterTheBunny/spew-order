@@ -58,9 +58,14 @@ func accountKey(id persist.Key) string {
 	return accountSubspace(nil).Pack(key.Tuple{id.String()}).String()
 }
 
+func authzSubspace() key.Subspace {
+	// /root/authz
+	return gsRoot.Sub(authzSub)
+}
+
 func authzKey(id persist.Key) string {
 	// /root/authz/{authzid}
-	return gsRoot.Sub(authzSub).Pack(key.Tuple{id.String()}).String()
+	return authzSubspace().Pack(key.Tuple{id.String()}).String()
 }
 
 func transactionSubspace(acct persist.Account) key.Subspace {
@@ -145,6 +150,7 @@ func bookItemSubspace(b persist.BookItem, t *types.ActionType) key.Subspace {
 // are sorted smallest/oldest to largest/newest
 func bookItemKey(b persist.BookItem) string {
 	// /root/book/{base}/{target}/{BUY|SELL}/{decimal_price}{timestamp}
+
 	p := b.Order.Type.KeyTuple(b.Order.Action)
 	p = append(p, key.Tuple{b.Order.Timestamp.UnixNano()}...)
 	return bookItemSubspace(b, nil).Pack(p).String()

@@ -3,9 +3,11 @@ package persist
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"math/rand"
 	"net"
@@ -70,6 +72,7 @@ type GoogleKVStore struct {
 
 // Get ...
 func (gs *GoogleKVStore) Get(sKey string) ([]byte, error) {
+	fmt.Printf("get key: %s\n", sKey)
 	ctx := context.Background()
 
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
@@ -77,7 +80,8 @@ func (gs *GoogleKVStore) Get(sKey string) ([]byte, error) {
 
 	rc, err := gs.client.Bucket(gs.bucket).Object(sKey).NewReader(ctx)
 	if err != nil {
-		if err == storage.ErrObjectNotExist {
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			fmt.Println("--- key doesn't exist")
 			err = ErrObjectNotExist
 		}
 		return []byte{}, err
@@ -120,6 +124,7 @@ func (gs *GoogleKVStore) Attrs(sKey string) (attrs *KVStoreObjectAttrs, err erro
 
 // Set ...
 func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrsToUpdate) error {
+	fmt.Printf("set key: %s\n", sKey)
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, storeTimeout)
 	defer cancel()
@@ -153,6 +158,7 @@ func (gs *GoogleKVStore) Set(sKey string, data []byte, attrs *KVStoreObjectAttrs
 
 	err := doOp(gs.bucket, sKey)
 	for err != nil {
+		fmt.Println("exponential backoff")
 
 		if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
 			// exponential backoff
@@ -300,19 +306,24 @@ func (gs *GoogleKVStore) Delete(sKey string) error {
 // NewMockKVStore ...
 func NewMockKVStore() *MockKVStore {
 	return &MockKVStore{
-		data: make(map[string][]byte),
-		meta: make(map[string]*KVStoreObjectAttrs)}
+		data:     make(map[string][]byte),
+		meta:     make(map[string]*KVStoreObjectAttrs),
+		logLevel: 0}
 }
 
 // MockKVStore ...
 type MockKVStore struct {
-	key  []string
-	data map[string][]byte
-	meta map[string]*KVStoreObjectAttrs
+	key      []string
+	data     map[string][]byte
+	meta     map[string]*KVStoreObjectAttrs
+	logLevel int
 }
 
 // Get ...
 func (gsm *MockKVStore) Get(key string) ([]byte, error) {
+	if gsm.logLevel > 0 {
+		log.Printf("GET %s", key)
+	}
 	if _, ok := gsm.data[key]; !ok {
 		return []byte{}, ErrObjectNotExist
 	}
@@ -320,6 +331,9 @@ func (gsm *MockKVStore) Get(key string) ([]byte, error) {
 }
 
 func (gsm *MockKVStore) Attrs(key string) (a *KVStoreObjectAttrs, err error) {
+	if gsm.logLevel > 0 {
+		log.Printf("ATTRS %s", key)
+	}
 	a, ok := gsm.meta[key]
 	if !ok {
 		err = ErrObjectNotExist
@@ -329,7 +343,9 @@ func (gsm *MockKVStore) Attrs(key string) (a *KVStoreObjectAttrs, err error) {
 
 // Set ...
 func (gsm *MockKVStore) Set(key string, b []byte, attrs *KVStoreObjectAttrsToUpdate) error {
-
+	if gsm.logLevel > 0 {
+		log.Printf("SET %s", key)
+	}
 	sAttrs := &KVStoreObjectAttrs{
 		Name:    key,
 		Created: time.Now(),
@@ -358,6 +374,9 @@ func (gsm *MockKVStore) Set(key string, b []byte, attrs *KVStoreObjectAttrsToUpd
 
 // Delete ...
 func (gsm *MockKVStore) Delete(key string) error {
+	if gsm.logLevel > 0 {
+		log.Printf("DELETE %s", key)
+	}
 	for i, k := range gsm.key {
 		if k == key {
 			gsm.key = append(gsm.key[:i], gsm.key[i+1:]...)
@@ -380,6 +399,9 @@ func (gsm *MockKVStore) RangeGet(q *KVStoreQuery, limit int) (attrs []*KVStoreOb
 
 	if q.StartOffset != "" {
 		qry = q.StartOffset
+	}
+	if gsm.logLevel > 0 {
+		log.Printf("RANGE_GET %s", qry)
 	}
 
 	for _, k := range gsm.key {

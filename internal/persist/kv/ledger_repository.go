@@ -1,6 +1,8 @@
 package kv
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/easterthebunny/spew-order/internal/key"
@@ -19,76 +21,174 @@ func NewLedgerRepository(store persist.KVStore) *LedgerRepository {
 
 var _ persist.LedgerRepository = &LedgerRepository{}
 
-type AccountType int
-
-const (
-	Liability AccountType = iota
-	Asset
-)
-
-type LedgerAccount int
-
-const (
-	Cash LedgerAccount = iota
-	Sales
-	TransfersPayable
-	Transfers
-)
-
-type EntryType int
-
-const (
-	Credit EntryType = iota
-	Debit
-)
-
 // RecordDeposit is run for the case when a new customer sends funds to their account.
 // This makes a credit in a Transfers Payable account and a debit in a Transfers account.
-func (r *LedgerRepository) RecordDeposit(s types.Symbol, amt decimal.Decimal) error {
-	d := time.Now()
-	//
-	key1 := r.ledgerAccountSubspace(Transfers).Sub(int(Debit))
-	key2 := r.ledgerAccountSubspace(TransfersPayable).Sub(int(Credit))
-
+func (r *LedgerRepository) RecordDeposit(ctx context.Context, s types.Symbol, amt decimal.Decimal) error {
 	entry := &persist.LedgerEntry{
 		Symbol:    s,
 		Amount:    amt,
-		Timestamp: persist.NanoTime(d),
+		Timestamp: persist.NanoTime(time.Now()),
 	}
 
-	return r.record(entry, key1, key2)
+	key1 := r.ledgerAccountSubspace(persist.Transfers).Sub(int(persist.Debit))
+	entry.Account = persist.Transfers
+	entry.Entry = persist.Debit
+	err := r.record(entry, key1)
+	if err != nil {
+		return err
+	}
+
+	key2 := r.ledgerAccountSubspace(persist.TransfersPayable).Sub(int(persist.Credit))
+	entry.Account = persist.TransfersPayable
+	entry.Entry = persist.Credit
+
+	return r.record(entry, key2)
 }
 
-func (r *LedgerRepository) RecordTransfer(s types.Symbol, amt decimal.Decimal) error {
-
-	d := time.Now()
-	key2 := r.ledgerAccountSubspace(TransfersPayable).Sub(int(Debit))
-	key1 := r.ledgerAccountSubspace(Transfers).Sub(int(Credit))
+func (r *LedgerRepository) RecordTransfer(ctx context.Context, s types.Symbol, amt decimal.Decimal) error {
 
 	entry := &persist.LedgerEntry{
 		Symbol:    s,
 		Amount:    amt,
-		Timestamp: persist.NanoTime(d),
+		Timestamp: persist.NanoTime(time.Now()),
 	}
 
-	return r.record(entry, key1, key2)
+	key1 := r.ledgerAccountSubspace(persist.Transfers).Sub(int(persist.Credit))
+	entry.Account = persist.Transfers
+	entry.Entry = persist.Credit
+	err := r.record(entry, key1)
+	if err != nil {
+		return err
+	}
+
+	key2 := r.ledgerAccountSubspace(persist.TransfersPayable).Sub(int(persist.Debit))
+	entry.Account = persist.TransfersPayable
+	entry.Entry = persist.Debit
+
+	return r.record(entry, key2)
 }
 
-func (r *LedgerRepository) RecordFee(s types.Symbol, amt decimal.Decimal) error {
+func (r *LedgerRepository) GetLiabilityBalance(ctx context.Context, a persist.LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error) {
+	balances = make(map[types.Symbol]decimal.Decimal)
 
-	d := time.Now()
-	key1 := r.ledgerAccountSubspace(Transfers).Sub(int(Debit))
-	key2 := r.ledgerAccountSubspace(TransfersPayable).Sub(int(Credit))
-	key3 := r.ledgerAccountSubspace(Cash).Sub(int(Debit))
-	key4 := r.ledgerAccountSubspace(Sales).Sub(int(Credit))
+	q := persist.KVStoreQuery{
+		StartOffset: r.ledgerAccountSubspace(a).Pack(key.Tuple{}).String(),
+	}
+
+	attr, err := r.kvstore.RangeGet(&q, 0)
+	if err != nil {
+		return
+	}
+
+	for _, at := range attr {
+		var bts []byte
+		bts, err = r.kvstore.Get(at.Name)
+		if err != nil {
+			err = fmt.Errorf("Ledger::getLiabilityBalance -- %w", err)
+			return
+		}
+
+		entry := &persist.LedgerEntry{}
+		err = entry.Decode(bts, encodingFromStr(at.ContentEncoding))
+		if err != nil {
+			return
+		}
+
+		amt := entry.Amount
+		if entry.Entry == persist.Debit {
+			amt = decimal.NewFromInt(0).Sub(entry.Amount)
+		}
+
+		bal, ok := balances[entry.Symbol]
+		if !ok {
+			balances[entry.Symbol] = amt
+		} else {
+			balances[entry.Symbol] = bal.Add(amt)
+		}
+	}
+
+	return
+}
+
+func (r *LedgerRepository) GetAssetBalance(ctx context.Context, a persist.LedgerAccount) (balances map[types.Symbol]decimal.Decimal, err error) {
+
+	balances = make(map[types.Symbol]decimal.Decimal)
+
+	q := persist.KVStoreQuery{
+		StartOffset: r.ledgerAccountSubspace(a).Pack(key.Tuple{}).String(),
+	}
+
+	attr, err := r.kvstore.RangeGet(&q, 0)
+	if err != nil {
+		return
+	}
+
+	for _, at := range attr {
+		var bts []byte
+		bts, err = r.kvstore.Get(at.Name)
+		if err != nil {
+			err = fmt.Errorf("Ledger::getAssetBalance -- %w", err)
+			return
+		}
+
+		entry := &persist.LedgerEntry{}
+		err = entry.Decode(bts, encodingFromStr(at.ContentEncoding))
+		if err != nil {
+			return
+		}
+
+		amt := entry.Amount
+		if entry.Entry == persist.Credit {
+			amt = decimal.NewFromInt(0).Sub(entry.Amount)
+		}
+
+		bal, ok := balances[entry.Symbol]
+		if !ok {
+			balances[entry.Symbol] = amt
+		} else {
+			balances[entry.Symbol] = bal.Add(amt)
+		}
+	}
+
+	return
+}
+
+func (r *LedgerRepository) RecordFee(ctx context.Context, s types.Symbol, amt decimal.Decimal) error {
 
 	entry := &persist.LedgerEntry{
 		Symbol:    s,
 		Amount:    amt,
-		Timestamp: persist.NanoTime(d),
+		Timestamp: persist.NanoTime(time.Now()),
 	}
 
-	return r.record(entry, key1, key2, key3, key4)
+	key1 := r.ledgerAccountSubspace(persist.Transfers).Sub(int(persist.Credit))
+	entry.Account = persist.Transfers
+	entry.Entry = persist.Credit
+	err := r.record(entry, key1)
+	if err != nil {
+		return err
+	}
+
+	key2 := r.ledgerAccountSubspace(persist.TransfersPayable).Sub(int(persist.Debit))
+	entry.Account = persist.TransfersPayable
+	entry.Entry = persist.Debit
+	err = r.record(entry, key2)
+	if err != nil {
+		return err
+	}
+
+	key3 := r.ledgerAccountSubspace(persist.Cash).Sub(int(persist.Debit))
+	entry.Account = persist.Cash
+	entry.Entry = persist.Debit
+	err = r.record(entry, key3)
+	if err != nil {
+		return err
+	}
+
+	key4 := r.ledgerAccountSubspace(persist.Sales).Sub(int(persist.Credit))
+	entry.Account = persist.Sales
+	entry.Entry = persist.Credit
+	return r.record(entry, key4)
 }
 
 func (r *LedgerRepository) record(e *persist.LedgerEntry, keys ...key.Subspace) error {
@@ -115,30 +215,30 @@ func (r *LedgerRepository) record(e *persist.LedgerEntry, keys ...key.Subspace) 
 	return nil
 }
 
-func (r *LedgerRepository) accountTypeSubspace(t AccountType) key.Subspace {
+func (r *LedgerRepository) accountTypeSubspace(t persist.AccountType) key.Subspace {
 
 	s := ledgerSubspace()
 	switch t {
-	case Liability:
-		return s.Sub(int(Liability))
-	case Asset:
-		return s.Sub(int(Asset))
+	case persist.Liability:
+		return s.Sub(int(persist.Liability))
+	case persist.Asset:
+		return s.Sub(int(persist.Asset))
 	}
 
 	return s
 }
 
-func (r *LedgerRepository) ledgerAccountSubspace(a LedgerAccount) key.Subspace {
+func (r *LedgerRepository) ledgerAccountSubspace(a persist.LedgerAccount) key.Subspace {
 
 	switch a {
-	case Cash:
-		return r.accountTypeSubspace(Asset).Sub(int(Cash))
-	case Sales:
-		return r.accountTypeSubspace(Liability).Sub(int(Sales))
-	case TransfersPayable:
-		return r.accountTypeSubspace(Liability).Sub(int(TransfersPayable))
-	case Transfers:
-		return r.accountTypeSubspace(Asset).Sub(int(Transfers))
+	case persist.Cash:
+		return r.accountTypeSubspace(persist.Asset).Sub(int(persist.Cash))
+	case persist.Sales:
+		return r.accountTypeSubspace(persist.Liability).Sub(int(persist.Sales))
+	case persist.TransfersPayable:
+		return r.accountTypeSubspace(persist.Liability).Sub(int(persist.TransfersPayable))
+	case persist.Transfers:
+		return r.accountTypeSubspace(persist.Asset).Sub(int(persist.Transfers))
 	}
 
 	return ledgerSubspace()

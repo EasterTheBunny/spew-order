@@ -5,9 +5,9 @@ import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
-import css from 'rollup-plugin-css-only';
 import replace from '@rollup/plugin-replace';
 import workerLoader from 'rollup-plugin-web-worker-loader';
+import postcss from 'rollup-plugin-postcss';
 
 const production = !process.env.ROLLUP_WATCH;
 const AUTH0_CLIENTID = process.env.AUTH0_CLIENTID;
@@ -62,9 +62,21 @@ export default {
 				dev: !production
 			}
 		}),
-		// we'll extract any component CSS out into
+		
+    // we'll extract any component CSS out into
 		// a separate file - better for performance
-		css({ output: 'bundle.css' }),
+    postcss({
+      extract: 'bundle.css',
+      minimize: production,
+      use: [
+        [
+          'sass',
+          {
+            includePaths: ['./src/theme/dark', './node_modules'],
+          },
+        ],
+      ],
+    }),
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In

@@ -1,15 +1,17 @@
 <script type="ts">
-  import Fab, { Icon } from '@smui/fab'
-  import { Anchor } from '@smui/menu-surface'
-  import Menu from '@smui/menu'
+  import Fab, { Icon } from '@smui/fab/styled'
+  import { Anchor } from '@smui/menu-surface/styled'
+  import Menu from '@smui/menu/styled'
   import { getOidc } from "../oidc";
-  import List, { Item, Text } from '@smui/list'
+  import List, { Item, Text } from '@smui/list/styled'
+  import { getLocalization } from '../i18n'
 
   let menu
   let anchor;
   let anchorClasses = {};
 
   const { oidc } = getOidc()
+  const {t} = getLocalization()
 </script>
 
 <div
@@ -42,7 +44,7 @@
     >
       <List>
         <Item on:SMUI:action={() => oidc.signOut()}>
-          <Text>Sign out</Text>
+          <Text>{$t('Signout')}</Text>
         </Item>
       </List>
     </Menu>

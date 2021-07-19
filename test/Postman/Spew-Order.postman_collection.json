@@ -1,0 +1,2198 @@
+{
+	"info": {
+		"_postman_id": "881eb69c-094b-4063-8eae-f250ec38d780",
+		"name": "Spew-Order",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Empty Balance: Cannot Create Order",
+			"item": [
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_one\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_one}}\",\n  \"password\": \"{{password_one}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accounts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Accounts listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"accountid\", jsonData.data[0].id);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            var key = balances[i].symbol.toLowerCase() + \"_hash\"",
+									"            pm.environment.set(key, balances[i].funding);",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Order Attempt",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"",
+									"if(responseCode.code == 409){",
+									"    pm.test(\"Insufficient balance error response\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.error).to.be.length(1);",
+									"        if (jsonData.error.length > 0) {",
+									"            pm.expect(jsonData.error[0].detail).to.be.string(\"account balance too low for hold\")",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"BUY\",\n    \"type\": {\n        \"name\": \"MARKET\",\n        \"base\": \"BTC\",\n        \"quantity\": \"0.0123\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token_one}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Create and Cancel Order",
+			"item": [
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_3\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_3}}\",\n  \"password\": \"{{password_3}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accounts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Accounts listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"accountid\", jsonData.data[0].id);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            var key = balances[i].symbol.toLowerCase() + \"_hash\"",
+									"            pm.environment.set(key, balances[i].funding);",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fund Account ETH",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"Symbol\": \"ETH\",\n\t\"TransactionHash\": \"{{eth_hash}}\",\n\t\"Address\": \"{{eth_hash}}\",\n\t\"Amount\": \"20.00000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{webhookurl}}/funding",
+							"host": [
+								"{{webhookurl}}"
+							],
+							"path": [
+								"funding"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create ETH Limit Sell Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"orderid\", jsonData.data.guid);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"SELL\",\n    \"type\": {\n        \"name\": \"LIMIT\",\n        \"base\": \"BTC\",\n        \"price\": \"0.1000\",\n        \"quantity\": \"5.0000\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel ETH Limit Sell Order Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"orderid\", jsonData.data.guid);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\n    \"op\": \"replace\",\n    \"path\": \"/status\",\n    \"value\": \"CANCELLED\"\n}]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders/{{orderid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders",
+								"{{orderid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Order List Length",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.data).to.be.length(1)",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Deleted Hold",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance updated\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"ETH\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"20.000000000000000000\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token_3}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Create Order: Balance Update (AccountOne) ETH LIMIT SELL",
+			"item": [
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_one\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_one}}\",\n  \"password\": \"{{password_one}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accounts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Accounts listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"accountid\", jsonData.data[0].id);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            var key = balances[i].symbol.toLowerCase() + \"_hash\"",
+									"            pm.environment.set(key, balances[i].funding);",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fund Account ETH",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"Symbol\": \"ETH\",\n\t\"TransactionHash\": \"{{eth_hash}}\",\n\t\"Address\": \"{{eth_hash}}\",\n\t\"Amount\": \"20.00000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{webhookurl}}/funding",
+							"host": [
+								"{{webhookurl}}"
+							],
+							"path": [
+								"funding"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create ETH Limit Sell Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"orderid\", jsonData.data.guid);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"SELL\",\n    \"type\": {\n        \"name\": \"LIMIT\",\n        \"base\": \"BTC\",\n        \"price\": \"0.1000\",\n        \"quantity\": \"5.0000\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Balance Change",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance updated\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"ETH\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"15.000000000000000000\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Order List Length",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.data).to.be.length(1)",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create ETH Limit Sell Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"orderid\", jsonData.data.guid);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"SELL\",\n    \"type\": {\n        \"name\": \"LIMIT\",\n        \"base\": \"BTC\",\n        \"price\": \"0.15\",\n        \"quantity\": \"2.000\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Balance Change Update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance updated\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"ETH\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"13.000000000000000000\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Order List Length 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.data).to.be.length(2)",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token_one}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Create Order: Balance Update (AccountTwo) BTC MARKET BUY",
+			"item": [
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_2\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_2}}\",\n  \"password\": \"{{password_2}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accounts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Accounts listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"accountid\", jsonData.data[0].id);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            var key = balances[i].symbol.toLowerCase() + \"_hash\"",
+									"            pm.environment.set(key, balances[i].funding);",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fund Account BTC",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"Symbol\": \"BTC\",\n\t\"TransactionHash\": \"{{btc_hash}}\",\n\t\"Address\": \"{{btc_hash}}\",\n\t\"Amount\": \"2.00000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{webhookurl}}/funding",
+							"host": [
+								"{{webhookurl}}"
+							],
+							"path": [
+								"funding"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create BTC Market Buy Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"orderid\", jsonData.data.guid);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"BUY\",\n    \"type\": {\n        \"name\": \"MARKET\",\n        \"base\": \"BTC\",\n        \"quantity\": \"0.5000\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Balance Change",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance updated\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"BTC\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"1.50000000\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Order List Length",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.data).to.be.length(1)",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create BTC Market Buy Order 0.25",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"orderid\", jsonData.data.guid);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"base\": \"BTC\",\n    \"target\": \"ETH\",\n    \"action\": \"BUY\",\n    \"type\": {\n        \"name\": \"MARKET\",\n        \"base\": \"BTC\",\n        \"quantity\": \"0.21000\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Balance Change Update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance updated\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"BTC\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"1.29000000\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Order List Length 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.data).to.be.length(2)",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token_2}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Verify Order Completion (AccountOne)",
+			"item": [
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_one\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_one}}\",\n  \"password\": \"{{password_one}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accounts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Accounts listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"accountid\", jsonData.data[0].id);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"BTC\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"0.70964500\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assert Order List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    var jsonData = pm.response.json();",
+									"",
+									"    pm.test(\"Order List Length\", function () {",
+									"        pm.expect(jsonData.data).to.be.length(2)",
+									"    });",
+									"",
+									"    pm.test(\"Filled Order Count\", function () {",
+									"        let filled = 0;",
+									"",
+									"        for (var x = 0; x < jsonData.data.length; x++) {",
+									"            const order = jsonData.data[x];",
+									"",
+									"            switch (order.status) {",
+									"                case \"FILLED\":",
+									"                    filled++;",
+									"                    break;",
+									"            }",
+									"        }",
+									"",
+									"        pm.expect(filled).to.eq(1);",
+									"    });",
+									"",
+									"    pm.test(\"Partial Order Count\", function () {",
+									"        let partial = 0;",
+									"",
+									"        for (var x = 0; x < jsonData.data.length; x++) {",
+									"            const order = jsonData.data[x];",
+									"",
+									"            switch (order.status) {",
+									"                case \"PARTIAL\":",
+									"                    partial++;",
+									"                    break;",
+									"            }",
+									"        }",
+									"",
+									"        pm.expect(partial).to.eq(1);",
+									"    });",
+									"",
+									"    pm.test(\"Open Order Count\", function () {",
+									"        let open = 0;",
+									"",
+									"        for (var x = 0; x < jsonData.data.length; x++) {",
+									"            const order = jsonData.data[x];",
+									"",
+									"            switch (order.status) {",
+									"                case \"OPEN\":",
+									"                    open++;",
+									"                    break;",
+									"            }",
+									"        }",
+									"",
+									"        pm.expect(open).to.eq(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assert Transaction List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.data).to.be.length(5)",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/transactions",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"transactions"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token_one}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Verify Order Completion (AccountTwo)",
+			"item": [
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account One Logged In\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"token_2\", jsonData.id_token);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"{{user_2}}\",\n  \"password\": \"{{password_2}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"{{auth0_scope}}\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth0_domain}}/oauth/token",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accounts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Accounts listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        pm.environment.set(\"accountid\", jsonData.data[0].id);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"",
+									"        var balances = jsonData.data.balances;",
+									"        for (i = 0; i < balances.length; i++) {",
+									"            if (balances[i].symbol == \"ETH\") {",
+									"                pm.expect(balances[i].quantity).to.eq(\"6.390400000000000000\")",
+									"            }",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assert Order List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    var jsonData = pm.response.json();",
+									"",
+									"    pm.test(\"Order List Length\", function () {",
+									"        pm.expect(jsonData.data).to.be.length(2)",
+									"    });",
+									"",
+									"    pm.test(\"Filled Order Count\", function () {",
+									"        let filled = 0;",
+									"",
+									"        for (var x = 0; x < jsonData.data.length; x++) {",
+									"            const order = jsonData.data[x];",
+									"",
+									"            switch (order.status) {",
+									"                case \"FILLED\":",
+									"                    filled++;",
+									"                    break;",
+									"            }",
+									"        }",
+									"",
+									"        pm.expect(filled).to.eq(2);",
+									"    });",
+									"",
+									"    pm.test(\"Partial Order Count\", function () {",
+									"        let partial = 0;",
+									"",
+									"        for (var x = 0; x < jsonData.data.length; x++) {",
+									"            const order = jsonData.data[x];",
+									"",
+									"            switch (order.status) {",
+									"                case \"PARTIAL\":",
+									"                    partial++;",
+									"                    break;",
+									"            }",
+									"        }",
+									"",
+									"        pm.expect(partial).to.eq(0);",
+									"    });",
+									"",
+									"    pm.test(\"Open Order Count\", function () {",
+									"        let open = 0;",
+									"",
+									"        for (var x = 0; x < jsonData.data.length; x++) {",
+									"            const order = jsonData.data[x];",
+									"",
+									"            switch (order.status) {",
+									"                case \"OPEN\":",
+									"                    open++;",
+									"                    break;",
+									"            }",
+									"        }",
+									"",
+									"        pm.expect(open).to.eq(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assert Transaction List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Order returned\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.data).to.be.length(5)",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/transactions",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"transactions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/orders/{{orderid}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"orders",
+								"{{orderid}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token_2}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Audit Balances and Ledger",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if(responseCode.code == 200){",
+							"    var jsonData = pm.response.json();",
+							"",
+							"    pm.test(\"Balance should be zero\", function () {",
+							"        pm.expect(jsonData.data.balance.BTC).to.eq(\"0.00000000\")",
+							"        pm.expect(jsonData.data.balance.ETH).to.eq(\"0.000000000000000000\")",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{toolsurl}}/audit",
+					"host": [
+						"{{toolsurl}}"
+					],
+					"path": [
+						"audit"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "general-account",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

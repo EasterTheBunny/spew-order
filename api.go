@@ -11,18 +11,18 @@ import (
 	"os"
 	"strings"
 
+	"cloud.google.com/go/firestore"
 	"github.com/easterthebunny/spew-order/internal/queue"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
+	"github.com/easterthebunny/spew-order/pkg/types"
 )
 
 const (
 	envIdentityURI       = "IDENTITY_PROVIDER" // identity provider as a URI path
 	envProjectID         = "GOOGLE_CLOUD_PROJECT"
 	envOrderTopic        = "ORDER_TOPIC"
-	envAppName           = "APP_NAME"                // application name used as prefix for named resources
 	envRuntimeEnv        = "DEPLOYMENT_ENV"          // deployment environment; CI, QA, PROD
-	envLocation          = "LOCATION"                // resources location for this function instanc
 	envCoinbasePubKey    = "COINBASE_RSA_PUBLIC_KEY" // rsa public key for verifying signature of coinbase notifications
 	envCoinbaseAPIKey    = "COINBASE_API_KEY"        // api key for coinbase
 	envCoinbaseAPISecret = "COINBASE_API_SECRET"     // api secret for coinbase
@@ -35,45 +35,48 @@ var (
 	GS       *domain.OrderBook
 	Router   http.Handler
 	Webhooks http.Handler
+	Audit    http.Handler
 )
 
 func init() {
 	// GOOGLE_CLOUD_PROJECT is a user-set environment variable.
 	var projectID = getEnvVar(envProjectID)
 
-	conf := []interface{}{
-		getEnvVar(envAppName),
-		"book",
-		strings.ToLower(getEnvVar(envRuntimeEnv)),
-		strings.ToLower(getEnvVar(envLocation))}
-
-	bucket := fmt.Sprintf("%s-%s-%s-%s", conf...)
 	queue.OrderTopic = orderTopic
 
 	pubKey := strings.NewReader(getEnvVar(envCoinbasePubKey))
 	ky := getEnvVar(envCoinbaseAPIKey)
 	sct := getEnvVar(envCoinbaseAPISecret)
-	f := handlers.NewFundingSource("COINBASE", &ky, &sct, log.Writer(), pubKey)
+	srcType := "COINBASE"
+	if strings.ToUpper(getEnvVar(envRuntimeEnv)) != "PROD" {
+		srcType = "MOCK"
+	}
+	f := handlers.NewFundingSource(srcType, &ky, &sct, log.Writer(), pubKey)
 	ps := handlers.NewGooglePubSub(projectID)
 
-	kv, err := handlers.NewGoogleKVStore(&bucket)
+	client, err := firestore.NewClient(context.Background(), projectID)
 	if err != nil {
-		log.Fatal(err.Error())
+		panic(err)
 	}
-	GS = handlers.NewGoogleOrderBook(kv, f)
+
+	GS = handlers.NewGoogleOrderBook(client, f)
 
 	jwt, err := handlers.NewJWTAuth(getEnvVar(envIdentityURI))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	rh, err := handlers.NewDefaultRouter(kv, ps, jwt, f)
+	rh, err := handlers.NewDefaultRouter(client, ps, jwt, f)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
+	types.MakerFee = 0.0025
+	types.TakerFee = 0.0050
+
 	Router = rh.Routes()
-	Webhooks = handlers.NewWebhookRouter(kv, f).Routes()
+	Webhooks = handlers.NewWebhookRouter(client, f).Routes()
+	Audit = handlers.NewAuditRouter(client).Routes()
 }
 
 // RestAPI forwards all rest requests to the main API handler.
@@ -87,6 +90,11 @@ func FundingWebhooks(w http.ResponseWriter, r *http.Request) {
 	Webhooks.ServeHTTP(w, r)
 }
 
+// AuditAPI ...
+func AuditAPI(w http.ResponseWriter, r *http.Request) {
+	Audit.ServeHTTP(w, r)
+}
+
 // OrderPubSub consumes a Pub/Sub message.
 func OrderPubSub(ctx context.Context, m domain.PubSubMessage) error {
 
@@ -96,9 +104,9 @@ func OrderPubSub(ctx context.Context, m domain.PubSubMessage) error {
 	}
 
 	if msg.Action == domain.CancelOrderMessageType {
-		return GS.CancelOrder(msg.Order)
+		return GS.CancelOrder(ctx, msg.Order)
 	} else if msg.Action == domain.OpenOrderMessageType {
-		return GS.ExecuteOrInsertOrder(msg.Order)
+		return GS.ExecuteOrInsertOrder(ctx, msg.Order)
 	}
 
 	return nil

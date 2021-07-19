@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/easterthebunny/spew-order/internal/key"
@@ -16,7 +17,7 @@ func NewOrderRepository(store persist.KVStore, account *persist.Account) *OrderR
 	return &OrderRepository{kvstore: store, account: account}
 }
 
-func (or *OrderRepository) GetOrder(k persist.Key) (order *persist.Order, err error) {
+func (or *OrderRepository) GetOrder(ctx context.Context, k persist.Key) (order *persist.Order, err error) {
 
 	b, err := or.kvstore.Get(orderIDKey(*or.account, k))
 	if err != nil {
@@ -34,7 +35,7 @@ func (or *OrderRepository) GetOrder(k persist.Key) (order *persist.Order, err er
 	return
 }
 
-func (or *OrderRepository) SetOrder(o *persist.Order) error {
+func (or *OrderRepository) SetOrder(ctx context.Context, o *persist.Order) error {
 	if o == nil {
 		return fmt.Errorf("%w for order", persist.ErrCannotSaveNilValue)
 	}
@@ -53,7 +54,7 @@ func (or *OrderRepository) SetOrder(o *persist.Order) error {
 	return or.kvstore.Set(orderKey(*or.account, *o), b, &attrs)
 }
 
-func (or *OrderRepository) GetOrdersByStatus(s ...persist.FillStatus) (orders []*persist.Order, err error) {
+func (or *OrderRepository) GetOrdersByStatus(ctx context.Context, s ...persist.FillStatus) (orders []*persist.Order, err error) {
 
 	m := make(map[persist.FillStatus]bool)
 	for _, st := range s {
@@ -89,9 +90,9 @@ func (or *OrderRepository) GetOrdersByStatus(s ...persist.FillStatus) (orders []
 	return
 }
 
-func (or *OrderRepository) UpdateOrderStatus(k persist.Key, s persist.FillStatus, tr []string) error {
+func (or *OrderRepository) UpdateOrderStatus(ctx context.Context, k persist.Key, s persist.FillStatus, tr []string) error {
 
-	order, err := or.GetOrder(k)
+	order, err := or.GetOrder(ctx, k)
 	if err != nil {
 		return err
 	}
@@ -100,5 +101,5 @@ func (or *OrderRepository) UpdateOrderStatus(k persist.Key, s persist.FillStatus
 	if len(tr) > 0 {
 		order.Transactions = append(order.Transactions, tr)
 	}
-	return or.SetOrder(order)
+	return or.SetOrder(ctx, order)
 }

@@ -12,10 +12,10 @@ const PriceDepthChartFactory = (element: HTMLDivElement): PriceDepthChart => {
   let xScale
   let yScale
   let drawn = false
-  let fillColor = "green"
+  let className = "bid"
 
-  const draw: (width: number, height: number, color: string) => void = (width, height, color) => {
-    fillColor = color
+  const draw: (width: number, height: number, name: string) => void = (width, height, name) => {
+    className = name
     chartWidth = width - margin.left - margin.right
     chartHeight = height - margin.top - margin.bottom
   
@@ -52,33 +52,30 @@ const PriceDepthChartFactory = (element: HTMLDivElement): PriceDepthChart => {
                             .attr("transform", d => "translate(0,"+ yScale(d.price) +")")
 
               g.append("rect")
-                    .attr("fill", fillColor)
+                    .attr("class", "market-book-depth-"+className)
                     .attr("width", (d: PriceDepthItem) => (chartWidth - xScale(d.depth)) / 2)
                     .attr("height", yScale.bandwidth())
-                    .attr("opacity", "0.5")
 
               g.append("text")
-                    .attr("class", "price")
+                    .attr("class", "market-book-text")
                     .attr("x", d => 10)
                     .attr("y", d => yScale.bandwidth() / 2)
                     .attr("dy", ".35em")
-                    .attr("font-size", "9px")
                     .text(d => d.price)
 
               g.append("text")
-                    .attr("class", "depth")
-                    .attr("x", d => 80)
+                    .attr("class", "market-book-text depth")
+                    .attr("x", d => chartWidth / 2)
                     .attr("y", d => yScale.bandwidth() / 2)
                     .attr("dy", ".35em")
-                    .attr("font-size", "9px")
-                    .text(d => d.depth)
+                    .text(d => d.depth.toPrecision(6))
             },
             update => update.call(update => {
               update.select("rect")
                       .transition()
                       .attr("width", (d: PriceDepthItem) => (chartWidth - xScale(d.depth)) / 2)
               
-              update.select(".depth").text(d => d.depth)
+              update.select(".depth").text(d => d.depth.toPrecision(6))
             })
          )
   }

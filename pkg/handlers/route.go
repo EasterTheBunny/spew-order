@@ -55,7 +55,7 @@ func (d *Router) AccountRoutes() func(r chi.Router) {
 
 func (d *Router) AccountSubRoutes() func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Use(d.Accounts.AccountCtx(d.Balance))
+		r.Use(d.Accounts.AccountCtx(d.Balance, chi.URLParam))
 		r.Get("/", d.Accounts.GetAccount())
 		r.Route("/orders", d.OrderRoutes())
 		r.Route("/transactions", d.TransactionRoutes())
@@ -98,6 +98,22 @@ func (wr *WebhookRouter) Routes() http.Handler {
 	r.Use(wr.Funding.Source.Callback())
 
 	r.Post("/funding", wr.Funding.PostFunding())
+
+	return r
+}
+
+type AuditRouter struct {
+	Audit *AuditHandler
+}
+
+func (ar *AuditRouter) Routes() http.Handler {
+
+	r := chi.NewRouter()
+
+	// set CORS headers early and short circuit the response loop
+	r.Use(middleware.SetCORSHeaders)
+
+	r.Get("/audit", ar.Audit.AuditBalances())
 
 	return r
 }

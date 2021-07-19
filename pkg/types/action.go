@@ -50,7 +50,7 @@ func (at ActionType) typeInRange() bool {
 // in this package.
 func (at ActionType) MarshalJSON() ([]byte, error) {
 	if !at.typeInRange() {
-		return []byte(`""`), ErrActionTypeUnrecognized
+		return []byte(`""`), fmt.Errorf("ActionType::MarshalJSON: %w", ErrActionTypeUnrecognized)
 	}
 
 	return []byte(fmt.Sprintf(`"%s"`, at.String())), nil
@@ -72,7 +72,7 @@ func (at *ActionType) UnmarshalJSON(b []byte) error {
 	case actionTypeSellName:
 		*at = ActionTypeSell
 	default:
-		return ErrActionTypeUnrecognized
+		return fmt.Errorf("ActionType::UnmarshalJSON:%w", ErrActionTypeUnrecognized)
 	}
 
 	return nil

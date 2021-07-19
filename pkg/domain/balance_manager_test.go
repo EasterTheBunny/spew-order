@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"testing"
 
 	"github.com/easterthebunny/spew-order/internal/funding"
@@ -59,11 +60,12 @@ func TestGetAvailableBalance(t *testing.T) {
 	}
 
 	service := NewBalanceManager(newSeededRepo())
+	ctx := context.Background()
 
 	for i, test := range tests {
 		switch test.actiontype {
 		case 0:
-			_, err := service.SetHoldOnAccount(test.action.acct, test.action.sym, test.action.amt)
+			_, err := service.SetHoldOnAccount(ctx, test.action.acct, test.action.sym, test.action.amt)
 			if test.err == ErrInsufficientBalanceForHold && err == nil {
 				t.Errorf("%d: error [%s] expected, none found", i, ErrInsufficientBalanceForHold)
 				continue
@@ -74,14 +76,14 @@ func TestGetAvailableBalance(t *testing.T) {
 				continue
 			}
 		case 1:
-			err := service.PostAmtToBalance(test.action.acct, test.action.sym, test.action.amt)
+			err := service.PostAmtToBalance(ctx, test.action.acct, test.action.sym, test.action.amt)
 			if err != nil {
 				t.Errorf("%d: post error encountered where none expected: %s", i, err)
 				continue
 			}
 		}
 
-		bal, err := service.GetAvailableBalance(test.action.acct, test.action.sym)
+		bal, err := service.GetAvailableBalance(ctx, test.action.acct, test.action.sym)
 		if test.err == nil && err != nil {
 			t.Errorf("%d: balance error encountered where none expected: %s", i, err)
 			continue
@@ -129,13 +131,11 @@ func newSeededRepo() (persist.AccountRepository, persist.LedgerRepository, fundi
 	repo := kv.NewAccountRepository(store)
 	l := kv.NewLedgerRepository(store)
 	f := funding.NewMockSource()
+	ctx := context.Background()
 
 	for _, s := range seedData {
 		acct := &persist.Account{ID: s.acct.ID.String()}
-		b := repo.Balances(acct, s.sym)
-		bal, _ := b.GetBalance()
-		bal = bal.Add(s.amt)
-		b.UpdateBalance(bal)
+		repo.Balances(acct, s.sym).AddToBalance(ctx, s.amt)
 	}
 
 	return repo, l, f
