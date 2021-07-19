@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "deploying rest api for $ENVIRONMENT and $LOCATION"
-ENVLOC="$ENVIRONMENT-$LOCATION"
+ENVLOC=$(echo "$ENVIRONMENT-$LOCATION")
 
 # deploy RestAPI
 gcloud functions deploy order-api-$ENVLOC \
