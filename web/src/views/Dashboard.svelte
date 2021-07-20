@@ -108,7 +108,7 @@
   }
 
   * :global(.market-book-depth-bids) {
-    opacity: 50%;
+    opacity: 0.5;
     fill: #ffbb00;
   }
 </style>
