@@ -74,6 +74,7 @@ func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account,
 		// check for funding address; if it doesn't exist of that symbol or it
 		// is blank, create a new one
 		if x, ok := a.Addresses[s]; !ok || x == "" {
+			log.Printf("new address created for %s", s)
 			addr, err = m.funding.CreateAddress(s)
 			if err == nil {
 				dirty = true
