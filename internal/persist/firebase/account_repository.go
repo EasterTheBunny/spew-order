@@ -141,14 +141,14 @@ func documentToAccount(m map[string]interface{}) *persist.Account {
 			addr := persist.FundingAddress{}
 
 			if s, ok := vals["symbol"]; ok {
-				var sym types.Symbol
-				json.Unmarshal([]byte(`"`+s.(string)+`"`), &sym)
-				addr.Symbol = sym
+				json.Unmarshal([]byte(`"`+s.(string)+`"`), &addr.Symbol)
 			}
 
 			if s, ok := vals["address"]; ok {
 				addr.Address = s.(string)
 			}
+
+			addrs = append(addrs, addr)
 		}
 
 		acct.Addresses = addrs
