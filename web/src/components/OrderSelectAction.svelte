@@ -1,4 +1,5 @@
 <script type="ts">
+  import type { Readable } from 'svelte/store'
   import Tab, { Label } from '@smui/tab/styled'
   import TabBar from '@smui/tab-bar/styled'
   import { ActionType } from "../constants"
@@ -6,11 +7,11 @@
 
   export let active: ActionType = ActionType.Buy;
 
-  const {t} = getLocalization()
+  const t: Readable<TType> = getLocalization().t
   const actionTypes = [ActionType.Buy, ActionType.Sell]
-  const actionTypeLabels = {
-    [ActionType.Buy]: t("Buy"),
-    [ActionType.Sell]: t("Sell"),
+  let actionTypeLabels = {
+    [ActionType.Buy]: $t("Buy"),
+    [ActionType.Sell]: $t("Sell"),
   }
 </script>
 

@@ -2,7 +2,6 @@ import i18next, { i18n, Resource } from "i18next"
 import LanguageDetector from "i18next-browser-languagedetector"
 import translations from "./translations"
 
-const INITIAL_LANGUAGE = "en"
 export class I18nService {
   // expose i18next
   public i18n: i18n
@@ -20,14 +19,15 @@ export class I18nService {
   // Initializing i18n
   public initialize(): void {
     this.i18n.init({
+      detection: { order: ['querystring', 'navigator'] },
       debug: false,
       defaultNS: "common",
-      fallbackLng: "en",
       fallbackNS: "common",
+      fallbackLng: "en",
+      supportedLngs: ['en', 'es'],
       interpolation: {
         escapeValue: false,
       },
-      lng: INITIAL_LANGUAGE,
       resources: translations as Resource,
     })
   }

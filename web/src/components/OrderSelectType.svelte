@@ -9,10 +9,10 @@
   const {t} = getLocalization()
   let orderTypes = [{
     value: OrderType.Market,
-    label: t('MarketOrder'),
+    label: $t('MarketOrder'),
   }, {
     value: OrderType.Limit,
-    label: t('LimitOrder'),
+    label: $t('LimitOrder'),
   }]
   
   const dispatch = createEventDispatcher();

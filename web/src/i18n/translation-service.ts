@@ -5,7 +5,6 @@ export class I18NextTranslationService implements ITranslationService {
   public translate: Readable<TType>
 
   constructor(i18n: I18nService) {
-    i18n.initialize()
     this.locale = this.createLocale(i18n)
     this.translate = this.createTranslate(i18n)
   }
