@@ -1,6 +1,6 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
-  import { Link } from "svelte-routing"
+  import { Link } from "svelte-navigator"
   import { getDataCtx } from "../exchange"
   import { getLocalization } from '../i18n'
 
@@ -19,7 +19,7 @@
   <dd>{balance.quantity} <i>{balance.symbol}</i></dd>
   {/each}
 </dl>
-<Link to="funding">{$t('AddFunds')}</Link>
+<Link to="/funding">{$t('AddFunds')}</Link>
 
 <style lang="scss">
   .balance-list {

@@ -1,23 +1,27 @@
-import type { Writable } from "svelte/store"
-import { writable } from "svelte/store"
-import WebWorker from 'web-worker:../Worker.ts'
+import { getContext, setContext } from "svelte"
 import { WorkerMessageType } from '../constants'
+import PriceWritable from "./price-writable"
+import MarketWritable from "./market-writable"
+import WebWorker from 'web-worker:./Worker.ts'
 
-const PriceWritable = (): Writable<IfcBookProductSpread> => {
-  const { subscribe, set, update } = writable<IfcBookProductSpread>({ maxDepth: 0, ask: "0.000", bid: "0.000", change24hr: "", range24hr: "", asks: [], bids: []})
+const CONTEXT_KEY = {}
+
+const initMarketContext: () => void = () => {
   const worker = new WebWorker()
+  const market = MarketWritable(worker)
+  const price = PriceWritable()
 
   worker.onmessage = (evt) => {
     if (isTicker(evt.data)) {
       const msg: IfcTickerMessage = evt.data
 
       const open = parseFloat(msg.open_24h)
-      const price = parseFloat(msg.price)
+      const p = parseFloat(msg.price)
 
-      update((v) => {
+      price.update((v) => {
         v.ask = msg.price
         v.bid = msg.price
-        v.change24hr = (price - open).toFixed(8) + " (" + (((price / open) - 1) * 100).toFixed(2) + "%)"
+        v.change24hr = (p - open).toFixed(8) + " (" + (((p / open) - 1) * 100).toFixed(2) + "%)"
         v.range24hr = msg.low_24h + " - " + msg.high_24h
 
         return v
@@ -25,7 +29,7 @@ const PriceWritable = (): Writable<IfcBookProductSpread> => {
     } else if (isBook(evt.data)) {
       const msg: IfcBookMessage = evt.data
 
-      update((v) => {
+      price.update((v) => {
         v.maxDepth = msg.maxDepth
         v.asks = msg.asks
         v.bids = msg.bids
@@ -37,7 +41,18 @@ const PriceWritable = (): Writable<IfcBookProductSpread> => {
   
   worker.postMessage({type: 'init'})
 
-  return { subscribe, set, update }
+  setMarketCtx({
+    price,
+    market,
+  })
+}
+
+export const setMarketCtx: (context: IfcMarketContext) => void = (context) => {
+  return setContext<IfcMarketContext>(CONTEXT_KEY, context)
+}
+
+export const getMarketCtx: () => IfcMarketContext = () => {
+  return getContext<IfcMarketContext>(CONTEXT_KEY)
 }
 
 function isTicker(item: IfcWorkerMessage): item is IfcTickerMessage {
@@ -48,4 +63,4 @@ function isBook(item: IfcWorkerMessage): item is IfcBookMessage {
   return (item as IfcBookMessage).type === WorkerMessageType.Book
 }
 
-export default PriceWritable
+export default initMarketContext

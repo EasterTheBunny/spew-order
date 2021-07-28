@@ -1,13 +1,13 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
-  import { getDataCtx } from "../exchange";
+  import { getMarketCtx } from "../market";
   import { getLocalization } from '../i18n'
 
   const {
     price,
   }: {
     price: Readable<IfcBookProductSpread>
-  } = getDataCtx()
+  } = getMarketCtx()
   const {t} = getLocalization()
 </script>
 

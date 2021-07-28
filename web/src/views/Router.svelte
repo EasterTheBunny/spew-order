@@ -1,18 +1,24 @@
 <script type="ts">
-  import { Router, Route } from "svelte-routing"
+  import { Router, Route } from "svelte-navigator"
   import Nav from "../components/Nav.svelte"
+  import LazyRoute from "../components/LazyRoute.svelte"
   import Landing from "../views/Landing.svelte"
   import Login from "../views/Login.svelte"
-  import Dashboard from "../views/Dashboard.svelte"
-  import Funding from "../views/Funding.svelte"
 
   export let url: string
+
+  const Funding = () => import("../views/Funding.svelte")
+  const Exchange = () => import("../views/Exchange.svelte")
 </script>
 
 <Router url={url}>
   <Nav>
-    <Route path="funding"><Funding /></Route>
-    <Route path="dashboard"><Dashboard /></Route>
+    <LazyRoute path="funding" component={Funding} delayMs={500}>
+      <h4>Loading Funding...</h4>
+    </LazyRoute>
+    <LazyRoute path="dashboard/*" component={Exchange} delayMS={500}>
+      <h4>Loading Exchange...</h4>
+    </LazyRoute>
     <Route path="login"><Login /></Route>
     <Route path="/"><Landing /></Route>
   </Nav>

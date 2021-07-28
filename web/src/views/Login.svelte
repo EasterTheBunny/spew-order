@@ -2,14 +2,14 @@
   import { onMount } from "svelte"
   import { derived } from "svelte/store"
   import type { User } from "oidc-client"
-  import { navigate } from "svelte-routing"
+  import { navigate } from "svelte-navigator"
   import { getOidc } from "../oidc"
 
   const { oidc, loggedIn } = getOidc()
 
   const redirector = derived([loggedIn], ([$l]) => {
     if ($l) {
-      navigate("/", { replace: false })
+      navigate("/", { replace: true })
     }
     return ""
   })

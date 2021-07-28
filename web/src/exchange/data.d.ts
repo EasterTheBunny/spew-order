@@ -61,7 +61,6 @@ interface IfcDataContext {
   api: ExchangeAPI
   account: AccountWritable
   orders: OrderWritable
-  price: PriceWritable
   transactions: TransactionReadable
 }
 
@@ -95,4 +94,9 @@ interface IfcTransactionRequest {
   symbol: Currency
   address: string
   quantity: string
+}
+
+interface IfcMarket {
+  base: Currency
+  target: Currency
 }

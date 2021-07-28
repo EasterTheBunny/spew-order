@@ -3,6 +3,7 @@
 	import Router from "./views/Router.svelte"
   import oidc from "./oidc"
   import initExchangeAPI from "./exchange"
+  import initMarketDataController from "./market"
   import { initLocalizationContext } from './i18n';
 
   export let client_id: string = process.env.AUTH0_CLIENTID;
@@ -32,6 +33,7 @@
     },
   })
   initExchangeAPI(user)
+  initMarketDataController()
 
 </script>
 

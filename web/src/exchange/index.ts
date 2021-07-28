@@ -4,7 +4,6 @@ import type { User } from "oidc-client"
 import AccountWritable from "./account-writable"
 import ExchangeAPI from "./api-service"
 import OrderWritable from "./order-writable"
-import PriceWritable from "./price-writable"
 import TransactionWritable from "./transaction-writable"
 
 const CONTEXT_KEY = {}
@@ -20,19 +19,16 @@ const initDataContext: (subscribedUser: Readable<User>) => void = (subscribedUse
     }
   })
 
-  const price = PriceWritable()
   const account = AccountWritable(api.getActiveAccountFunc(), subscribedUser)
-  const orders = OrderWritable(api.getOrderFunc(), account, price)
+  const orders = OrderWritable(api.getOrderFunc(), account)
   const transactions = TransactionWritable(api.getTransactionFunc(), account)
 
   setDataCtx({
     api,
     account,
     orders,
-    price,
     transactions,
   })
-
 }
 
 export const setDataCtx: (context: IfcDataContext) => void = (context) => {

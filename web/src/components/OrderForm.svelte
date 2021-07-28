@@ -4,6 +4,7 @@
   import OrderSelectType from "./OrderSelectType.svelte"
   import { OrderType, ActionType } from "../constants"
   import { getDataCtx } from "../exchange";
+  import { getMarketCtx } from "../market";
   import MarketOrderForm from "./MarketOrderForm.svelte";
   import LimitOrderForm from "./LimitOrderForm.svelte"
  
@@ -14,11 +15,15 @@
 
   const {
     account,
-    price,
   }: {
     account: Readable<IfcAccountResource>
-    price: Readable<IfcBookProductSpread>
   } = getDataCtx()
+
+  const {
+    price,
+  }: {
+    price: Readable<IfcBookProductSpread>
+  } = getMarketCtx()
 
   price.subscribe((s: IfcBookProductSpread) => {
     if (!!s) {

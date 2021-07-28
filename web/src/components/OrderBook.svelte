@@ -2,13 +2,13 @@
   import type { Readable } from "svelte/store"
   import { onMount } from 'svelte'
   import PriceDepthChartFactory from '../charts/pricedepth'
-  import { getDataCtx } from "../exchange";
+  import { getMarketCtx } from "../market";
 
   const {
     price,
   }: {
     price: Readable<IfcBookProductSpread>
-  } = getDataCtx()
+  } = getMarketCtx()
 
   let el
   let chart: PriceDepthChart

@@ -1,5 +1,5 @@
 <script type="ts">
-  import type { Readable } from "svelte/store"
+  import type { Readable, Writable } from "svelte/store"
   import Paper, { Title, Content } from "@smui/paper/styled";
   import LayoutGrid, { Cell } from "@smui/layout-grid/styled";
   import OrderForm from "../components/OrderForm.svelte"
@@ -10,11 +10,15 @@
   import OrderBook from "../components/OrderBook.svelte"
   import { getOidc } from "../oidc"
   import { getDataCtx } from "../exchange"
+  import { getMarketCtx } from "../market"
   import { getLocalization } from '../i18n'
+  import { onMount } from "svelte"
+  import { validMarket } from "../constants"
 
-  let elevation = 1;
-  let color = 'default';
-  let bookHeight = 250;
+  let elevation = 1
+  let color = 'default'
+  let bookHeight = 250
+  export let market: IfcMarket = null
 
   const { loggedIn } = getOidc()
   const {
@@ -22,7 +26,17 @@
   }: {
     account: Readable<IfcAccountResource>
   } = getDataCtx()
+
+  const mkt = getMarketCtx().market
   const {t} = getLocalization()
+
+  onMount(() => {
+    if (market !== null && validMarket(market)) {
+      mkt.update(() => market)
+    }
+
+    return () => mkt.update(() => null)
+  })
 </script>
 
 {#if $loggedIn && $account}

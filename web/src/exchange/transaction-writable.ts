@@ -1,6 +1,6 @@
 import type { Writable, Readable } from "svelte/store"
 
-const reloadWait = 5000
+const reloadWait = 10000
 
 const TransactionWritable = (
   loader: (accountID: string, data: IfcTransactionRequest) => Promise<IfcTransactionResource[] | IfcTransactionResource>,

@@ -28,6 +28,8 @@ export default {
       Date: "Date",
       Currency: "Currency",
       SubmitWithdrawal: "Submit Withdrawal",
+      Markets: "Markets",
+      ChoosePair: "Choose a trading pair to get started.",
     },
   },
   es: {
@@ -59,6 +61,8 @@ export default {
       Date: "Fecha",
       Currency: "Moneda",
       SubmitWithdrawal: "Ingresar Retiro",
+      Markets: "Markets",
+      ChoosePair: "Choose a trading pair to get started.",
     },
   },
 }
