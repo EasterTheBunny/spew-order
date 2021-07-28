@@ -1,5 +1,6 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
+  import { onMount } from 'svelte'
   import OrderSelectAction from "./OrderSelectAction.svelte"
   import OrderSelectType from "./OrderSelectType.svelte"
   import { OrderType, ActionType } from "../constants"
@@ -25,10 +26,12 @@
     price: Readable<IfcBookProductSpread>
   } = getMarketCtx()
 
-  price.subscribe((s: IfcBookProductSpread) => {
-    if (!!s) {
-      currentPrice = s.ask
-    }
+  onMount(() => {
+    return price.subscribe((s: IfcBookProductSpread) => {
+      if (!!s) {
+        currentPrice = s.ask
+      }
+    })
   })
 
 </script>

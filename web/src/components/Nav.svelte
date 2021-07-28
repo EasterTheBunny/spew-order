@@ -61,7 +61,7 @@
       <List>
         {#each markets as market}
         <Item
-          href={"dashboard/"+marketToName(market)}
+          href={"/dashboard/"+marketToName(market)}
           use={[link]}
           on:click={() => open = false}
         >

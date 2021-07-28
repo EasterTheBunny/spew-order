@@ -81,12 +81,15 @@ const socket: () => IfcDataSocket = () => {
 
     const marketLookup = {
       "BTC-ETH": "ETH-BTC",
+      "BTC-BCH": "BCH-BTC",
     }
+
     const msg = {
       type: "subscribe",
       product_ids: [marketLookup[m]],
       channels: ["level2", "ticker"],
     }
+
     msgs.push(msg)
     dataManager = new OrderBookDataManager()
 

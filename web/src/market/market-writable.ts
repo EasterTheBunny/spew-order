@@ -14,7 +14,6 @@ const MarketWritable = (worker: Worker): Writable<IfcMarket> => {
       const nextValue = updater(currentValue)
 
       if (nextValue !== null) {
-        console.log(nextValue)
         worker.postMessage({type: 'subscribe', market: nextValue})
       } else {
         worker.postMessage({type: 'unsubscribe'})

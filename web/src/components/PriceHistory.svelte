@@ -29,7 +29,6 @@
       clearTimeout(timeout)
     }
     chart.remove()
-    console.log(el.offsetWidth)
 
     // delay the draw until after the resize event is done
     timeout = setTimeout(resizeDone, 1000)
@@ -38,13 +37,19 @@
   onMount(() => {
     window.onresize = reportWindowSize;
 
-    chart = PriceHistoryChartFactory(el)
-    chart.draw(el.offsetWidth, height)
-
-    market.subscribe(mkt => {
+    const unsubscribe = market.subscribe(mkt => {
       if (mkt === null) {
         return
       }
+
+      if (!!chart) {
+        chart.remove()
+      } else {
+        chart = PriceHistoryChartFactory(el)
+      }
+
+      chart.draw(el.offsetWidth, height)
+
       let api = axios.create({
         timeout: 1000,
         headers: {
@@ -56,7 +61,10 @@
       const m = mkt.base + "-" + mkt.target
       const marketLookup = {
         "BTC-ETH": "ETH-BTC",
+        "BTC-BCH": "BCH-BTC",
       }
+      console.log(m)
+      console.log(marketLookup[m])
 
       api.get("/products/"+marketLookup[m]+"/candles?granularity=3600").then((r: AxiosResponse) => {
 
@@ -80,6 +88,11 @@
         chart.update(chartData)
       })
     })
+
+    return () => {
+      unsubscribe()
+      chart.remove()
+    }
   })
 </script>
 

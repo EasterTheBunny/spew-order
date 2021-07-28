@@ -10,6 +10,9 @@
   }, {
     value: Currency.Bitcoin,
     name: 'Bitcoin',
+  }, {
+    value: Currency.BitcoinCash,
+    name: 'Bitcoin Cash',
   }]
 
 </script>

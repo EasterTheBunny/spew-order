@@ -37,6 +37,10 @@ export const markets: IfcMarket[] = [
     base: Currency.Bitcoin,
     target: Currency.Ethereum,
   },
+  {
+    base: Currency.Bitcoin,
+    target: Currency.BitcoinCash,
+  },
 ]
 
 export const validMarket: (market: IfcMarket) => boolean = (market) => {
@@ -59,6 +63,7 @@ export const marketFromString: (market: string) => IfcMarket | null = (market) =
   const currencies = [
     Currency.Bitcoin,
     Currency.Ethereum,
+    Currency.BitcoinCash,
   ]
 
   if (matches.length == 3) {

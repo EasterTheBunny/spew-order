@@ -45,7 +45,7 @@ export default class OidcService {
     //this.manager.removeUser()
     //this.manager.revokeAccessToken()
     this.manager.signoutRedirect().then(() => {
-      console.log("signed out")
+      //console.log("signed out")
     })
   }
 }

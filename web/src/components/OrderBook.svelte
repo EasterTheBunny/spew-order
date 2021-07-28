@@ -39,7 +39,7 @@
     chart = PriceDepthChartFactory(el)
     chart.draw(el.offsetWidth, height, name, yAxis)
 
-    price.subscribe((b) => {
+    const unsubscribe = price.subscribe((b) => {
       let x: PriceDepthItem[]
       if (src === "asks") {
         x = b.asks.map((item) => {
@@ -59,6 +59,8 @@
 
       chart.update(x, b.maxDepth)
     })
+
+    return () => unsubscribe()
 	});
 </script>
 

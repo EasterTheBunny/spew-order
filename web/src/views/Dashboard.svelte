@@ -1,5 +1,5 @@
 <script type="ts">
-  import type { Readable, Writable } from "svelte/store"
+  import type { Readable } from "svelte/store"
   import Paper, { Title, Content } from "@smui/paper/styled";
   import LayoutGrid, { Cell } from "@smui/layout-grid/styled";
   import OrderForm from "../components/OrderForm.svelte"
@@ -29,6 +29,12 @@
 
   const mkt = getMarketCtx().market
   const {t} = getLocalization()
+
+  $: {
+    if (market !== null && validMarket(market)) {
+      mkt.update(() => market)
+    }
+  }
 
   onMount(() => {
     if (market !== null && validMarket(market)) {

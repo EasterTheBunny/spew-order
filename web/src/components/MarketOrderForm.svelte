@@ -110,7 +110,7 @@
 <div class="form-section" style="display:none;">
   {#each symbolList as symbol}
     <FormField>
-      <Radio bind:group={order.base} value={symbol} touch on:click={() => console.log("clicked")} />
+      <Radio bind:group={order.base} value={symbol} touch />
       <span slot="label">{symbol}</span>
     </FormField>
   {/each}
