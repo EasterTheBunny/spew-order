@@ -10,11 +10,15 @@
   import OrderBook from "../components/OrderBook.svelte"
   import { getOidc } from "../oidc"
   import { getDataCtx } from "../exchange"
+  import { getMarketCtx } from "../market"
   import { getLocalization } from '../i18n'
+  import { onMount } from "svelte"
+  import { validMarket } from "../constants"
 
-  let elevation = 1;
-  let color = 'default';
-  let bookHeight = 250;
+  let elevation = 1
+  let color = 'default'
+  let bookHeight = 250
+  export let market: IfcMarket = null
 
   const { loggedIn } = getOidc()
   const {
@@ -22,7 +26,23 @@
   }: {
     account: Readable<IfcAccountResource>
   } = getDataCtx()
+
+  const mkt = getMarketCtx().market
   const {t} = getLocalization()
+
+  $: {
+    if (market !== null && validMarket(market)) {
+      mkt.update(() => market)
+    }
+  }
+
+  onMount(() => {
+    if (market !== null && validMarket(market)) {
+      mkt.update(() => market)
+    }
+
+    return () => mkt.update(() => null)
+  })
 </script>
 
 {#if $loggedIn && $account}

@@ -3,6 +3,7 @@ import SortedSet from 'js-sorted-set'
 export class OrderBookDataManager {
   private bids: OrderedValues
   private asks: OrderedValues
+  private tick: CBCoinbaseTicker | null = null
 
   public constructor() {}
 
@@ -41,6 +42,10 @@ export class OrderBookDataManager {
     }
   }
 
+  public processTicker(tick: CBCoinbaseTicker): void {
+    this.tick = tick
+  }
+
   public topBids(): string[][] {
     if (!this.bids) {
       return []
@@ -54,6 +59,10 @@ export class OrderBookDataManager {
     }
     return this.asks.top(10)
   }
+
+  public lastTick(): CBCoinbaseTicker {
+    return this.tick
+  }
 }
 
 class OrderedValues {
@@ -62,6 +71,7 @@ class OrderedValues {
 
   public constructor(t: string, init: string[][]) {
     this.set = new SortedSet({
+      strategy: SortedSet.ArrayStrategy,
       onInsertConflict: SortedSet.OnInsertConflictIgnore,
       comparator: t == "bids" ? this.bidsComparator : this.asksComparator,
     })

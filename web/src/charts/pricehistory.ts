@@ -83,21 +83,22 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
   
   const mousemove = (event) => {
     event.preventDefault()
-    const pointer = d3.pointer(event, this)
-    const xm = xScale.invert(pointer[0])
-    // const ym = yScale.invert(pointer[1]-margin.bottom)
-    const i = bisectDate(data, xm)
-    // recover coordinate we need
-    
-    let selectedData = data[i]
-    focus
-      .attr("cx", xScale(selectedData.time))
-      .attr("cy", yScale(selectedData.close))
-    focusText
-      .html(d3.format(",.2r")(selectedData.close))
-      .attr("x", xScale(selectedData.time)+15)
-      .attr("y", yScale(selectedData.close))
+    if (data.length > 0) {
+      const pointer = d3.pointer(event, this)
+      const xm = xScale.invert(pointer[0])
+      // const ym = yScale.invert(pointer[1]-margin.bottom)
+      const i = bisectDate(data, xm)
+      // recover coordinate we need
       
+      let selectedData = data[i]
+      focus
+        .attr("cx", xScale(selectedData.time))
+        .attr("cy", yScale(selectedData.close))
+      focusText
+        .html(d3.format(",.2r")(selectedData.close))
+        .attr("x", xScale(selectedData.time)+15)
+        .attr("y", yScale(selectedData.close))
+    }
   }
   
   const mouseleave = (d) => {

@@ -1,9 +1,11 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
+  import { onMount } from 'svelte'
   import OrderSelectAction from "./OrderSelectAction.svelte"
   import OrderSelectType from "./OrderSelectType.svelte"
   import { OrderType, ActionType } from "../constants"
   import { getDataCtx } from "../exchange";
+  import { getMarketCtx } from "../market";
   import MarketOrderForm from "./MarketOrderForm.svelte";
   import LimitOrderForm from "./LimitOrderForm.svelte"
  
@@ -14,16 +16,22 @@
 
   const {
     account,
-    price,
   }: {
     account: Readable<IfcAccountResource>
-    price: Readable<IfcBookProductSpread>
   } = getDataCtx()
 
-  price.subscribe((s: IfcBookProductSpread) => {
-    if (!!s) {
-      currentPrice = s.ask
-    }
+  const {
+    price,
+  }: {
+    price: Readable<IfcBookProductSpread>
+  } = getMarketCtx()
+
+  onMount(() => {
+    return price.subscribe((s: IfcBookProductSpread) => {
+      if (!!s) {
+        currentPrice = s.ask
+      }
+    })
   })
 
 </script>

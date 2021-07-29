@@ -141,6 +141,8 @@ paths:
                     $ref: '#/components/schemas/ResponseError'
     get:
       description: Retrieve order list
+      parameters:
+        - $ref: '#/components/parameters/OrderStatusParam'
       responses:
         200:
           description: OK
@@ -185,6 +187,12 @@ components:
       schema:
         type: string
       description: The uuid order identifier
+    OrderStatusParam:
+      in: query
+      name: status
+      required: false
+      schema:
+        $ref: '#/components/schemas/OrderStatus'
   schemas:
     ResponseError:
       type: object

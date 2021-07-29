@@ -1,18 +1,22 @@
 <script type="ts">
   import type { Readable } from "svelte/store"
-  import { getDataCtx } from "../exchange";
+  import { getMarketCtx } from "../market";
   import { getLocalization } from '../i18n'
 
   const {
     price,
+    market,
   }: {
-    price: Readable<IfcBookProductSpread>
-  } = getDataCtx()
+    price: Readable<IfcBookProductSpread>,
+    market: Readable<IfcMarket>,
+  } = getMarketCtx()
   const {t} = getLocalization()
+
+  $: marketStr = $market == null ? "" : $market.base+"-"+$market.target
 </script>
 
 <div class="snapshot">
-  <h1>BTC-ETH</h1>
+  <h1>{marketStr}</h1>
   <div>
     <h4>{$t('LastPrice')}</h4>
     <small>{$price.bid}</small>

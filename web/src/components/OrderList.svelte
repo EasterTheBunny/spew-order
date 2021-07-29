@@ -1,6 +1,6 @@
 <script type="ts">
   import type { Writable } from "svelte/store"
-  import { onDestroy, onMount } from "svelte"
+  import { onMount } from "svelte"
   import DataTable, { Head, Body, Row, Cell } from '@smui/data-table/styled'
   import { Icon } from '@smui/common/styled'
   import Tooltip, { Wrapper } from '@smui/tooltip/styled'
@@ -10,7 +10,6 @@
   import { getLocalization } from '../i18n'
 
   let orderList: IfcOrderResource[] = []
-  let unsubscribe_orders = () => {}
 
   const {
     orders,
@@ -41,13 +40,9 @@
   }
 
   onMount(() => {
-    unsubscribe_orders = orders.subscribe((values: IfcOrderResource[]) => {
+    return orders.subscribe((values: IfcOrderResource[]) => {
       orderList = values.filter((v) => v.status === OrderStatus.Open || v.status === OrderStatus.Partial)
     })
-  })
-
-  onDestroy(() => {
-    unsubscribe_orders()
   })
 </script>
 

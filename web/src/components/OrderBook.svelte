@@ -2,13 +2,13 @@
   import type { Readable } from "svelte/store"
   import { onMount } from 'svelte'
   import PriceDepthChartFactory from '../charts/pricedepth'
-  import { getDataCtx } from "../exchange";
+  import { getMarketCtx } from "../market";
 
   const {
     price,
   }: {
     price: Readable<IfcBookProductSpread>
-  } = getDataCtx()
+  } = getMarketCtx()
 
   let el
   let chart: PriceDepthChart
@@ -39,7 +39,7 @@
     chart = PriceDepthChartFactory(el)
     chart.draw(el.offsetWidth, height, name, yAxis)
 
-    price.subscribe((b) => {
+    const unsubscribe = price.subscribe((b) => {
       let x: PriceDepthItem[]
       if (src === "asks") {
         x = b.asks.map((item) => {
@@ -59,6 +59,8 @@
 
       chart.update(x, b.maxDepth)
     })
+
+    return () => unsubscribe()
 	});
 </script>
 

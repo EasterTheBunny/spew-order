@@ -1,13 +1,12 @@
-import type { Writable, Readable } from "svelte/store"
-import { ActionType, Currency, OrderType } from "../constants"
-import { calcTotal, roundingPlace } from "../util"
+import type { Writable } from "svelte/store"
+import { OrderType } from "../constants"
+import { roundingPlace } from "../util"
 
-const reloadWait = 5000
+const reloadWait = 10000
 
 const OrderWritable = (
   loader: (accountID: string, data: IfcOrderResource) => Promise<IfcOrderResource[] | IfcOrderResource>,
   account: Writable<IfcAccountResource | IfcBalanceResource>,
-  price: Readable<IfcBookProductSpread>
 ): Writable<IfcOrderResource[] | IfcOrderResource> => {
 
   let store: IfcOrderCache = {
@@ -17,15 +16,7 @@ const OrderWritable = (
   }
   let subs = []                     // subscriber's handlers
   let accountID = ""
-  let currentPrice = {
-    ask: "0.000",
-    bid: "0.000",
-  }
   let tick = null
-
-  price.subscribe((p: IfcBookProductSpread) => {
-    currentPrice = p
-  })
 
   const loadRecords = () => {
     loader(accountID, null).then((value: IfcOrderResource[]) => {
@@ -75,34 +66,14 @@ const OrderWritable = (
     // new value could be a new single order resource
     if (isSingle(new_value)) {
       loader(accountID, new_value).then((order: IfcOrderResource) => {
+        // order was successful; add it to the list
         store.data.unshift(order)
+
+        // TODO: account balance update is unreliable due to sudden price changes, market selection, etc.
+        // set the amount to 0 and allow the account writable to update the value
         account.update((a: IfcBalanceResource) => {
-          let symbol: Currency = order.order.base
-          let amt = 0
-          // calculate the balance change and apply it
-          if (order.order.action === ActionType.Buy) {
-            if (isLimit(order.order.type)) {
-
-            } else if (isMarket(order.order.type)) {
-              if (order.order.type.base === order.order.target) {
-                symbol = order.order.base
-              } else {
-                symbol = order.order.target
-              }
-
-              amt = calcTotal(order.order.type, order.order.action, currentPrice.ask, order.order.base, order.order.target)
-            }
-          } else {
-            if (isLimit(order.order.type)) {
-
-            } else if (isMarket(order.order.type)) {
-              amt = calcTotal(order.order.type, order.order.action, currentPrice.bid, order.order.base, order.order.target)
-            }
-          }
-
-          if (a.symbol === symbol) {
-            const qnt = parseFloat(a.quantity)
-            a.quantity = (qnt - amt).toFixed(roundingPlace(symbol))
+          if (a.symbol === order.order.base || a.symbol === order.order.target) {
+            a.quantity = (0).toFixed(roundingPlace(a.symbol))
           }
 
           return a
