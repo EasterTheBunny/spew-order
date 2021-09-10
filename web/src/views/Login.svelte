@@ -9,30 +9,13 @@
   const {
     oidc,
     loggedIn,
-    user,
   }: {
     oidc: OidcService
     loggedIn: Readable<boolean>
-    user: Readable<User>
   } = getOidc()
 
-  const redirector = derived([loggedIn, user], ([$l, $u]) => {
+  const redirector = derived([loggedIn], ([$l]) => {
     if ($l) {
-
-      pendo.initialize({
-        visitor: {
-          id: $u.profile.sid,
-          email: $u.profile.email,
-          full_name: $u.profile.name,
-        },
-        account: {
-          id: $u.profile.sid,
-          name: $u.profile.name,
-          is_paying: true,
-          // monthly_value:// Recommended if using Pendo Feedback
-        }
-      });
-
       navigate("/", { replace: true })
     }
     return ""

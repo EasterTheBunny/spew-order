@@ -55,6 +55,22 @@ export default class UserService {
   private onUserLoaded: (user: any) => void = (user) => {
     const { update } = this.state
     update((state: UserState) => {
+
+      const pendoData = {
+        visitor: {
+          id: user.profile.sub,
+          email: user.profile.email,
+          full_name: user.profile.name,
+        },
+        account: {
+          id: user.profile.sub,
+          name: user.profile.name,
+          is_paying: true,
+          // monthly_value:// Recommended if using Pendo Feedback
+        }
+      }
+      pendo.initialize(pendoData)
+
       return {
         user: user,
         isLoadingUser: false,
