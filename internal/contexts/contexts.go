@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/domain"
 )
@@ -21,6 +22,7 @@ const (
 	ctxAccountKey
 	ctxAccountIDKey
 	ctxOrderKey
+	ctxAddressKey
 )
 
 // AttachAuthorization ...
@@ -98,6 +100,26 @@ func GetOrder(ctx context.Context) *persist.Order {
 	}
 
 	a, ok := val.(persist.Order)
+	if !ok {
+		return nil
+	}
+
+	return &a
+}
+
+// AttachAddress ...
+func AttachAddress(ctx context.Context, a funding.Address) context.Context {
+	return context.WithValue(ctx, ctxAddressKey, a)
+}
+
+// GetAddress ...
+func GetAddress(ctx context.Context) *funding.Address {
+	val := ctx.Value(ctxAddressKey)
+	if val == nil {
+		return nil
+	}
+
+	a, ok := val.(funding.Address)
 	if !ok {
 		return nil
 	}

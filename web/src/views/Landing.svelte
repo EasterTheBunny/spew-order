@@ -15,13 +15,13 @@
               <dd>Limit and Market</dd>
 
               <dt>Currencies:</dt>
-              <dd>BTC, ETH, BCH</dd>
+              <dd>BTC, ETH, BCH, DOGE</dd>
 
               <dt>Funding:</dt>
-              <dd>BTC, ETH</dd>
+              <dd>BTC, ETH, BCH, DOGE</dd>
 
               <dt>Withdrawals:</dt>
-              <dd>BTC, ETH</dd>
+              <dd>BTC, ETH, BCH, DOGE</dd>
 
               <dt>Other:</dt>
               <dd>Realtime market prices</dd>

@@ -54,7 +54,18 @@ interface IfcTransactionCache {
 interface IfcBalanceResource {
   symbol: Currency
   quantity: string
-  funding: string
+}
+
+interface IfcAddressResource {
+  symbol: Currency
+  address: string
+}
+
+interface ExchangeAPI {
+  getActiveAccountFunc(): (accountID: string) => Promise<IfcAccountResource>
+  getOrderFunc(): (accountID: string, data: IfcOrderResource) => Promise<IfcOrderResource[] | IfcOrderResource>
+  getTransactionFunc(): (accountID: string, data: IfcTransactionRequest) => Promise<IfcTransactionResource[] | IfcTransactionResource>
+  getAddressFunc(): (accountID: string, symbol: string) => Promise<IfcAddressResource>
 }
 
 interface IfcDataContext {

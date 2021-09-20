@@ -13,6 +13,9 @@
   }, {
     value: Currency.BitcoinCash,
     name: 'Bitcoin Cash',
+  }, {
+    value: Currency.Dogecoin,
+    name: 'Dogecoin',
   }]
 
 </script>

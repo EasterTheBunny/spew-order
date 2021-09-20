@@ -59,6 +59,20 @@ func (d *Router) AccountSubRoutes() func(r chi.Router) {
 		r.Get("/", d.Accounts.GetAccount())
 		r.Route("/orders", d.OrderRoutes())
 		r.Route("/transactions", d.TransactionRoutes())
+		r.Route("/addresses", d.AddressRoutes())
+	}
+}
+
+func (d *Router) AddressRoutes() func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Route(fmt.Sprintf("/{%s}", api.SymbolPathParamName), d.AddressSubRoutes())
+	}
+}
+
+func (d *Router) AddressSubRoutes() func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(d.Accounts.AddressCtx(d.Balance))
+		r.Get("/", d.Accounts.GetFundingAddress())
 	}
 }
 

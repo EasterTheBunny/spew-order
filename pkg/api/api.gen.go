@@ -30,7 +30,11 @@ const (
 
 // Defines values for SymbolType.
 const (
+	SymbolTypeBCH SymbolType = "BCH"
+
 	SymbolTypeBTC SymbolType = "BTC"
+
+	SymbolTypeDOGE SymbolType = "DOGE"
 
 	SymbolTypeETH SymbolType = "ETH"
 )
@@ -53,13 +57,20 @@ type Account struct {
 // Action type: * `BUY` - use base currency to buy target currency * `SELL` - sell target currency for base currency
 type ActionType string
 
+// AddressItem defines model for AddressItem.
+type AddressItem struct {
+	// Address hash for funding this balance
+	Address string `json:"address"`
+
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
+	Symbol SymbolType `json:"symbol"`
+}
+
 // BalanceItem defines model for BalanceItem.
 type BalanceItem struct {
-	// Address hash for funding this balance
-	Funding  string        `json:"funding"`
 	Quantity CurrencyValue `json:"quantity"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 	Symbol SymbolType `json:"symbol"`
 }
 
@@ -88,7 +99,7 @@ type LimitOrderRequest struct {
 	// Embedded struct due to allOf(#/components/schemas/OrderType)
 	OrderType `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 	Base     SymbolType    `json:"base"`
 	Price    CurrencyValue `json:"price"`
 	Quantity CurrencyValue `json:"quantity"`
@@ -99,7 +110,7 @@ type MarketOrderRequest struct {
 	// Embedded struct due to allOf(#/components/schemas/OrderType)
 	OrderType `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 	Base     SymbolType    `json:"base"`
 	Quantity CurrencyValue `json:"quantity"`
 }
@@ -109,10 +120,10 @@ type OrderRequest struct {
 	// Action type: * `BUY` - use base currency to buy target currency * `SELL` - sell target currency for base currency
 	Action ActionType `json:"action"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 	Base SymbolType `json:"base"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 	Target SymbolType       `json:"target"`
 	Type   OrderRequestType `json:"type"`
 }
@@ -147,7 +158,7 @@ type ResponseError struct {
 	Detail string `json:"detail"`
 }
 
-// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 type SymbolType string
 
 // Account balance change
@@ -156,7 +167,7 @@ type Transaction struct {
 	Orderid  string        `json:"orderid"`
 	Quantity CurrencyValue `json:"quantity"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 	Symbol          SymbolType `json:"symbol"`
 	Timestamp       string     `json:"timestamp"`
 	TransactionHash string     `json:"transactionHash"`
@@ -173,7 +184,7 @@ type TransactionRequest struct {
 	Address  string        `json:"address"`
 	Quantity CurrencyValue `json:"quantity"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
 	Symbol SymbolType `json:"symbol"`
 }
 
@@ -183,11 +194,14 @@ type TransactionType string
 // AccountPathParam defines model for AccountPathParam.
 type AccountPathParam string
 
-// OrderPathParam defines model for OrderPathParam.
-type OrderPathParam string
+// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier
+type OrderPathParam SymbolType
 
 // Symbol Type: * `OPEN` - incomplete order * `PARTIAL` - partial order * `FILLED` - filled order * `CANCELLED` - cancelled order
 type OrderStatusParam OrderStatus
+
+// SymbolPathParam defines model for SymbolPathParam.
+type SymbolPathParam string
 
 // GetApiAccountsAccountIDOrdersParams defines parameters for GetApiAccountsAccountIDOrders.
 type GetApiAccountsAccountIDOrdersParams struct {
