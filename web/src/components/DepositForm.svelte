@@ -5,19 +5,22 @@
   import Icon from '@smui/textfield/icon/styled'
   import CopyClipBoard from '../components/CopyClipBoard.svelte'
   import type { Currency } from '../constants'
+  import { getDataCtx } from "../exchange"
   import { getLocalization } from '../i18n'
 
-  export let balances: IfcBalanceResource[] = []
+  export let accountid: string = ""
 
   let selected: Currency
+  const {
+    api,
+  }: {
+    api: ExchangeAPI
+  } = getDataCtx()
 
-  const getHash: (c: Currency, b: IfcBalanceResource[]) => string = (c, b) => {
-    for (let x = 0; x < b.length; x++) {
-      if (b[x].symbol === c) {
-        return b[x].funding
-      }
-    }
-    return ""
+  async function getHash(c: Currency, a: string) {
+    let func = api.getAddressFunc()
+    const addr = await func(a, c)
+    return addr.address
   }
 
   const {t} = getLocalization()
@@ -29,7 +32,7 @@
 		app.$destroy();
   }
 
-  $: hash = !!selected ? getHash(selected, balances) : ""
+  $: hash = !!selected ? getHash(selected, accountid) : ""
 </script>
 
 <LayoutGrid>
@@ -39,18 +42,22 @@
     </div>
   
     {#if selected != null}
+    {#await hash then value}
     <div style="padding-top: 25px;">
-      <Textfield bind:value={hash} label="Deposit Address" on:click={copyHash} >
+      <Textfield value={value} label="Deposit Address" on:click={copyHash} >
         <Icon class="material-icons" slot="trailingIcon">content_copy</Icon>
       </Textfield>
     </div>
     <p>{$t('CopyAddressInstruction')}</p>
+    {/await}
     {/if}
   
   </Cell>
   <Cell span={6}>
     {#if selected != null}
-    <img src="https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl={hash}&choe=UTF-8" alt="{selected} deposit address qrcode" />
+    {#await hash then value}
+    <img src="https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl={value}&choe=UTF-8" alt="{selected} deposit address qrcode" />
+    {/await}
     {/if}
   </Cell>
 </LayoutGrid>

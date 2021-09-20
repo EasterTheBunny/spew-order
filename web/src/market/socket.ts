@@ -1,4 +1,5 @@
 import { OrderBookDataManager } from '../OrderBookDataManager'
+import { CoinbaseMarketMap } from '../constants'
 
 const socket: () => IfcDataSocket = () => {
   let WebSocketStateEnum = {CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3}
@@ -79,14 +80,9 @@ const socket: () => IfcDataSocket = () => {
       subscriptions = []
     }
 
-    const marketLookup = {
-      "BTC-ETH": "ETH-BTC",
-      "BTC-BCH": "BCH-BTC",
-    }
-
     const msg = {
       type: "subscribe",
-      product_ids: [marketLookup[m]],
+      product_ids: [CoinbaseMarketMap[m]],
       channels: ["level2", "ticker"],
     }
 
@@ -108,7 +104,7 @@ const socket: () => IfcDataSocket = () => {
       }
       openChannel()
     }
-    subscriptions.push(marketLookup[m])
+    subscriptions.push(CoinbaseMarketMap[m])
 
     return dataManager
   }

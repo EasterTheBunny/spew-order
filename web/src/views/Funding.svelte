@@ -35,7 +35,7 @@
         </TabBar>
 
         {#if active === 'Deposit'}
-        <DepositForm bind:balances={$account.balances} />
+        <DepositForm bind:accountid={$account.id} />
         {:else if active === 'Withdraw'}
         <WithdrawForm bind:balances={$account.balances} />
         {/if}

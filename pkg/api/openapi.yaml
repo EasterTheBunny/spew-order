@@ -35,6 +35,23 @@ paths:
                     $ref: '#/components/schemas/Account'
                   error:
                     $ref: '#/components/schemas/ResponseError'
+  /api/accounts/{accountID}/addresses/{symbolName}:
+    parameters:
+      - $ref: '#/components/parameters/AccountPathParam'
+      - $ref: '#/components/parameters/SymbolPathParam'
+    get:
+      description: Desc
+      responses:
+        200:
+          description: OK
+          content:
+            'application/json':
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AddressItem'
+                  error:
+                    $ref: '#/components/schemas/ResponseError'
   /api/accounts/{accountID}/transactions:
     parameters:
       - $ref: '#/components/parameters/AccountPathParam'
@@ -180,12 +197,20 @@ components:
       schema:
         type: string
       description: The uuid account identifier
+    SymbolPathParam:
+      in: path
+      name: symbolName
+      required: true
+      schema:
+        type: string
+      description: Currency trade symbol
     OrderPathParam:
       in: path
       name: orderID
       required: true
       schema:
         type: string
+        $ref: '#/components/schemas/SymbolType'
       description: The uuid order identifier
     OrderStatusParam:
       in: query
@@ -219,10 +244,14 @@ components:
       enum:
       - BTC
       - ETH
+      - BCH
+      - DOGE
       description: >
         Symbol Type:
         * `BTC` - bitcoin currency identifier
         * `ETH` - ethereum currency identifier
+        * `BCH` - bitcoin cash currency identifier
+        * `DOGE` - dogecoin currency identifier
     TransactionType:
       type: string
       enum:
@@ -318,7 +347,15 @@ components:
           $ref: '#/components/schemas/SymbolType'
         quantity:
           $ref: '#/components/schemas/CurrencyValue'
-        funding:
+    AddressItem:
+      type: object
+      required:
+      - address
+      - symbol
+      properties:
+        symbol:
+          $ref: '#/components/schemas/SymbolType'
+        address:
           type: string
           description: Address hash for funding this balance
     OrderRequest:

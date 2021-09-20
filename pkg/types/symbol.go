@@ -21,12 +21,15 @@ const (
 	SymbolEthereum Symbol = 4
 	// SymbolBitcoinCash ...
 	SymbolBitcoinCash Symbol = 8
+	// SymbolDogecoin ...
+	SymbolDogecoin Symbol = 16
 )
 
 const (
 	symbolBitcoinName     = "BTC"
 	symbolEthereumName    = "ETH"
 	symbolBitcoinCashName = "BCH"
+	symbolDogecoinName    = "DOGE"
 )
 
 var (
@@ -37,6 +40,8 @@ var (
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolEthereumName),
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolBitcoinCashName),
 		fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
+		fmt.Sprintf("%s%s", symbolBitcoinName, symbolDogecoinName),
+		fmt.Sprintf("%s%s", symbolEthereumName, symbolDogecoinName),
 	}
 )
 
@@ -50,19 +55,21 @@ func (s Symbol) String() string {
 		return symbolEthereumName
 	case SymbolBitcoinCash:
 		return symbolBitcoinCashName
+	case SymbolDogecoin:
+		return symbolDogecoinName
 	default:
 		return ""
 	}
 }
 
 func (s Symbol) typeInRange() bool {
-	return s >= SymbolBitcoin && s <= SymbolBitcoinCash
+	return s >= SymbolBitcoin && s <= SymbolDogecoin
 }
 
 // RoundingPlace provides expected rounding values for each symbol
 func (s Symbol) RoundingPlace() int32 {
 	switch s {
-	case SymbolBitcoin, SymbolBitcoinCash:
+	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		return 8
 	case SymbolEthereum:
 		return 18
@@ -73,7 +80,7 @@ func (s Symbol) RoundingPlace() int32 {
 
 func (s Symbol) MinimumFee() decimal.Decimal {
 	switch s {
-	case SymbolBitcoin, SymbolBitcoinCash:
+	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		return decimal.NewFromFloat(0.00000001)
 	case SymbolEthereum:
 		return decimal.NewFromFloat(0.000000000000000001)
@@ -87,7 +94,7 @@ func (s Symbol) MinimumFee() decimal.Decimal {
 func (s Symbol) ValidateAddress(a string) bool {
 
 	switch s {
-	case SymbolBitcoin, SymbolBitcoinCash:
+	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		// A Bitcoin address is between 25 and 34 characters long;
 		if len(a) < 25 || len(a) > 34 {
 			return false
@@ -201,16 +208,27 @@ func (s *Symbol) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	switch str {
-	case symbolBitcoinName:
-		*s = SymbolBitcoin
-	case symbolEthereumName:
-		*s = SymbolEthereum
-	case symbolBitcoinCashName:
-		*s = SymbolBitcoinCash
-	default:
-		return ErrSymbolUnrecognized
+	sym, err := FromString(str)
+	if err != nil {
+		return err
 	}
 
+	*s = sym
+
 	return nil
+}
+
+func FromString(str string) (Symbol, error) {
+	switch str {
+	case symbolBitcoinName:
+		return SymbolBitcoin, nil
+	case symbolEthereumName:
+		return SymbolEthereum, nil
+	case symbolBitcoinCashName:
+		return SymbolBitcoinCash, nil
+	case symbolDogecoinName:
+		return SymbolDogecoin, nil
+	default:
+		return 0, ErrSymbolUnrecognized
+	}
 }

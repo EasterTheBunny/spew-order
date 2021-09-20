@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/easterthebunny/spew-order/internal/funding"
@@ -61,7 +60,6 @@ func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account,
 
 	// TODO: very inefficient method of collecting account balances; refactor
 	var bal decimal.Decimal
-	var addr *funding.Address
 	for _, s := range a.ActiveSymbols() {
 		bal, err = m.GetAvailableBalance(ctx, a, s)
 		if err != nil {
@@ -70,22 +68,6 @@ func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account,
 		}
 
 		a.Balances[s] = bal
-
-		// check for funding address; if it doesn't exist of that symbol or it
-		// is blank, create a new one
-		if x, ok := a.Addresses[s]; !ok || x == "" {
-			addr, err = m.funding.CreateAddress(s)
-			if err == nil {
-				dirty = true
-				a.Addresses[s] = addr.Hash
-				p.Addresses = append(p.Addresses, persist.FundingAddress{Symbol: s, Address: addr.Hash})
-			}
-
-			// log errors instead of bubbling them up
-			if err != nil {
-				log.Printf("BalanceManager::GetAccount.CreateAddress::%s", err)
-			}
-		}
 	}
 
 	// only save the value once; protect against rapid back to back updates
@@ -94,6 +76,44 @@ func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account,
 		if err != nil {
 			err = fmt.Errorf("BalanceManager::GetAccount.Save::%w", err)
 			return nil, err
+		}
+	}
+
+	return
+}
+
+func (m *BalanceManager) GetFundingAddress(ctx context.Context, a *Account, s types.Symbol) (addr *funding.Address, err error) {
+	// check for funding address; if it doesn't exist of that symbol or it
+	// is blank, create a new one
+	x, ok := a.Addresses[s]
+	if !ok || x == "" {
+		addr, err = m.funding.CreateAddress(s)
+		if err == nil {
+			a.Addresses[s] = addr.Hash
+
+			var p *persist.Account
+			p, err = m.acct.Find(ctx, a.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			p.Addresses = append(p.Addresses, persist.FundingAddress{Symbol: s, Address: addr.Hash})
+
+			err = m.acct.Save(ctx, p)
+			if err != nil {
+				err = fmt.Errorf("BalanceManager::GetAccount.Save::%w", err)
+				return nil, err
+			}
+		}
+
+		// log errors instead of bubbling them up
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		addr = &funding.Address{
+			ID:   "",
+			Hash: x,
 		}
 	}
 

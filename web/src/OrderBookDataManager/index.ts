@@ -46,18 +46,18 @@ export class OrderBookDataManager {
     this.tick = tick
   }
 
-  public topBids(): string[][] {
+  public topBids(precision: number): string[][] {
     if (!this.bids) {
       return []
     }
-    return this.bids.top(10)
+    return this.bids.top(10, precision)
   }
 
-  public topAsks(): string[][] {
+  public topAsks(precision: number): string[][] {
     if (!this.asks) {
       return []
     }
-    return this.asks.top(10)
+    return this.asks.top(10, precision)
   }
 
   public lastTick(): CBCoinbaseTicker {
@@ -92,19 +92,19 @@ class OrderedValues {
     delete this.values[key]
   }
 
-  public top(count: number): string[][] {
+  public top(count: number, precision: number): string[][] {
     if (this.set.length == 0) {
       return []
     }
 
     let bins = {}
-    const exponent = Math.pow(10, 3)
+    const exponent = Math.pow(10, precision)
 
     let cnt = 0
     let iterator = this.set.beginIterator()
     while (iterator.value() != null && cnt <= count) {
       const key = iterator.value()
-      const binkey = (Math.round(parseFloat(key) * exponent) / exponent).toFixed(3)
+      const binkey = (Math.round(parseFloat(key) * exponent) / exponent).toFixed(precision)
 
       if (!!bins[binkey]) {
         bins[binkey] = bins[binkey]+parseFloat(this.values[key])
@@ -119,7 +119,7 @@ class OrderedValues {
     }
 
     return Object.keys(bins).map(k => {
-      return [k, bins[k].toFixed(3)]
+      return [k, bins[k]]
     })
   }
 

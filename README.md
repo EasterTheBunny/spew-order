@@ -27,3 +27,8 @@ $ git secret tell <user@email.com>
 ```
 
 For more information, visit the documentation: [git-secret docs](https://git-secret.io/#commands) [gpg docs](https://keyring.debian.org/creating-key.html)
+
+To set up default credentials, do the following:
+```
+$ export GOOGLE_APPLICATION_CREDENTIALS=/workspaces/spew-order/configurations/key.json
+```

@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/easterthebunny/render"
 	"github.com/easterthebunny/spew-order/internal/contexts"
+	"github.com/easterthebunny/spew-order/internal/funding"
 	"github.com/easterthebunny/spew-order/internal/persist"
 	"github.com/easterthebunny/spew-order/pkg/api"
 	"github.com/easterthebunny/spew-order/pkg/domain"
@@ -53,9 +55,6 @@ func (h *AccountHandler) GetAccount() func(w http.ResponseWriter, r *http.Reques
 		items := []api.BalanceItem{}
 		for _, s := range acct.ActiveSymbols() {
 			i := api.BalanceItem{}
-			if hash, ok := acct.Addresses[s]; ok {
-				i.Funding = hash
-			}
 			if bal, ok := acct.Balances[s]; ok {
 				i.Quantity = api.CurrencyValue(bal.StringFixedBank(s.RoundingPlace()))
 			}
@@ -208,6 +207,19 @@ func (h *AccountHandler) GetAccountTransactions() func(w http.ResponseWriter, r 
 	}
 }
 
+func (h *AccountHandler) GetFundingAddress() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		addr := contexts.GetAddress(ctx)
+
+		out := api.AddressItem{
+			Address: addr.Hash,
+		}
+
+		render.Render(w, r, HTTPNewOKResponse(&out))
+	}
+}
+
 func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -239,6 +251,46 @@ func (h *AccountHandler) OrderCtx() func(http.Handler) http.Handler {
 			}
 
 			ctx = contexts.AttachOrder(ctx, *ctxOrder)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func (h *AccountHandler) AddressCtx(bm *domain.BalanceManager) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var ctxAddr *funding.Address
+
+			ctx := r.Context()
+
+			acct := contexts.GetAccount(ctx)
+
+			if symbolName := chi.URLParam(r, api.SymbolPathParamName); symbolName != "" {
+				sym, err := types.FromString(strings.ToUpper(symbolName))
+				if err != nil {
+					render.Render(w, r, HTTPBadRequest(err))
+					return
+				}
+
+				// check for funding address; if it doesn't exist of that symbol or it
+				// is blank, create a new one
+				ctxAddr, err = bm.GetFundingAddress(ctx, acct, sym)
+				if err != nil {
+					render.Render(w, r, HTTPBadRequest(errors.New("address could not be created")))
+					return
+				}
+
+			} else {
+				render.Render(w, r, HTTPBadRequest(errors.New("invalid symbol")))
+				return
+			}
+
+			if ctxAddr == nil {
+				render.Render(w, r, HTTPNotFound(errors.New("address not found")))
+				return
+			}
+
+			ctx = contexts.AttachAddress(r.Context(), *ctxAddr)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

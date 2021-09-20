@@ -5,6 +5,7 @@
   import axios from "axios"
   import PriceHistoryChartFactory from '../charts/pricehistory'
   import { getMarketCtx } from '../market'
+  import { CoinbaseMarketMap } from '../constants'
 
   let el
   let chart: PriceHistoryChart
@@ -59,14 +60,8 @@
       })
 
       const m = mkt.base + "-" + mkt.target
-      const marketLookup = {
-        "BTC-ETH": "ETH-BTC",
-        "BTC-BCH": "BCH-BTC",
-      }
-      console.log(m)
-      console.log(marketLookup[m])
 
-      api.get("/products/"+marketLookup[m]+"/candles?granularity=3600").then((r: AxiosResponse) => {
+      api.get("/products/"+CoinbaseMarketMap[m]+"/candles?granularity=3600").then((r: AxiosResponse) => {
 
         let data = r.data.slice(0, 100)
     
