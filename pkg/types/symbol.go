@@ -23,6 +23,8 @@ const (
 	SymbolBitcoinCash Symbol = 8
 	// SymbolDogecoin ...
 	SymbolDogecoin Symbol = 16
+	// SymbolUniswap ...
+	SymbolUniswap Symbol = 20
 )
 
 const (
@@ -30,6 +32,7 @@ const (
 	symbolEthereumName    = "ETH"
 	symbolBitcoinCashName = "BCH"
 	symbolDogecoinName    = "DOGE"
+	symbolUniswapName     = "UNI"
 )
 
 var (
@@ -39,9 +42,10 @@ var (
 	ValidPairs            = []string{
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolEthereumName),
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolBitcoinCashName),
-		fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
+		// fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolDogecoinName),
-		fmt.Sprintf("%s%s", symbolEthereumName, symbolDogecoinName),
+		// fmt.Sprintf("%s%s", symbolEthereumName, symbolDogecoinName),
+		fmt.Sprintf("%s%s", symbolBitcoinName, symbolUniswapName),
 	}
 )
 
@@ -57,13 +61,15 @@ func (s Symbol) String() string {
 		return symbolBitcoinCashName
 	case SymbolDogecoin:
 		return symbolDogecoinName
+	case SymbolUniswap:
+		return symbolUniswapName
 	default:
 		return ""
 	}
 }
 
 func (s Symbol) typeInRange() bool {
-	return s >= SymbolBitcoin && s <= SymbolDogecoin
+	return s >= SymbolBitcoin && s <= SymbolUniswap
 }
 
 // RoundingPlace provides expected rounding values for each symbol
@@ -71,7 +77,7 @@ func (s Symbol) RoundingPlace() int32 {
 	switch s {
 	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		return 8
-	case SymbolEthereum:
+	case SymbolEthereum, SymbolUniswap:
 		return 18
 	default:
 		return 8
@@ -82,7 +88,7 @@ func (s Symbol) MinimumFee() decimal.Decimal {
 	switch s {
 	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		return decimal.NewFromFloat(0.00000001)
-	case SymbolEthereum:
+	case SymbolEthereum, SymbolUniswap:
 		return decimal.NewFromFloat(0.000000000000000001)
 	default:
 		return decimal.NewFromInt(0)
@@ -109,7 +115,7 @@ func (s Symbol) ValidateAddress(a string) bool {
 		if exceptionLetters.MatchString(a) {
 			return false
 		}
-	case SymbolEthereum:
+	case SymbolEthereum, SymbolUniswap:
 		return validateEIP55(a)
 	}
 
@@ -228,6 +234,8 @@ func FromString(str string) (Symbol, error) {
 		return SymbolBitcoinCash, nil
 	case symbolDogecoinName:
 		return SymbolDogecoin, nil
+	case symbolUniswapName:
+		return SymbolUniswap, nil
 	default:
 		return 0, ErrSymbolUnrecognized
 	}
