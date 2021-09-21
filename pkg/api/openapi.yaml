@@ -246,12 +246,14 @@ components:
       - ETH
       - BCH
       - DOGE
+      - UNI
       description: >
         Symbol Type:
         * `BTC` - bitcoin currency identifier
         * `ETH` - ethereum currency identifier
         * `BCH` - bitcoin cash currency identifier
         * `DOGE` - dogecoin currency identifier
+        * `UNI` - uniswap currency identifer
     TransactionType:
       type: string
       enum:

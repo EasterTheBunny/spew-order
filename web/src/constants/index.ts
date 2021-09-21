@@ -13,6 +13,7 @@ export enum Currency {
   Ethereum = "ETH",
   BitcoinCash = 'BCH',
   Dogecoin = "DOGE",
+  Uniswap = "UNI",
 }
 
 export enum OrderStatus {
@@ -46,6 +47,10 @@ export const markets: IfcMarket[] = [
     base: Currency.Bitcoin,
     target: Currency.Dogecoin,
   },
+  {
+    base: Currency.Bitcoin,
+    target: Currency.Uniswap,
+  },
 ]
 
 // left is this exchange; right is coinbase
@@ -53,6 +58,7 @@ export const CoinbaseMarketMap = {
   "BTC-ETH": "ETH-BTC",
   "BTC-BCH": "BCH-BTC",
   "BTC-DOGE": "DOGE-BTC",
+  "BTC-UNI": "UNI-BTC",
 }
 
 export const validMarket: (market: IfcMarket) => boolean = (market) => {
@@ -77,6 +83,7 @@ export const marketFromString: (market: string) => IfcMarket | null = (market) =
     Currency.Ethereum,
     Currency.BitcoinCash,
     Currency.Dogecoin,
+    Currency.Uniswap,
   ]
 
   if (matches.length == 3) {
