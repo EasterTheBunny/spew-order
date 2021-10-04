@@ -1,45 +1,59 @@
 <script type="ts">
   import LayoutGrid, { Cell } from "@smui/layout-grid/styled"
-  import Paper, { Title, Content } from "@smui/paper/styled"
 </script>
 
 <main>
   <LayoutGrid>
-    <Cell span={6}>
-      <div class="info-container">
-        <Paper color="primary">
-          <Title class="no-focus-border">Current Features</Title>
-          <Content class="info-content">
-            <dl>
-              <dt>Order Types:</dt>
-              <dd>Limit and Market</dd>
-
-              <dt>Currencies:</dt>
-              <dd>BTC, ETH, BCH, DOGE</dd>
-
-              <dt>Funding:</dt>
-              <dd>BTC, ETH, BCH, DOGE</dd>
-
-              <dt>Withdrawals:</dt>
-              <dd>BTC, ETH, BCH, DOGE</dd>
-
-              <dt>Other:</dt>
-              <dd>Realtime market prices</dd>
-            </dl>
-            <img src="exchange-screenshot.png" alt="cryptocurrency exchange" />
-          </Content>
-        </Paper>
-      </div>
+    <Cell align="center" span={12}>
+      <h1 class="no-focus-border">Cryptocurrency Simplified</h1>
     </Cell>
-    <Cell span={6}>
-      <iframe src="https://cdn.forms-content.sg-form.com/35a20b74-0f35-11ec-8a80-3a9a2a8bfcfe" style="width:100%;height:600px;border:none;"/>
+  </LayoutGrid>
+
+  <LayoutGrid>
+    <Cell align="left" spanDevices={{ desktop: 4, tablet: 6, phone: 12 }}>
+      <h2 class="no-focus-border">Simple Interface</h2>
+      <p>Easy tools to get you started. Trade with Bitcoin and Ethereum with ease against a growing number of other currencies.</p>
+    </Cell>
+    <Cell spanDevices={{ desktop: 8, tablet: 6, phone: 12 }}>
+      <img src="cipher-mountain-ui-snapshot-zoom-book.png" alt="cryptocurrency exchange" />
+    </Cell>
+  </LayoutGrid>
+  
+  <LayoutGrid>
+    <Cell spanDevices={{ desktop: 8, tablet: 6, phone: 12 }}>
+      <img src="cipher-mountain-ui-snapshot-zoom-order.png" alt="cryptocurrency exchange" />
+    </Cell>
+    <Cell align="left" spanDevices={{ desktop: 4, tablet: 6, phone: 12 }}>
+      <h2 class="no-focus-border">Trade Popular Currencies</h2>
+      <p>Open limit and market orders on some of your favorite cryptocurrencies.</p>
+      <ul>
+        <li>Bitcoin</li>
+        <li>Ethereum</li>
+        <li>Bitcoin Cash</li>
+        <li>Dogecoin</li>
+        <li>Uniswap</li>
+      </ul>
+    </Cell>
+  </LayoutGrid>
+
+  <LayoutGrid>
+    <Cell spanDevices={{ desktop: 4, tablet: 12, phone: 12 }}>
+      <h3>Biometric Security</h3>
+      <p>Industry leading security for supported devices</p>
+    </Cell>
+    <Cell spanDevices={{ desktop: 4, tablet: 12, phone: 12 }}>
+      <h3>Realtime Data</h3>
+      <p>Receive up to the second market information</p>
+    </Cell>
+    <Cell spanDevices={{ desktop: 4, tablet: 12, phone: 12 }}>
+      <h3>Integrity First</h3>
+      <p>Your assets are safe and your data is secure</p>
     </Cell>
   </LayoutGrid>
 </main>
   
 <style>
   main {
-		text-align: center;
 		padding: 1em;
 		max-width: 240px;
 		margin: 0 auto;
@@ -50,9 +64,6 @@
 			max-width: none;
 		}
 	}
-  .info-container {
-    padding-top: 20px;
-  }
 
   * :global(.info-content) {
     text-align: left;
@@ -60,29 +71,6 @@
 
   * :global(.no-focus-border:focus-visible) {
     outline: none;
-  }
-  dl {
-    width: 100%;
-    overflow: hidden;
-    padding: 0;
-    margin: 0
-  }
-  dt {
-    float: left;
-    width: 35%;
-    /* adjust the width; make sure the total of both is 100% */
-    padding: 0;
-    margin: 0;
-    margin-right: 10px;
-    text-align: right;
-    font-weight: bold;
-  }
-  dd {
-    float: left;
-    width: 50%;
-    /* adjust the width; make sure the total of both is 100% */
-    padding: 0;
-    margin: 0
   }
 
   img {
