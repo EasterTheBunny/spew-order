@@ -34,11 +34,9 @@ it('loads account data when user updates', () => {
     balances: [{
       symbol: "BTC",
       quantity: "1.234",
-      funding: "funding-test-hash-btc",
     },{
       symbol: "ETH",
       quantity: "24.23498",
-      funding: "funding-test-hash-eth",
     }],
   }
   let v = 0
