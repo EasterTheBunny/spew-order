@@ -110,9 +110,22 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						updateError = fmt.Errorf("update hold::%w, ", err)
 					}
 
+					// attempt to remove hold on fee
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: o.Account}, types.SymbolCipherMtn, ky(o.FeeHoldID))
+					if err != nil {
+						// errors should not be hard errors
+						updateError = fmt.Errorf("update hold::%w, ", err)
+					}
+
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
+					if err != nil {
+						updateError = fmt.Errorf("remove hold::%w, ", err)
+					}
+
+					// attempt to remove fee hold
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
 					if err != nil {
 						updateError = fmt.Errorf("remove hold::%w, ", err)
 					}
@@ -143,9 +156,21 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						updateError = fmt.Errorf("update hold::%w, ", err)
 					}
 
+					// attempt to remove fee hold id
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+					if err != nil {
+						updateError = fmt.Errorf("update hold::%w, ", err)
+					}
+
 					// remove hold on book order since that order is filled
 					smb, _ = book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, smb, ky(book.Order.HoldID))
+					if err != nil {
+						updateError = fmt.Errorf("remove hold::%w, ", err)
+					}
+
+					// attempt to remove fee hold
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
 					if err != nil {
 						updateError = fmt.Errorf("remove hold::%w, ", err)
 					}
@@ -174,9 +199,21 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						updateError = fmt.Errorf("remove hold::%w, ", err)
 					}
 
+					// remove hold on fee amount
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
+					if err != nil {
+						updateError = fmt.Errorf("remove hold::%w, ", err)
+					}
+
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
 					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
+					if err != nil {
+						updateError = fmt.Errorf("remove hold::%w, ", err)
+					}
+
+					// remove fee hold
+					err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
 					if err != nil {
 						updateError = fmt.Errorf("remove hold::%w, ", err)
 					}

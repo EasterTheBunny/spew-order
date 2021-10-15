@@ -30,7 +30,13 @@ type Account struct {
 }
 
 func (Account) ActiveSymbols() []types.Symbol {
-	return []types.Symbol{types.SymbolBitcoin, types.SymbolEthereum, types.SymbolBitcoinCash, types.SymbolDogecoin}
+	return []types.Symbol{
+		types.SymbolBitcoin,
+		types.SymbolEthereum,
+		types.SymbolBitcoinCash,
+		types.SymbolDogecoin,
+		types.SymbolCipherMtn,
+	}
 }
 
 // NewAccount ...

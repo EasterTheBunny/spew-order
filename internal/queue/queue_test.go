@@ -66,6 +66,7 @@ func TestPublishOrderRequest(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		// set an initial amount in the account that is equal to the next order
 		svc.PostAmtToBalance(ctx, acct, types.SymbolBitcoin, decimal.NewFromFloat(1.0))
+		svc.PostAmtToBalance(ctx, acct, types.SymbolCipherMtn, decimal.NewFromFloat(100))
 
 		or := types.OrderRequest{
 			Base:   types.SymbolBitcoin,

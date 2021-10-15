@@ -19,8 +19,9 @@ const (
 )
 
 var (
-	MakerFee = 0.0005
-	TakerFee = 0.0015
+	MakerFee    = 0.0005
+	TakerFee    = 0.0015
+	StandardFee = decimal.NewFromInt(100)
 )
 
 // Order is the complete order representation. Built by composition of the Request.
@@ -42,6 +43,7 @@ func (o Order) MarshalJSON() ([]byte, error) {
 	or["id"] = o.ID.String()
 	or["owner"] = o.Owner
 	or["holdID"] = o.HoldID
+	or["feeHoldID"] = o.FeeHoldID
 	or["account"] = o.OrderRequest.Account.String()
 	or["timestamp"] = o.Timestamp.UnixNano()
 
@@ -63,6 +65,7 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 		ID        uuid.UUID `json:"id"`
 		Owner     string    `json:"owner"`
 		HoldID    string    `json:"holdID"`
+		FeeHoldID string    `json:"feeHoldID"`
 		Account   uuid.UUID `json:"account"`
 		Timestamp int64     `json:"timestamp"`
 	}{}
@@ -74,6 +77,7 @@ func (o *Order) UnmarshalJSON(b []byte) error {
 	o.OrderRequest.Account = tp.Account
 	o.OrderRequest.Owner = tp.Owner
 	o.OrderRequest.HoldID = tp.HoldID
+	o.OrderRequest.FeeHoldID = tp.FeeHoldID
 	o.ID = tp.ID
 	o.Timestamp = time.Unix(0, tp.Timestamp)
 
@@ -100,43 +104,17 @@ func (o *Order) Resolve(order Order) (*Transaction, *Order) {
 		tr.A.AccountID = o.Account
 		tr.A.Order = *o
 
-		// TODO: calculate fee schedule from order history
-		// 30 day volume	-	taker	-	maker
-		// promotion		-	0.150%	-	0.050%
-		// <  20 BTC		-	0.350%	-	0.150%
-		// >= 200 BTC		-	0.250%	-	0.150%
-		// >= 500 BTC		-	0.200%	-	0.100%
-		// >= 1500 BTC		-	0.150%	-	0.090%
-		// >= 3000 BTC		-	0.100%	-	0.075%
-
-		// calculate the maker fee using promotion amount
-		feeA := tr.A.AddQuantity.Mul(decimal.NewFromFloat(MakerFee)).StringFixedBank(tr.A.AddSymbol.RoundingPlace())
-		// TODO: the following error is being ignored. this is probably dangerous
-		tr.A.FeeQuantity, _ = decimal.NewFromString(feeA)
-		if tr.A.FeeQuantity.LessThan(tr.A.AddSymbol.MinimumFee()) {
-			tr.A.FeeQuantity = tr.A.AddSymbol.MinimumFee()
-		}
-
-		if tr.A.AddQuantity.LessThan(tr.A.FeeQuantity) {
-			tr.A.AddQuantity = decimal.NewFromInt(0)
-		} else {
-			tr.A.AddQuantity = tr.A.AddQuantity.Sub(tr.A.FeeQuantity)
+		if !tr.A.Order.FeePaid {
+			tr.A.FeeQuantity = StandardFee
+			tr.A.Order.FeePaid = true
 		}
 
 		tr.B.AccountID = order.Account
 		tr.B.Order = order
 
-		// calculate the taker fee using promotion amount
-		feeB := tr.B.AddQuantity.Mul(decimal.NewFromFloat(TakerFee)).StringFixedBank(tr.B.AddSymbol.RoundingPlace())
-		tr.B.FeeQuantity, _ = decimal.NewFromString(feeB)
-		if tr.B.FeeQuantity.LessThan(tr.B.AddSymbol.MinimumFee()) {
-			tr.B.FeeQuantity = tr.B.AddSymbol.MinimumFee()
-		}
-
-		if tr.B.AddQuantity.LessThan(tr.B.FeeQuantity) {
-			tr.B.AddQuantity = decimal.NewFromInt(0)
-		} else {
-			tr.B.AddQuantity = tr.B.AddQuantity.Sub(tr.B.FeeQuantity)
+		if !tr.B.Order.FeePaid {
+			tr.B.FeeQuantity = StandardFee
+			tr.B.Order.FeePaid = true
 		}
 	}
 

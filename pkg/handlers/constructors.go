@@ -12,11 +12,11 @@ import (
 	"github.com/easterthebunny/spew-order/pkg/domain"
 )
 
-func NewGoogleOrderBook(client *firestore.Client, f funding.Source) *domain.OrderBook {
+func NewGoogleOrderBook(client *firestore.Client, f ...funding.Source) *domain.OrderBook {
 	br := firebase.NewBookRepository(client)
 	a := firebase.NewAccountRepository(client)
 	l := firebase.NewLedgerRepository(client)
-	bs := domain.NewBalanceManager(a, l, f)
+	bs := domain.NewBalanceManager(a, l, f...)
 	return domain.NewOrderBook(br, bs)
 }
 
@@ -49,15 +49,17 @@ func NewFundingSource(t string, apiKey, apiSecret *string, audit io.Writer, pubk
 			APIKey:        *apiKey,
 			APISecret:     *apiSecret,
 		})
+	case "CMTN":
+		return funding.NewAirdropSource(*apiKey)
 	default:
 		return funding.NewMockSource()
 	}
 }
 
-func NewDefaultRouter(client *firestore.Client, ps queue.PubSub, pr middleware.AuthenticationProvider, f funding.Source) (*Router, error) {
+func NewDefaultRouter(client *firestore.Client, ps queue.PubSub, pr middleware.AuthenticationProvider, f ...funding.Source) (*Router, error) {
 	a := firebase.NewAccountRepository(client)
 	l := firebase.NewLedgerRepository(client)
-	bs := domain.NewBalanceManager(a, l, f)
+	bs := domain.NewBalanceManager(a, l, f...)
 
 	r := Router{
 		AuthStore: firebase.NewAuthorizationRepository(client),
@@ -70,11 +72,13 @@ func NewDefaultRouter(client *firestore.Client, ps queue.PubSub, pr middleware.A
 	return &r, nil
 }
 
-func NewWebhookRouter(client *firestore.Client, f funding.Source) *WebhookRouter {
+func NewWebhookRouter(client *firestore.Client, f funding.Source, d funding.Source) *WebhookRouter {
 	a := firebase.NewAccountRepository(client)
 	l := firebase.NewLedgerRepository(client)
 
-	return &WebhookRouter{Funding: NewFundingHandler(a, l, f)}
+	return &WebhookRouter{
+		Funding: NewFundingHandler(a, l, f),
+		Airdrop: NewFundingHandler(a, l, d)}
 }
 
 func NewAuditRouter(client *firestore.Client) *AuditRouter {

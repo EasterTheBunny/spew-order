@@ -16,6 +16,7 @@ import (
 	"github.com/easterthebunny/spew-order/pkg/domain"
 	"github.com/easterthebunny/spew-order/pkg/handlers"
 	"github.com/easterthebunny/spew-order/pkg/types"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -44,6 +45,10 @@ func init() {
 
 	queue.OrderTopic = orderTopic
 
+	// add funds to new accounts
+	domain.FundNewAccounts = true
+	domain.NewAccountFunds = decimal.NewFromInt(5000)
+
 	pubKey := strings.NewReader(getEnvVar(envCoinbasePubKey))
 	ky := getEnvVar(envCoinbaseAPIKey)
 	sct := getEnvVar(envCoinbaseAPISecret)
@@ -52,6 +57,7 @@ func init() {
 		srcType = "MOCK"
 	}
 	f := handlers.NewFundingSource(srcType, &ky, &sct, log.Writer(), pubKey)
+	air := handlers.NewFundingSource("CMTN", &ky, nil, nil, nil)
 	ps := handlers.NewGooglePubSub(projectID)
 
 	client, err := firestore.NewClient(context.Background(), projectID)
@@ -59,14 +65,14 @@ func init() {
 		panic(err)
 	}
 
-	GS = handlers.NewGoogleOrderBook(client, f)
+	GS = handlers.NewGoogleOrderBook(client, f, air)
 
 	jwt, err := handlers.NewJWTAuth(getEnvVar(envIdentityURI))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	rh, err := handlers.NewDefaultRouter(client, ps, jwt, f)
+	rh, err := handlers.NewDefaultRouter(client, ps, jwt, f, air)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -75,7 +81,7 @@ func init() {
 	types.TakerFee = 0.0050
 
 	Router = rh.Routes()
-	Webhooks = handlers.NewWebhookRouter(client, f).Routes()
+	Webhooks = handlers.NewWebhookRouter(client, f, air).Routes()
 	Audit = handlers.NewAuditRouter(client).Routes()
 }
 

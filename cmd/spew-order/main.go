@@ -43,19 +43,23 @@ func main() {
 		panic(err)
 	}
 
+	airdropKey := "test"
+
 	f := handlers.NewFundingSource("MOCK", nil, nil, nil, nil)
-	book := handlers.NewGoogleOrderBook(client, f)
+	air := handlers.NewFundingSource("CMTN", &airdropKey, nil, nil, nil)
+
+	book := handlers.NewGoogleOrderBook(client, f, air)
 	ps := queue.NewMockPubSub()
 	jwt := &mockJWTAuth{}
 	subscription := make(chan domain.PubSubMessage)
 	ps.Subscribe(queue.OrderTopic, subscription)
 
-	rh, err := handlers.NewDefaultRouter(client, ps, jwt, f)
+	rh, err := handlers.NewDefaultRouter(client, ps, jwt, f, air)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	wh := handlers.NewWebhookRouter(client, f)
+	wh := handlers.NewWebhookRouter(client, f, air)
 	ah := handlers.NewAuditRouter(client)
 
 	wg := new(sync.WaitGroup)
