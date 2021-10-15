@@ -482,6 +482,13 @@ func (m *BalanceManager) makeOrderRecords(ctx context.Context, entry types.Balan
 	}
 
 	if entry.FeeQuantity.GreaterThan(decimal.NewFromInt(0)) {
+
+		// for flat fees apply the amount
+		err = m.PostAmtToBalance(ctx, a, types.SymbolCipherMtn, entry.FeeQuantity.Mul(decimal.NewFromInt(-1)))
+		if err != nil {
+			return err
+		}
+
 		err = m.ledger.RecordFee(ctx, types.SymbolCipherMtn, entry.FeeQuantity)
 		if err != nil {
 			return err
