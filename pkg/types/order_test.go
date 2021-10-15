@@ -1134,12 +1134,13 @@ func TestOrderHold(t *testing.T) {
 func TestMarshalOrder(t *testing.T) {
 	order := NewOrder()
 	order.OrderRequest = OrderRequest{
-		Owner:   uuid.NewV4().String(),
-		Account: uuid.NewV4(),
-		Base:    SymbolBitcoin,
-		HoldID:  uuid.NewV4().String(),
-		Target:  SymbolEthereum,
-		Action:  ActionTypeBuy,
+		Owner:     uuid.NewV4().String(),
+		Account:   uuid.NewV4(),
+		Base:      SymbolBitcoin,
+		FeeHoldID: uuid.NewV4().String(),
+		HoldID:    uuid.NewV4().String(),
+		Target:    SymbolEthereum,
+		Action:    ActionTypeBuy,
 		Type: &MarketOrderType{
 			Base:     SymbolBitcoin,
 			Quantity: decimal.NewFromFloat(0.001),
@@ -1149,8 +1150,8 @@ func TestMarshalOrder(t *testing.T) {
 	b, err := json.Marshal(order)
 	assert.NoError(t, err)
 
-	e := `{"account":"%s","action":"BUY","base":"BTC","holdID":"%s","id":"%s","owner":"%s","target":"ETH","timestamp":%d,"type":{"base":"BTC","name":"MARKET","quantity":"0.001"}}`
-	expected := fmt.Sprintf(e, order.Account, order.HoldID, order.ID, order.Owner, order.Timestamp.UnixNano())
+	e := `{"account":"%s","action":"BUY","base":"BTC","feeHoldID":"%s","holdID":"%s","id":"%s","owner":"%s","target":"ETH","timestamp":%d,"type":{"base":"BTC","name":"MARKET","quantity":"0.001"}}`
+	expected := fmt.Sprintf(e, order.Account, order.FeeHoldID, order.HoldID, order.ID, order.Owner, order.Timestamp.UnixNano())
 
 	assert.Equal(t, expected, string(b))
 }
