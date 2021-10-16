@@ -34,6 +34,8 @@ const (
 
 	SymbolTypeBTC SymbolType = "BTC"
 
+	SymbolTypeCMTN SymbolType = "CMTN"
+
 	SymbolTypeDOGE SymbolType = "DOGE"
 
 	SymbolTypeETH SymbolType = "ETH"
@@ -64,7 +66,7 @@ type AddressItem struct {
 	// Address hash for funding this balance
 	Address string `json:"address"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Symbol SymbolType `json:"symbol"`
 }
 
@@ -72,7 +74,7 @@ type AddressItem struct {
 type BalanceItem struct {
 	Quantity CurrencyValue `json:"quantity"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Symbol SymbolType `json:"symbol"`
 }
 
@@ -101,7 +103,7 @@ type LimitOrderRequest struct {
 	// Embedded struct due to allOf(#/components/schemas/OrderType)
 	OrderType `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Base     SymbolType    `json:"base"`
 	Price    CurrencyValue `json:"price"`
 	Quantity CurrencyValue `json:"quantity"`
@@ -112,7 +114,7 @@ type MarketOrderRequest struct {
 	// Embedded struct due to allOf(#/components/schemas/OrderType)
 	OrderType `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Base     SymbolType    `json:"base"`
 	Quantity CurrencyValue `json:"quantity"`
 }
@@ -122,10 +124,10 @@ type OrderRequest struct {
 	// Action type: * `BUY` - use base currency to buy target currency * `SELL` - sell target currency for base currency
 	Action ActionType `json:"action"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Base SymbolType `json:"base"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Target SymbolType       `json:"target"`
 	Type   OrderRequestType `json:"type"`
 }
@@ -160,7 +162,7 @@ type ResponseError struct {
 	Detail string `json:"detail"`
 }
 
-// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 type SymbolType string
 
 // Account balance change
@@ -169,7 +171,7 @@ type Transaction struct {
 	Orderid  string        `json:"orderid"`
 	Quantity CurrencyValue `json:"quantity"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Symbol          SymbolType `json:"symbol"`
 	Timestamp       string     `json:"timestamp"`
 	TransactionHash string     `json:"transactionHash"`
@@ -186,7 +188,7 @@ type TransactionRequest struct {
 	Address  string        `json:"address"`
 	Quantity CurrencyValue `json:"quantity"`
 
-	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+	// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 	Symbol SymbolType `json:"symbol"`
 }
 
@@ -196,7 +198,7 @@ type TransactionType string
 // AccountPathParam defines model for AccountPathParam.
 type AccountPathParam string
 
-// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer
+// Symbol Type: * `BTC` - bitcoin currency identifier * `ETH` - ethereum currency identifier * `BCH` - bitcoin cash currency identifier * `DOGE` - dogecoin currency identifier * `UNI` - uniswap currency identifer * `CMTN` - cipher mountain currency identifer
 type OrderPathParam SymbolType
 
 // Symbol Type: * `OPEN` - incomplete order * `PARTIAL` - partial order * `FILLED` - filled order * `CANCELLED` - cancelled order

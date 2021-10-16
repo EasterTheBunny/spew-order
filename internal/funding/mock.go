@@ -27,8 +27,13 @@ func (s *mockSource) Name() string {
 	return "MOCK"
 }
 
-func (s *mockSource) Supports(types.Symbol) bool {
-	return true
+func (s *mockSource) Supports(sym types.Symbol) bool {
+	switch sym {
+	case types.SymbolCipherMtn:
+		return false
+	default:
+		return true
+	}
 }
 
 func (s *mockSource) Callback() func(http.Handler) http.Handler {

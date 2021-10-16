@@ -1,8 +1,12 @@
 package funding
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -92,11 +96,17 @@ func (s *airdropSource) Callback() func(http.Handler) http.Handler {
 }
 
 func (s *airdropSource) CreateAddress(symbol types.Symbol) (*Address, error) {
-	adr := &Address{
-		ID:   uuid.NewV4().String(),
-		Hash: uuid.NewV4().String()}
 
-	return adr, nil
+	id := uuid.NewV4()
+
+	hash := hmac.New(sha256.New, uuid.NewV4().Bytes())
+	_, err := io.WriteString(hash, id.String())
+	if err != nil {
+		return nil, err
+	}
+	encoded := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+
+	return &Address{ID: id.String(), Hash: encoded}, nil
 }
 
 func (s *airdropSource) Withdraw(tr *Transaction) (string, error) {
