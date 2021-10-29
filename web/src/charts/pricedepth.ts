@@ -40,6 +40,7 @@ const PriceDepthChartFactory = (element: HTMLDivElement): PriceDepthChart => {
       return
     }
     const prices: string[] = items.map(v => v.price)
+    const precision = 7
 
     xScale.domain([0, depth]).nice() // depth
     yScale.domain(prices) // price
@@ -68,14 +69,14 @@ const PriceDepthChartFactory = (element: HTMLDivElement): PriceDepthChart => {
                     .attr("x", d => chartWidth / 2)
                     .attr("y", d => yScale.bandwidth() / 2)
                     .attr("dy", ".35em")
-                    .text(d => d.depth.toPrecision(6))
+                    .text(d => d.depth.toPrecision(precision))
             },
             update => update.call(update => {
               update.select("rect")
                       .transition()
                       .attr("width", (d: PriceDepthItem) => (chartWidth - xScale(d.depth)) / 2)
               
-              update.select(".depth").text(d => d.depth.toPrecision(6))
+              update.select(".depth").text(d => d.depth.toPrecision(precision))
             })
          )
   }

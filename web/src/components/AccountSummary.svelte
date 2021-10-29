@@ -11,12 +11,33 @@
   } = getDataCtx()
   const {t} = getLocalization()
 
+  const formatQuantity = (quantity: string): string => {
+    const decimal = quantity.indexOf(".")
+    const places = 4;
+
+    if (decimal < 0) {
+      for (let i = 0; i < places; i++) {
+        quantity+=" ";
+      }
+    } else {
+      let end = 5;
+      if (quantity.length >= decimal+end) {
+        end = decimal+end;
+      } else {
+        end = quantity.length;
+      }
+      quantity = quantity.slice(0, end);
+    }
+
+    return quantity;
+  }
+
 </script>
 
 <dl class="balance-list">
   {#each $account.balances as balance}
   <dt>{balance.symbol}</dt>
-  <dd>{balance.quantity} <i>{balance.symbol}</i></dd>
+  <dd>{formatQuantity(balance.quantity)}</dd>
   {/each}
 </dl>
 <Link to="/funding">{$t('AddFunds')}</Link>

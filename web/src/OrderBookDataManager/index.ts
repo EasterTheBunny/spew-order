@@ -1,8 +1,8 @@
 import SortedSet from 'js-sorted-set'
 
 export class OrderBookDataManager {
-  private bids: OrderedValues
-  private asks: OrderedValues
+  public bids: OrderedValues
+  public asks: OrderedValues
   private tick: CBCoinbaseTicker | null = null
 
   public constructor() {}
@@ -21,9 +21,10 @@ export class OrderBookDataManager {
       const price = change[1]
       const size = change[2]
 
+      const zeroSize = parseFloat(size) === 0
       switch (action) {
         case "buy":
-          if (size === "0.00000000") {
+          if (zeroSize) {
             this.bids.remove(price)
           } else {
             this.bids.insert(price, size)
@@ -31,7 +32,7 @@ export class OrderBookDataManager {
 
           break;
         case "sell":
-          if (size === "0.00000000") {
+          if (zeroSize) {
             this.asks.remove(price)
           } else {
             this.asks.insert(price, size)
@@ -68,16 +69,20 @@ export class OrderBookDataManager {
 class OrderedValues {
   private values: object = {}
   private set: SortedSet | null = null
+  public length = 0
+  private setType: string = ""
 
   public constructor(t: string, init: string[][]) {
+    this.setType = t
     this.set = new SortedSet({
       strategy: SortedSet.ArrayStrategy,
       onInsertConflict: SortedSet.OnInsertConflictIgnore,
-      comparator: t == "bids" ? this.bidsComparator : this.asksComparator,
+      comparator: this.setType == "bids" ? this.bidsComparator : this.asksComparator,
     })
     
     for (let x = 0; x < init.length; x++) {
       this.set.insert(init[x][0])
+      this.length++
       this.values[init[x][0]] = init[x][1]
     }
   }
@@ -85,11 +90,13 @@ class OrderedValues {
   public insert(key: string, value: string): void {
     this.set.insert(key)
     this.values[key] = value
+    this.length++
   }
 
   public remove(key: string): void {
     this.set.remove(key)
     delete this.values[key]
+    this.length--
   }
 
   public top(count: number, precision: number): string[][] {
@@ -102,20 +109,34 @@ class OrderedValues {
 
     let cnt = 0
     let iterator = this.set.beginIterator()
+    let lastBinKey = 0
     while (iterator.value() != null && cnt <= count) {
       const key = iterator.value()
-      const binkey = (Math.round(parseFloat(key) * exponent) / exponent).toFixed(precision)
+      const binKeyNum = Math.round(parseFloat(key) * exponent) / exponent
+      lastBinKey = binKeyNum
+      const binkey = binKeyNum.toFixed(precision)
 
       if (!!bins[binkey]) {
         bins[binkey] = bins[binkey]+parseFloat(this.values[key])
       } else {
         if (cnt != count){
           bins[binkey] = parseFloat(this.values[key])
+          cnt++
         }
-        cnt++
       }
 
       iterator = iterator.next()
+    }
+
+    for (let i = cnt+1; i <= count; i++) {
+      let nextBin = 0
+      if (this.setType === "bids") {
+        nextBin = lastBinKey - (1/exponent);
+      } else {
+        nextBin = lastBinKey + (1/exponent);
+      }
+      bins[nextBin.toFixed(precision)] = 0
+      lastBinKey = nextBin
     }
 
     return Object.keys(bins).map(k => {
