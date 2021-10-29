@@ -22,8 +22,10 @@
 
   const {
     price,
+    market,
   }: {
-    price: Readable<IfcBookProductSpread>
+    price: Readable<IfcBookProductSpread>,
+    market: Readable<IfcMarket>,
   } = getMarketCtx()
 
   onMount(() => {
@@ -46,9 +48,9 @@
   </div>
 
   {#if selectedType === OrderType.Market}
-    <MarketOrderForm bind:action={selectedAction} bind:currentPrice={currentPrice} bind:balances={$account.balances} />
+    <MarketOrderForm bind:action={selectedAction} bind:currentPrice={currentPrice} bind:balances={$account.balances} bind:base={$market.base} bind:target={$market.target} />
   {:else if selectedType === OrderType.Limit}
-    <LimitOrderForm bind:action={selectedAction} bind:currentPrice={currentPrice} bind:balances={$account.balances} />
+    <LimitOrderForm bind:action={selectedAction} bind:currentPrice={currentPrice} bind:balances={$account.balances} bind:base={$market.base} bind:target={$market.target} />
   {/if}
 {/if}
 
