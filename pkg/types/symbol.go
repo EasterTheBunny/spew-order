@@ -51,14 +51,18 @@ var (
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolEthereumName),
 		// BTC-BCH
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolBitcoinCashName),
-		// ETH-BCH
-		// fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
 		// BTC-DOGE
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolDogecoinName),
-		// ETH-DOGE
-		// fmt.Sprintf("%s%s", symbolEthereumName, symbolDogecoinName),
 		// BTC-UNI
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolUniswapName),
+		// BTC-CMTN
+		fmt.Sprintf("%s%s", SymbolBitcoin, symbolCipherMtnName),
+		// ETH-BCH
+		// fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
+		// ETH-DOGE
+		// fmt.Sprintf("%s%s", symbolEthereumName, symbolDogecoinName),
+		// ETH-CMTN
+		fmt.Sprintf("%s%s", symbolEthereumName, symbolCipherMtnName),
 		// ADA-BTC
 		fmt.Sprintf("%s%s", symbolCardanoName, symbolBitcoinName),
 		// ADA-ETH
@@ -70,7 +74,7 @@ var (
 		// ADA-UNI
 		fmt.Sprintf("%s%s", symbolCardanoName, symbolUniswapName),
 		// ADA-CMTN
-		fmt.Sprintf("%s%s", symbolCardanoName, symbolCipherMtnName),
+		// fmt.Sprintf("%s%s", symbolCardanoName, symbolCipherMtnName),
 	}
 	PermittedWithdrawal = []Symbol{
 		SymbolBitcoin,

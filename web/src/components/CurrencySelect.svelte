@@ -3,8 +3,7 @@
   import { Currency } from '../constants';
 
   export let selected: Currency
-
-  const currencies = [{
+  export let currencies = [{
     value: Currency.Ethereum,
     name: 'Ethereum',
   }, {

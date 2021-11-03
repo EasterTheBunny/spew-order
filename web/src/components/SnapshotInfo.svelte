@@ -16,7 +16,7 @@
 </script>
 
 <div class="snapshot">
-  <h1>{marketStr}</h1>
+  <h3>{marketStr}</h3>
   <div>
     <h4>{$t('LastPrice')}</h4>
     <small>{$price.bid}</small>

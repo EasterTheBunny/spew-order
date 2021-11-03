@@ -14,6 +14,7 @@ export enum Currency {
   BitcoinCash = 'BCH',
   Dogecoin = "DOGE",
   Uniswap = "UNI",
+  CipherMtn = "CMTN",
 }
 
 export enum OrderStatus {

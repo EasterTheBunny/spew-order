@@ -37,30 +37,28 @@
     return mp
   }
 
-  const buildHelpText: (s: IfcMarketOrder, a: ActionType) => string = (s, a) => {
-
-    if (a === ActionType.Sell) {
-      return ""
-    }
-
-    let str = ""
-    let amt = calcTotal(s, a, currentPrice, base, target).toFixed(3)
-    if (s.base == target) {
-      str = "you will spend approx. "+amt+" "+base
-    } else {
-      str = "you will receive approx. "+amt+" "+target
-    }
-    return str
-  }
-
   $: if(action === ActionType.Sell) {
     order.base = target
   } else {
     order.base = base
   }
   $: amountLabel = order.base === base ? "Total" : "Amount"
-  $: amountHelp = buildHelpText(order, action)
   $: symbolList = action === ActionType.Sell ? [target] : [base]
+  $: amountHelp = ((order: IfcMarketOrder, action: ActionType, price: string) => {
+    let helpTxt = ""
+
+    if (action == ActionType.Buy) {
+      if (order.base === base) {
+        let amt = parseFloat(order.quantity)
+        let priceFloat = parseFloat(currentPrice)
+
+        amt = (amt * priceFloat)
+        helpTxt = "you will receive approx. "+amt.toFixed(6)+" "+target
+      }
+    }
+
+    return helpTxt
+  })(order, action, currentPrice)
 
   $: validOrder = validate(order, balanceMap(balances)) && amountInputGreaterThan0
 
@@ -81,6 +79,7 @@
         }
         break;
     }
+    console.log(bm)
 
     const max = bm[b]
 

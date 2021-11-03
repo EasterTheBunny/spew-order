@@ -4,7 +4,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 export default class ExchangeAPI {
   private api: AxiosInstance
   private options: AxiosRequestConfig = {
-    timeout: 5000,
+    timeout: 10000,
     headers: {
       "Content-Type": "application/vnd.api+json",
     }
@@ -47,15 +47,15 @@ export default class ExchangeAPI {
 
         if (data !== null && data.guid === "") {
           // post new
-          return inst.post(path, data.order).then((x) => this.dataResponse<IfcOrderResource[]>(x))
+          return inst.post(path, data.order).then((x) => this.dataResponse<IfcOrderResource>(x))
         } else if (data !== null && data.guid !== "") {
           if (data.status != "") {
             // patch status
             // hard coded patch order as this is the only support type
-            return inst.patch(path+"/"+data.guid, [{ op: "replace", path: "/status", value: data.status}]).then((x) => this.dataResponse<IfcOrderResource[]>(x))
+            return inst.patch(path+"/"+data.guid, [{ op: "replace", path: "/status", value: data.status}]).then((x) => this.dataResponse<IfcOrderResource>(x))
           } else {
             // get by id
-            return inst.get(path+"/"+data.guid).then((x) => this.dataResponse<IfcOrderResource[]>(x))
+            return inst.get(path+"/"+data.guid).then((x) => this.dataResponse<IfcOrderResource>(x))
           }
         } else {
           // get all values
