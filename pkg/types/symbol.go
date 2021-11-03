@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/shopspring/decimal"
 )
@@ -25,6 +26,10 @@ const (
 	SymbolDogecoin Symbol = 16
 	// SymbolUniswap ...
 	SymbolUniswap Symbol = 20
+	// SymbolCipherMtn ...
+	SymbolCipherMtn Symbol = 24
+	// SymbolCardano ...
+	SymbolCardano Symbol = 26
 )
 
 const (
@@ -33,6 +38,8 @@ const (
 	symbolBitcoinCashName = "BCH"
 	symbolDogecoinName    = "DOGE"
 	symbolUniswapName     = "UNI"
+	symbolCipherMtnName   = "CMTN"
+	symbolCardanoName     = "ADA"
 )
 
 var (
@@ -40,12 +47,42 @@ var (
 	// is not in the list of options provided by this package.
 	ErrSymbolUnrecognized = errors.New("unrecognized symbol")
 	ValidPairs            = []string{
+		// BTC-ETH
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolEthereumName),
+		// BTC-BCH
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolBitcoinCashName),
-		// fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
+		// BTC-DOGE
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolDogecoinName),
-		// fmt.Sprintf("%s%s", symbolEthereumName, symbolDogecoinName),
+		// BTC-UNI
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolUniswapName),
+		// BTC-CMTN
+		fmt.Sprintf("%s%s", symbolBitcoinName, symbolCipherMtnName),
+		// ETH-BCH
+		// fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
+		// ETH-DOGE
+		// fmt.Sprintf("%s%s", symbolEthereumName, symbolDogecoinName),
+		// ETH-CMTN
+		fmt.Sprintf("%s%s", symbolEthereumName, symbolCipherMtnName),
+		// ADA-BTC
+		fmt.Sprintf("%s%s", symbolCardanoName, symbolBitcoinName),
+		// ADA-ETH
+		fmt.Sprintf("%s%s", symbolCardanoName, symbolEthereumName),
+		// ADA-BCH
+		fmt.Sprintf("%s%s", symbolCardanoName, symbolBitcoinCashName),
+		// ADA-DOGE
+		fmt.Sprintf("%s%s", symbolCardanoName, symbolDogecoinName),
+		// ADA-UNI
+		fmt.Sprintf("%s%s", symbolCardanoName, symbolUniswapName),
+		// ADA-CMTN
+		// fmt.Sprintf("%s%s", symbolCardanoName, symbolCipherMtnName),
+	}
+	PermittedWithdrawal = []Symbol{
+		SymbolBitcoin,
+		SymbolBitcoinCash,
+		SymbolCardano,
+		SymbolDogecoin,
+		SymbolEthereum,
+		SymbolUniswap,
 	}
 )
 
@@ -63,22 +100,30 @@ func (s Symbol) String() string {
 		return symbolDogecoinName
 	case SymbolUniswap:
 		return symbolUniswapName
+	case SymbolCipherMtn:
+		return symbolCipherMtnName
+	case SymbolCardano:
+		return symbolCardanoName
 	default:
 		return ""
 	}
 }
 
 func (s Symbol) typeInRange() bool {
-	return s >= SymbolBitcoin && s <= SymbolUniswap
+	return s >= SymbolBitcoin && s <= SymbolCardano
 }
 
 // RoundingPlace provides expected rounding values for each symbol
 func (s Symbol) RoundingPlace() int32 {
 	switch s {
+	case SymbolCardano:
+		return 6
 	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		return 8
 	case SymbolEthereum, SymbolUniswap:
 		return 18
+	case SymbolCipherMtn:
+		return 0
 	default:
 		return 8
 	}
@@ -86,10 +131,14 @@ func (s Symbol) RoundingPlace() int32 {
 
 func (s Symbol) MinimumFee() decimal.Decimal {
 	switch s {
+	case SymbolCardano:
+		return decimal.NewFromFloat(0.0001)
 	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		return decimal.NewFromFloat(0.00000001)
 	case SymbolEthereum, SymbolUniswap:
 		return decimal.NewFromFloat(0.000000000000000001)
+	case SymbolCipherMtn:
+		return decimal.NewFromInt(0)
 	default:
 		return decimal.NewFromInt(0)
 	}
@@ -100,6 +149,10 @@ func (s Symbol) MinimumFee() decimal.Decimal {
 func (s Symbol) ValidateAddress(a string) bool {
 
 	switch s {
+	case SymbolCardano, SymbolCipherMtn:
+		if !strings.HasPrefix(a, "DdzFF") && !strings.HasPrefix(a, "addr1") {
+			return false
+		}
 	case SymbolBitcoin, SymbolBitcoinCash, SymbolDogecoin:
 		// A Bitcoin address is between 25 and 34 characters long;
 		if len(a) < 25 || len(a) > 34 {
@@ -117,9 +170,11 @@ func (s Symbol) ValidateAddress(a string) bool {
 		}
 	case SymbolEthereum, SymbolUniswap:
 		return validateEIP55(a)
+	default:
+		return false
 	}
 
-	return false
+	return true
 }
 
 var (
@@ -236,6 +291,10 @@ func FromString(str string) (Symbol, error) {
 		return SymbolDogecoin, nil
 	case symbolUniswapName:
 		return SymbolUniswap, nil
+	case symbolCipherMtnName:
+		return SymbolCipherMtn, nil
+	case symbolCardanoName:
+		return SymbolCardano, nil
 	default:
 		return 0, ErrSymbolUnrecognized
 	}

@@ -8,6 +8,7 @@ import typescript from '@rollup/plugin-typescript';
 import replace from '@rollup/plugin-replace';
 import workerLoader from 'rollup-plugin-web-worker-loader';
 import postcss from 'rollup-plugin-postcss';
+import rollupJson from '@rollup/plugin-json';
 
 const production = !process.env.ROLLUP_WATCH;
 const AUTH0_CLIENTID = process.env.AUTH0_CLIENTID;
@@ -87,6 +88,7 @@ export default {
 			browser: true,
 			dedupe: ['svelte']
 		}),
+    rollupJson(),
 		commonjs(),
 		typescript({
 			sourceMap: !production,

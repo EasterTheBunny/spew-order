@@ -15,16 +15,18 @@ import (
 
 var (
 	ErrInsufficientBalanceForHold = errors.New("account balance too low for hold")
+	FundNewAccounts               = true
+	NewAccountFunds               = decimal.NewFromInt(5000)
 )
 
-func NewBalanceManager(repo persist.AccountRepository, l persist.LedgerRepository, f funding.Source) *BalanceManager {
+func NewBalanceManager(repo persist.AccountRepository, l persist.LedgerRepository, f ...funding.Source) *BalanceManager {
 	return &BalanceManager{acct: repo, ledger: l, funding: f}
 }
 
 type BalanceManager struct {
 	acct    persist.AccountRepository
 	ledger  persist.LedgerRepository
-	funding funding.Source
+	funding []funding.Source
 }
 
 // GetAccount searches the persistance layer for an account. If one doesn't
@@ -39,6 +41,7 @@ func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account,
 	a.ID = uid
 
 	dirty := false
+	accountCreated := false
 
 	var p *persist.Account
 	p, err = m.acct.Find(ctx, a.ID)
@@ -48,6 +51,7 @@ func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account,
 		if errors.Is(err, persist.ErrObjectNotExist) {
 			p = &persist.Account{ID: a.ID.String()}
 			dirty = true
+			accountCreated = true
 		} else {
 			err = fmt.Errorf("BalanceManager::GetAccount::%w", err)
 			return
@@ -72,10 +76,18 @@ func (m *BalanceManager) GetAccount(ctx context.Context, id string) (a *Account,
 
 	// only save the value once; protect against rapid back to back updates
 	if dirty {
-		err = m.acct.Save(ctx, p)
-		if err != nil {
+		if err := m.acct.Save(ctx, p); err != nil {
 			err = fmt.Errorf("BalanceManager::GetAccount.Save::%w", err)
 			return nil, err
+		}
+
+		// fund new accounts on create
+		if accountCreated && FundNewAccounts {
+
+			acct := &persist.Account{ID: a.ID.String()}
+			if err := m.fundAccount(ctx, acct, types.SymbolCipherMtn, NewAccountFunds); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -87,7 +99,20 @@ func (m *BalanceManager) GetFundingAddress(ctx context.Context, a *Account, s ty
 	// is blank, create a new one
 	x, ok := a.Addresses[s]
 	if !ok || x == "" {
-		addr, err = m.funding.CreateAddress(s)
+
+		var src funding.Source
+		for _, check := range m.funding {
+			if check.Supports(s) {
+				src = check
+				break
+			}
+		}
+
+		if src == nil {
+			return nil, fmt.Errorf("supported funding source not available for %s", s)
+		}
+
+		addr, err = src.CreateAddress(s)
 		if err == nil {
 			a.Addresses[s] = addr.Hash
 
@@ -235,6 +260,11 @@ func (m *BalanceManager) PostAmtToBalance(ctx context.Context, a *Account, s typ
 
 func (m *BalanceManager) WithdrawFunds(ctx context.Context, a *Account, s types.Symbol, amt decimal.Decimal, hash string) (t *persist.Transaction, err error) {
 
+	switch s {
+	case types.SymbolCipherMtn:
+		return nil, fmt.Errorf("unsupported withdrawal: %s", s)
+	}
+
 	hid, err := m.SetHoldOnAccount(ctx, a, s, amt)
 	if err != nil {
 		return
@@ -246,7 +276,19 @@ func (m *BalanceManager) WithdrawFunds(ctx context.Context, a *Account, s types.
 		Amount:  amt,
 	}
 
-	trhash, err := m.funding.Withdraw(&tr)
+	var src funding.Source
+	for _, check := range m.funding {
+		if check.Supports(s) {
+			src = check
+			break
+		}
+	}
+
+	if src == nil {
+		return nil, fmt.Errorf("supported funding source not available for %s", s)
+	}
+
+	trhash, err := src.Withdraw(&tr)
 	if err != nil {
 		return
 	}
@@ -291,6 +333,12 @@ func (m *BalanceManager) FundAccountByID(ctx context.Context, id uuid.UUID, s ty
 		return err
 	}
 
+	return m.fundAccount(ctx, a, s, amt)
+}
+
+func (m *BalanceManager) fundAccount(ctx context.Context, a *persist.Account, s types.Symbol, amt decimal.Decimal) error {
+	var err error
+
 	r := m.acct.Balances(a, s)
 	err = r.AddToBalance(ctx, amt)
 	if err != nil {
@@ -322,6 +370,10 @@ func (m *BalanceManager) FundAccountByAddress(ctx context.Context, hash string, 
 	a, err := m.acct.FindByAddress(ctx, hash, s)
 	if err != nil {
 		return err
+	}
+
+	if a == nil {
+		return fmt.Errorf("no address found for hash '%s' and symbol '%s'", hash, s)
 	}
 
 	r := m.acct.Balances(a, s)
@@ -398,7 +450,7 @@ func (m *BalanceManager) makeOrderRecords(ctx context.Context, entry types.Balan
 		return err
 	}
 
-	qFee := entry.FeeQuantity.StringFixedBank(entry.AddSymbol.RoundingPlace())
+	qFee := entry.FeeQuantity.StringFixedBank(types.SymbolCipherMtn.RoundingPlace())
 	qAdd := entry.AddQuantity.StringFixedBank(entry.AddSymbol.RoundingPlace())
 	qSub := entry.SubQuantity.Mul(decimal.NewFromInt(-1)).StringFixedBank(entry.SubSymbol.RoundingPlace())
 
@@ -433,9 +485,18 @@ func (m *BalanceManager) makeOrderRecords(ctx context.Context, entry types.Balan
 		return err
 	}
 
-	err = m.ledger.RecordFee(ctx, entry.AddSymbol, entry.FeeQuantity)
-	if err != nil {
-		return err
+	if entry.FeeQuantity.GreaterThan(decimal.NewFromInt(0)) {
+
+		// for flat fees apply the amount
+		err = m.PostAmtToBalance(ctx, a, types.SymbolCipherMtn, entry.FeeQuantity.Mul(decimal.NewFromInt(-1)))
+		if err != nil {
+			return err
+		}
+
+		err = m.ledger.RecordFee(ctx, types.SymbolCipherMtn, entry.FeeQuantity)
+		if err != nil {
+			return err
+		}
 	}
 
 	// update the order status and transaction list
@@ -481,6 +542,13 @@ func (m *BalanceManager) CancelOrder(ctx context.Context, order types.Order) err
 
 	smb, _ := order.Type.HoldAmount(order.Action, order.Base, order.Target)
 	err = m.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, smb, ky(order.HoldID))
+	if err != nil {
+		err = fmt.Errorf("CancelOrder::RemoveHoldOnAccount::%w", err)
+		return err
+	}
+
+	// attempt to remove fee hold
+	err = m.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
 	if err != nil {
 		err = fmt.Errorf("CancelOrder::RemoveHoldOnAccount::%w", err)
 		return err

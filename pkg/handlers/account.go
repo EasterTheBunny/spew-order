@@ -108,7 +108,8 @@ func (h *AccountHandler) GetAccountOrders() func(w http.ResponseWriter, r *http.
 	}
 }
 
-// PostTransaction ...
+// PostTransaction provides an http handler that initiates a funds withdrawal. Limited to permitted
+// currencies.
 func (h *AccountHandler) PostTransaction(b *domain.BalanceManager) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -141,6 +142,19 @@ func (h *AccountHandler) PostTransaction(b *domain.BalanceManager) func(w http.R
 		err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, string(in.Symbol))), &smb)
 		if err != nil {
 			render.Render(w, r, HTTPBadRequest(err))
+			return
+		}
+
+		allowWithdrawal := false
+		for _, s := range types.PermittedWithdrawal {
+			if s == smb {
+				allowWithdrawal = true
+				break
+			}
+		}
+
+		if !allowWithdrawal {
+			render.Render(w, r, HTTPBadRequest(errors.New("symbol not available for withdrawal")))
 			return
 		}
 

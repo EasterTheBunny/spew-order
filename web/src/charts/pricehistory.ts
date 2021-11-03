@@ -22,6 +22,7 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
   let focus
   let focusText
   let drawn = false
+  let rect
   
   const idled = () => { idleTimeout = null; }
   
@@ -74,7 +75,7 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
         .classed("minor", true)
   }
   
-  const bisectDate = d3.bisector(function(d: any, x: any) { return d.time - x; }).left;
+  const bisectDate = d3.bisector(function(d: any, x: any) { return d - x }).left;
   
   const mouseover = (d) => {
     focus.style("opacity", 1)
@@ -84,20 +85,23 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
   const mousemove = (event) => {
     event.preventDefault()
     if (data.length > 0) {
-      const pointer = d3.pointer(event, this)
-      const xm = xScale.invert(pointer[0])
+      const pointer = d3.pointer(event, rect.node())
+      const xm: Date = xScale.invert(pointer[0])
       // const ym = yScale.invert(pointer[1]-margin.bottom)
-      const i = bisectDate(data, xm)
+      const times = data.map((d) => d.time.getTime())
+      const i = bisectDate(times, xm.getTime())
       // recover coordinate we need
-      
-      let selectedData = data[i]
-      focus
-        .attr("cx", xScale(selectedData.time))
-        .attr("cy", yScale(selectedData.close))
-      focusText
-        .html(d3.format(",.2r")(selectedData.close))
-        .attr("x", xScale(selectedData.time)+15)
-        .attr("y", yScale(selectedData.close))
+    
+      if (!!data[i]) {
+        let selectedData = data[i]
+        focus
+          .attr("cx", xScale(selectedData.time))
+          .attr("cy", yScale(selectedData.close))
+        focusText
+          .html(d3.format(",.2r")(selectedData.close))
+          .attr("x", xScale(selectedData.time)+15)
+          .attr("y", yScale(selectedData.close))
+      }
     }
   }
   
@@ -184,7 +188,7 @@ const PriceHistoryChartFactory = (element): PriceHistoryChart => {
         .classed("minor", true)
     })
     
-    svg.append('rect')
+    rect = svg.append('rect')
         .style("fill", "none")
         .style("pointer-events", "all")
         .attr('width', chartWidth)

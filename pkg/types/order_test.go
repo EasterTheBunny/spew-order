@@ -22,6 +22,8 @@ type testFill struct {
 	ExpectedOrderTransaction *Transaction
 }
 
+var flatFee int64 = 100
+
 var tests = []testFill{
 	{
 		Name:        "SellMarketOrderA_BuyLimitOrderB_ALessThanB_QuantityLimit",
@@ -63,16 +65,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003148),
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
-				FeeQuantity: decimal.NewFromFloat(0.00000063),
+				AddQuantity: decimal.NewFromFloat(0.00042), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
@@ -129,16 +131,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003373),
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.000449325),
-				FeeQuantity: decimal.NewFromFloat(0.000000675),
+				AddQuantity: decimal.NewFromFloat(0.00045),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
@@ -191,16 +193,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041979),
-				FeeQuantity: decimal.NewFromFloat(0.00000021),
+				AddQuantity: decimal.NewFromFloat(0.00042),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003145),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
@@ -257,16 +259,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.000449775),
-				FeeQuantity: decimal.NewFromFloat(0.000000225),
+				AddQuantity: decimal.NewFromFloat(0.00045),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003370),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
@@ -319,16 +321,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041979),
-				FeeQuantity: decimal.NewFromFloat(0.00000021),
+				AddQuantity: decimal.NewFromFloat(0.00042),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003145),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
@@ -385,16 +387,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.000449775),
-				FeeQuantity: decimal.NewFromFloat(0.000000225),
+				AddQuantity: decimal.NewFromFloat(0.00045),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003370),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
@@ -452,16 +454,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041979),
-				FeeQuantity: decimal.NewFromFloat(0.00000021),
+				AddQuantity: decimal.NewFromFloat(0.00042),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003145),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
@@ -512,16 +514,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.000449775),
-				FeeQuantity: decimal.NewFromFloat(0.000000225),
+				AddQuantity: decimal.NewFromFloat(0.00045),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003370),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
@@ -573,16 +575,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003373),
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.00003375),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00045),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.000449325),
-				FeeQuantity: decimal.NewFromFloat(0.000000675),
+				AddQuantity: decimal.NewFromFloat(0.00045),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.00003375),
 			},
@@ -640,16 +642,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003148),
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041937),
-				FeeQuantity: decimal.NewFromFloat(0.00000063),
+				AddQuantity: decimal.NewFromFloat(0.00042),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
@@ -706,16 +708,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00002998),
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.00003),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.0004),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.0003994),
-				FeeQuantity: decimal.NewFromFloat(0.0000006),
+				AddQuantity: decimal.NewFromFloat(0.0004),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.00003),
 			},
@@ -774,16 +776,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003148), // maker fee calculated on this amount
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.0000315), // maker fee calculated on this amount
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
-				FeeQuantity: decimal.NewFromFloat(0.00000063),
+				AddQuantity: decimal.NewFromFloat(0.00042), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
@@ -837,16 +839,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003148),
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
-				FeeQuantity: decimal.NewFromFloat(0.00000063),
+				AddQuantity: decimal.NewFromFloat(0.00042), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
@@ -902,16 +904,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003148), // maker fee calculated on this amount
-				FeeQuantity: decimal.NewFromFloat(0.00000002),
+				AddQuantity: decimal.NewFromFloat(0.0000315), // maker fee calculated on this amount
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041937), // taker fee calculated on this amount
-				FeeQuantity: decimal.NewFromFloat(0.00000063),
+				AddQuantity: decimal.NewFromFloat(0.00042), // taker fee calculated on this amount
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
@@ -976,16 +978,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041979),
-				FeeQuantity: decimal.NewFromFloat(0.00000021),
+				AddQuantity: decimal.NewFromFloat(0.00042),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003145),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
@@ -1039,16 +1041,16 @@ var tests = []testFill{
 			A: BalanceEntry{
 				AccountID:   accountIDA,
 				AddSymbol:   SymbolEthereum,
-				AddQuantity: decimal.NewFromFloat(0.00041979),
-				FeeQuantity: decimal.NewFromFloat(0.00000021),
+				AddQuantity: decimal.NewFromFloat(0.00042),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolBitcoin,
 				SubQuantity: decimal.NewFromFloat(0.0000315),
 			},
 			B: BalanceEntry{
 				AccountID:   accountIDB,
 				AddSymbol:   SymbolBitcoin,
-				AddQuantity: decimal.NewFromFloat(0.00003145),
-				FeeQuantity: decimal.NewFromFloat(0.00000005),
+				AddQuantity: decimal.NewFromFloat(0.0000315),
+				FeeQuantity: decimal.NewFromInt(flatFee),
 				SubSymbol:   SymbolEthereum,
 				SubQuantity: decimal.NewFromFloat(0.00042),
 			},
@@ -1132,12 +1134,13 @@ func TestOrderHold(t *testing.T) {
 func TestMarshalOrder(t *testing.T) {
 	order := NewOrder()
 	order.OrderRequest = OrderRequest{
-		Owner:   uuid.NewV4().String(),
-		Account: uuid.NewV4(),
-		Base:    SymbolBitcoin,
-		HoldID:  uuid.NewV4().String(),
-		Target:  SymbolEthereum,
-		Action:  ActionTypeBuy,
+		Owner:     uuid.NewV4().String(),
+		Account:   uuid.NewV4(),
+		Base:      SymbolBitcoin,
+		FeeHoldID: uuid.NewV4().String(),
+		HoldID:    uuid.NewV4().String(),
+		Target:    SymbolEthereum,
+		Action:    ActionTypeBuy,
 		Type: &MarketOrderType{
 			Base:     SymbolBitcoin,
 			Quantity: decimal.NewFromFloat(0.001),
@@ -1147,8 +1150,8 @@ func TestMarshalOrder(t *testing.T) {
 	b, err := json.Marshal(order)
 	assert.NoError(t, err)
 
-	e := `{"account":"%s","action":"BUY","base":"BTC","holdID":"%s","id":"%s","owner":"%s","target":"ETH","timestamp":%d,"type":{"base":"BTC","name":"MARKET","quantity":"0.001"}}`
-	expected := fmt.Sprintf(e, order.Account, order.HoldID, order.ID, order.Owner, order.Timestamp.UnixNano())
+	e := `{"account":"%s","action":"BUY","base":"BTC","feeHoldID":"%s","holdID":"%s","id":"%s","owner":"%s","target":"ETH","timestamp":%d,"type":{"base":"BTC","name":"MARKET","quantity":"0.001"}}`
+	expected := fmt.Sprintf(e, order.Account, order.FeeHoldID, order.HoldID, order.ID, order.Owner, order.Timestamp.UnixNano())
 
 	assert.Equal(t, expected, string(b))
 }

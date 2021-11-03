@@ -14,13 +14,15 @@ var (
 
 // OrderRequest represents an incoming order request.
 type OrderRequest struct {
-	Base    Symbol     `json:"base"`
-	Target  Symbol     `json:"target"`
-	Action  ActionType `json:"action"`
-	HoldID  string     `json:"holdID"`
-	Owner   string     `json:"owner"`
-	Account uuid.UUID  `json:"account"`
-	Type    OrderType  `json:"-"`
+	Base      Symbol     `json:"base"`
+	Target    Symbol     `json:"target"`
+	Action    ActionType `json:"action"`
+	HoldID    string     `json:"holdID"`
+	FeeHoldID string     `json:"feeHoldID"`
+	FeePaid   bool       `json:"feePaid"`
+	Owner     string     `json:"owner"`
+	Account   uuid.UUID  `json:"account"`
+	Type      OrderType  `json:"-"`
 }
 
 func (r OrderRequest) MarshalMap() map[string]interface{} {

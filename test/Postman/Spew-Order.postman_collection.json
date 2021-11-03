@@ -98,6 +98,86 @@
 					"response": []
 				},
 				{
+					"name": "Get Address for BTC",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/addresses/BTC",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"addresses",
+								"BTC"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Address for ETH",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/addresses/ETH",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"addresses",
+								"ETH"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Address for BCH",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/addresses/BCH",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"addresses",
+								"BCH"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Address for DOGE",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/addresses/DOGE",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"addresses",
+								"DOGE"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Account Data",
 					"event": [
 						{
@@ -324,19 +404,7 @@
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"if(responseCode.code == 200){",
-									"    pm.test(\"Account balance listed\", function () {",
-									"        var jsonData = pm.response.json();",
-									"",
-									"        var balances = jsonData.data.balances;",
-									"        for (i = 0; i < balances.length; i++) {",
-									"            var key = balances[i].symbol.toLowerCase() + \"_hash\"",
-									"            pm.environment.set(key, balances[i].funding);",
-									"        }",
-									"    });",
-									"}"
+									"});"
 								],
 								"type": "text/javascript"
 							}
@@ -353,6 +421,46 @@
 							"path": [
 								"accounts",
 								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Address for ETH",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.environment.set(\"eth_hash\", jsonData.data.address);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/addresses/ETH",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"addresses",
+								"ETH"
 							]
 						}
 					},
@@ -699,19 +807,7 @@
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"if(responseCode.code == 200){",
-									"    pm.test(\"Account balance listed\", function () {",
-									"        var jsonData = pm.response.json();",
-									"",
-									"        var balances = jsonData.data.balances;",
-									"        for (i = 0; i < balances.length; i++) {",
-									"            var key = balances[i].symbol.toLowerCase() + \"_hash\"",
-									"            pm.environment.set(key, balances[i].funding);",
-									"        }",
-									"    });",
-									"}"
+									"});"
 								],
 								"type": "text/javascript"
 							}
@@ -728,6 +824,46 @@
 							"path": [
 								"accounts",
 								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Address for ETH",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.environment.set(\"eth_hash\", jsonData.data.address);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/addresses/ETH",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"addresses",
+								"ETH"
 							]
 						}
 					},
@@ -1156,19 +1292,7 @@
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"if(responseCode.code == 200){",
-									"    pm.test(\"Account balance listed\", function () {",
-									"        var jsonData = pm.response.json();",
-									"",
-									"        var balances = jsonData.data.balances;",
-									"        for (i = 0; i < balances.length; i++) {",
-									"            var key = balances[i].symbol.toLowerCase() + \"_hash\"",
-									"            pm.environment.set(key, balances[i].funding);",
-									"        }",
-									"    });",
-									"}"
+									"});"
 								],
 								"type": "text/javascript"
 							}
@@ -1185,6 +1309,46 @@
 							"path": [
 								"accounts",
 								"{{accountid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Address for BTC",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(responseCode.code == 200){",
+									"    pm.test(\"Account balance listed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.environment.set(\"btc_hash\", jsonData.data.address);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{apiurl}}/accounts/{{accountid}}/addresses/BTC",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"accounts",
+								"{{accountid}}",
+								"addresses",
+								"BTC"
 							]
 						}
 					},
@@ -1622,7 +1786,7 @@
 									"        var balances = jsonData.data.balances;",
 									"        for (i = 0; i < balances.length; i++) {",
 									"            if (balances[i].symbol == \"BTC\") {",
-									"                pm.expect(balances[i].quantity).to.eq(\"0.70964500\")",
+									"                pm.expect(balances[i].quantity).to.eq(\"0.71000000\")",
 									"            }",
 									"        }",
 									"    });",
@@ -1750,7 +1914,7 @@
 									"if(responseCode.code == 200){",
 									"    pm.test(\"Order returned\", function () {",
 									"        var jsonData = pm.response.json();",
-									"        pm.expect(jsonData.data).to.be.length(5)",
+									"        pm.expect(jsonData.data).to.be.length(6) // includes the initial deposit for new accounts",
 									"    });",
 									"}"
 								],
@@ -1917,7 +2081,7 @@
 									"        var balances = jsonData.data.balances;",
 									"        for (i = 0; i < balances.length; i++) {",
 									"            if (balances[i].symbol == \"ETH\") {",
-									"                pm.expect(balances[i].quantity).to.eq(\"6.390400000000000000\")",
+									"                pm.expect(balances[i].quantity).to.eq(\"6.400000000000000000\")",
 									"            }",
 									"        }",
 									"    });",
@@ -2045,7 +2209,7 @@
 									"if(responseCode.code == 200){",
 									"    pm.test(\"Order returned\", function () {",
 									"        var jsonData = pm.response.json();",
-									"        pm.expect(jsonData.data).to.be.length(5)",
+									"        pm.expect(jsonData.data).to.be.length(6) // includes the initial deposit for new accounts",
 									"    });",
 									"}"
 								],
@@ -2139,7 +2303,24 @@
 							"    pm.test(\"Balance should be zero\", function () {",
 							"        pm.expect(jsonData.data.balance.BTC).to.eq(\"0.00000000\")",
 							"        pm.expect(jsonData.data.balance.ETH).to.eq(\"0.000000000000000000\")",
+							"        pm.expect(jsonData.data.balance.CMTN).to.eq(\"0\")",
 							"    });",
+							"",
+							"    pm.test(\"No errors should be present\", function () {",
+							"        pm.expect(jsonData.data.errors.length).to.eq(0)",
+							"    })",
+							"",
+							"    pm.test(\"User account balances should be\", function () {",
+							"        pm.expect(jsonData.data.user_accounts.BTC).to.eq(\"2.00000000\")",
+							"        pm.expect(jsonData.data.user_accounts.ETH).to.eq(\"40.000000000000000000\")",
+							"        pm.expect(jsonData.data.user_accounts.CMTN).to.eq(\"14600\")",
+							"    })",
+							"",
+							"    pm.test(\"Cash amounts should be\", function () {",
+							"        pm.expect(jsonData.data.ledger_accounts.BTC.cash).to.eq(undefined)",
+							"        pm.expect(jsonData.data.ledger_accounts.ETH.cash).to.eq(undefined)",
+							"        pm.expect(jsonData.data.ledger_accounts.CMTN.cash).to.eq(\"400\")",
+							"    })",
 							"}"
 						],
 						"type": "text/javascript"

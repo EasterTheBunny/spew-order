@@ -1,4 +1,5 @@
 <script type="ts">
+  import { afterUpdate } from "svelte"
   import type { Writable } from "svelte/store"
   import Button, { Label } from '@smui/button/styled';
   import AmountInputField from "./AmountInputField.svelte"
@@ -19,6 +20,10 @@
     base: base,
     price: currentPrice,
     quantity: "0.000000",
+  }
+  let setValues = {
+    target: target,
+    updatePrice: true,
   }
 
   const {
@@ -71,6 +76,11 @@
     total = t.toFixed(8)
   }
 
+  const onPriceChange = () => {
+    setValues.updatePrice = false
+    onAmountChange()
+  }
+
   const validate: (s: IfcLimitOrder, t: string, a: ActionType, bm: object) => boolean = (s, t, a, bm) => {
     let b = s.base
 
@@ -93,6 +103,18 @@
     return false
   }
 
+  afterUpdate(() => {
+    if (base != order.base || target !== setValues.target) {
+      order.base = base
+      setValues.target = target
+      setValues.updatePrice = true
+    }
+
+    if (setValues.updatePrice) {
+      order.price = currentPrice
+    }
+	});
+
 </script>
 
 <div class="form-section">
@@ -107,16 +129,16 @@
 <div class="form-section">
   <AmountInputField
     bind:value={order.price}
-    bind:symbol={order.base}
+    bind:symbol={base}
     label="price"
     on:valid={(e) => valid = e.detail}
-    on:keyup={onAmountChange} />
+    on:keyup={onPriceChange} />
 </div>
 
 <div class="form-section">
   <AmountInputField
     bind:value={total}
-    bind:symbol={order.base}
+    bind:symbol={base}
     label="total"
     on:valid={(e) => valid = e.detail}
     on:keyup={onTotalChange} />

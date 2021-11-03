@@ -247,6 +247,7 @@ components:
       - BCH
       - DOGE
       - UNI
+      - CMTN
       description: >
         Symbol Type:
         * `BTC` - bitcoin currency identifier
@@ -254,6 +255,7 @@ components:
         * `BCH` - bitcoin cash currency identifier
         * `DOGE` - dogecoin currency identifier
         * `UNI` - uniswap currency identifer
+        * `CMTN` - cipher mountain currency identifer
     TransactionType:
       type: string
       enum:

@@ -56,8 +56,8 @@ _self.addEventListener('message', function(e) {
         const book: IfcBookMessage = {
           type: WorkerMessageType.Book,
           maxDepth: asks.concat(bids).reduce((a, v) => parseFloat(v[1]) > a ? parseFloat(v[1]) : a, 0),
-          asks: dataManager.topAsks(precision),
-          bids: dataManager.topBids(precision),
+          asks: asks,
+          bids: bids,
         }
 
         _self.postMessage(book)

@@ -61,6 +61,8 @@ github.com/deepmap/oapi-codegen v1.8.1 h1:gSKgzu1DvWfRctnr0UVwieWkg1LEecP0C2htZy
 github.com/deepmap/oapi-codegen v1.8.1/go.mod h1:YLgSKSDv/bZQB7N4ws6luhozi3cEdRktEqrX88CvjIw=
 github.com/deepmap/oapi-codegen v1.8.2 h1:SegyeYGcdi0jLLrpbCMoJxnUUn8GBXHsvr4rbzjuhfU=
 github.com/deepmap/oapi-codegen v1.8.2/go.mod h1:YLgSKSDv/bZQB7N4ws6luhozi3cEdRktEqrX88CvjIw=
+github.com/deepmap/oapi-codegen v1.8.3 h1:0TkiSYTJGD1GU+CTyiKT5XqFZfrxkaTlFGxE1J69VAY=
+github.com/deepmap/oapi-codegen v1.8.3/go.mod h1:WG64zU4J1vxgkwgXq1ysfi9eayMH9y1g2aXNdCXr/i0=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/easterthebunny/render v1.0.2 h1:LkX843+yHkHS1YmuehEsxT6ro6cP2j0Q/pcVjxTDmQU=
 github.com/easterthebunny/render v1.0.2/go.mod h1:sXt/7N+jSeRr2/Df/oR6KwuWEJ6fk7fK8Z8XT/B/7oE=

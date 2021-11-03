@@ -75,12 +75,21 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 		return
 	}
 
+	// set a hold on the traded amount
 	holdid, err := o.balance.SetHoldOnAccount(ctx, acct, symbol, hold)
 	if err != nil {
 		return
 	}
 
 	or.HoldID = holdid
+
+	// set a hold on the fee amount
+	feeHoldId, err := o.balance.SetHoldOnAccount(ctx, acct, types.SymbolCipherMtn, types.StandardFee)
+	if err != nil {
+		return
+	}
+
+	or.FeeHoldID = feeHoldId
 
 	order, err = o.balance.CreateOrder(ctx, acct, or)
 	if err != nil {

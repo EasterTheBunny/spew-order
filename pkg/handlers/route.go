@@ -101,6 +101,7 @@ func (d *Router) OrderSubRoutes() func(r chi.Router) {
 
 type WebhookRouter struct {
 	Funding *FundingHandler
+	Airdrop *FundingHandler
 }
 
 func (wr *WebhookRouter) Routes() http.Handler {
@@ -112,6 +113,7 @@ func (wr *WebhookRouter) Routes() http.Handler {
 	r.Use(wr.Funding.Source.Callback())
 
 	r.Post("/funding", wr.Funding.PostFunding())
+	r.Post("/airdrop", wr.Airdrop.PostFunding())
 
 	return r
 }

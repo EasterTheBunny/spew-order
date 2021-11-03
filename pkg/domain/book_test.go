@@ -100,12 +100,24 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
+		err = bm.PostAmtToBalance(ctx, &Account{ID: b.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: b.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		b.HoldID = id
+
+		feeid, err := bm.SetHoldOnAccount(ctx, &Account{ID: b.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		b.FeeHoldID = feeid
 
 		err = ar.Orders(&persist.Account{ID: b.Account.String()}).
 			SetOrder(ctx, &persist.Order{Status: persist.StatusOpen, Base: b})
@@ -139,6 +151,11 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
@@ -146,10 +163,17 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 
 		order.HoldID = id
 
+		feeid, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.FeeHoldID = feeid
+
 		err = s.ExecuteOrInsertOrder(ctx, order)
 
 		assert.NoError(t, err)
-		assert.Equal(t, expected, st.Len())
+		assert.Equal(t, expected, st.Len(), "unexpected number of market orders")
 	})
 
 	t.Run("LargeMarketOrder_3x2", func(t *testing.T) {
@@ -171,12 +195,24 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
+
+		feeid, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.FeeHoldID = feeid
 
 		err = s.ExecuteOrInsertOrder(ctx, order)
 
@@ -201,12 +237,24 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
+
+		feeid, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.FeeHoldID = feeid
 
 		err = s.ExecuteOrInsertOrder(ctx, order)
 
@@ -231,12 +279,24 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
+
+		feeid, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.FeeHoldID = feeid
 
 		err = s.ExecuteOrInsertOrder(ctx, order)
 
@@ -263,12 +323,24 @@ func TestExecuteOrInsertOrder(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
+		err = bm.PostAmtToBalance(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
 		id, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, smb, amt)
 		if err != nil {
 			t.Fatalf("error: %s", err)
 		}
 
 		order.HoldID = id
+
+		feeid, err := bm.SetHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		order.FeeHoldID = feeid
 
 		err = s.ExecuteOrInsertOrder(ctx, order)
 

@@ -41,7 +41,10 @@ func (h *AuditHandler) AuditBalances() func(w http.ResponseWriter, r *http.Reque
 		}
 
 		ctx := r.Context()
-		symbols := []types.Symbol{types.SymbolBitcoin, types.SymbolEthereum}
+		symbols := []types.Symbol{
+			types.SymbolBitcoin,
+			types.SymbolEthereum,
+			types.SymbolCipherMtn}
 		accountBalances, orderBalances, msgs, err := h.getAccountBalances(ctx, symbols)
 		if err != nil {
 			render.Render(w, r, HTTPInternalServerError(err))
@@ -188,8 +191,9 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 			a := &persist.Account{ID: acc}
 
 			trbals := map[types.Symbol]decimal.Decimal{
-				types.SymbolBitcoin:  decimal.NewFromInt(0),
-				types.SymbolEthereum: decimal.NewFromInt(0),
+				types.SymbolBitcoin:   decimal.NewFromInt(0),
+				types.SymbolEthereum:  decimal.NewFromInt(0),
+				types.SymbolCipherMtn: decimal.NewFromInt(0),
 			}
 
 			trepo := h.accounts.Transactions(a)
@@ -209,10 +213,17 @@ func (h *AuditHandler) getAccountBalances(ctx context.Context, symbols []types.S
 					sym = types.SymbolBitcoin
 				case "ETH":
 					sym = types.SymbolEthereum
+				case "CMTN":
+					sym = types.SymbolCipherMtn
 				}
 
 				qty, _ := decimal.NewFromString(tr.Quantity)
 				trbals[sym] = trbals[sym].Add(qty)
+
+				if tr.Fee != "" {
+					f, _ := decimal.NewFromString(tr.Fee)
+					trbals[types.SymbolCipherMtn] = trbals[types.SymbolCipherMtn].Sub(f)
+				}
 			}
 
 			orepo := h.accounts.Orders(a)
