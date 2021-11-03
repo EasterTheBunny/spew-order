@@ -56,7 +56,7 @@ var (
 		// BTC-UNI
 		fmt.Sprintf("%s%s", symbolBitcoinName, symbolUniswapName),
 		// BTC-CMTN
-		fmt.Sprintf("%s%s", SymbolBitcoin, symbolCipherMtnName),
+		fmt.Sprintf("%s%s", symbolBitcoinName, symbolCipherMtnName),
 		// ETH-BCH
 		// fmt.Sprintf("%s%s", symbolEthereumName, symbolBitcoinCashName),
 		// ETH-DOGE
