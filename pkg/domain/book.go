@@ -111,7 +111,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					}
 
 					// attempt to remove hold on fee
-					ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: o.Account}, types.SymbolCipherMtn, ky(o.FeeHoldID))
+					if o.FeeHoldID != "" {
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: o.Account}, types.SymbolCipherMtn, ky(o.FeeHoldID))
+						if err != nil {
+							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							o.FeeHoldID = ""
+						}
+					}
 
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
@@ -121,7 +128,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					}
 
 					// attempt to remove fee hold
-					ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+					if order.FeeHoldID != "" {
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+						if err != nil {
+							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							order.FeeHoldID = ""
+						}
+					}
 
 					bi := persist.NewBookItem(*o)
 					err = ob.bir.SetBookItem(ctx, &bi)
@@ -150,7 +164,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					}
 
 					// attempt to remove fee hold id
-					ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+					if order.FeeHoldID != "" {
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+						if err != nil {
+							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							order.FeeHoldID = ""
+						}
+					}
 
 					// remove hold on book order since that order is filled
 					smb, _ = book.Order.Type.HoldAmount(book.Order.Action, book.Order.Base, book.Order.Target)
@@ -160,7 +181,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					}
 
 					// attempt to remove fee hold
-					ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
+					if book.Order.FeeHoldID != "" {
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
+						if err != nil {
+							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							book.Order.FeeHoldID = ""
+						}
+					}
 
 					log.Printf("deleting book item as book item was closed: %s; and matched by %s", bookOrder.ID, o.ID)
 					if err := ob.bir.DeleteBookItem(ctx, book); err != nil {
@@ -187,7 +215,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					}
 
 					// remove hold on fee amount
-					ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
+					if book.Order.FeeHoldID != "" {
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
+						if err != nil {
+							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							book.Order.FeeHoldID = ""
+						}
+					}
 
 					// remove hold on incoming order since that order is filled
 					smb, _ = order.Type.HoldAmount(order.Action, order.Base, order.Target)
@@ -197,7 +232,14 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 					}
 
 					// remove fee hold
-					ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+					if order.FeeHoldID != "" {
+						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+						if err != nil {
+							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							order.FeeHoldID = ""
+						}
+					}
 
 					log.Printf("deleting book item as both orders were closed: %s; and matched by %s", bookOrder.ID, order.ID)
 					err = ob.bir.DeleteBookItem(ctx, book)
