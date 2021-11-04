@@ -548,10 +548,12 @@ func (m *BalanceManager) CancelOrder(ctx context.Context, order types.Order) err
 	}
 
 	// attempt to remove fee hold
-	err = m.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
-	if err != nil {
-		err = fmt.Errorf("CancelOrder::RemoveHoldOnAccount::%w", err)
-		return err
+	if order.FeeHoldID != "" {
+		err = m.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
+		if err != nil {
+			err = fmt.Errorf("CancelOrder::RemoveHoldOnAccount::%w", err)
+			return err
+		}
 	}
 
 	return nil

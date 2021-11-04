@@ -83,13 +83,16 @@ func (o *OrderQueue) PublishOrderRequest(ctx context.Context, or types.OrderRequ
 
 	or.HoldID = holdid
 
-	// set a hold on the fee amount
-	feeHoldId, err := o.balance.SetHoldOnAccount(ctx, acct, types.SymbolCipherMtn, types.StandardFee)
-	if err != nil {
-		return
-	}
+	// set a hold on the fee amount if not dealing with native token
+	if or.Target != types.SymbolCipherMtn {
+		var feeHoldId string
+		feeHoldId, err = o.balance.SetHoldOnAccount(ctx, acct, types.SymbolCipherMtn, types.StandardFee)
+		if err != nil {
+			return
+		}
 
-	or.FeeHoldID = feeHoldId
+		or.FeeHoldID = feeHoldId
+	}
 
 	order, err = o.balance.CreateOrder(ctx, acct, or)
 	if err != nil {
