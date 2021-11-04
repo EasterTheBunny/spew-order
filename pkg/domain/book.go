@@ -115,6 +115,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: o.Account}, types.SymbolCipherMtn, ky(o.FeeHoldID))
 						if err != nil {
 							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							o.FeeHoldID = ""
 						}
 					}
 
@@ -130,6 +132,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
 						if err != nil {
 							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							order.FeeHoldID = ""
 						}
 					}
 
@@ -164,6 +168,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
 						if err != nil {
 							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							order.FeeHoldID = ""
 						}
 					}
 
@@ -179,6 +185,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
 						if err != nil {
 							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							book.Order.FeeHoldID = ""
 						}
 					}
 
@@ -211,6 +219,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: book.Order.Account}, types.SymbolCipherMtn, ky(book.Order.FeeHoldID))
 						if err != nil {
 							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							book.Order.FeeHoldID = ""
 						}
 					}
 
@@ -226,6 +236,8 @@ func (ob *OrderBook) ExecuteOrInsertOrder(ctx context.Context, order types.Order
 						err = ob.bm.RemoveHoldOnAccount(ctx, &Account{ID: order.Account}, types.SymbolCipherMtn, ky(order.FeeHoldID))
 						if err != nil {
 							updateError = fmt.Errorf("remove hold::%w, ", err)
+						} else {
+							order.FeeHoldID = ""
 						}
 					}
 
