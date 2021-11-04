@@ -33,7 +33,7 @@ func (h *FundingHandler) PostFunding() func(w http.ResponseWriter, r *http.Reque
 		}
 
 		if tr == nil {
-			err := errors.New("FundingHander::PostFunding: transaction not found in context")
+			err := errors.New("FundingHandler::PostFunding: transaction not found in context")
 			log.Println(err)
 			render.Render(w, r, HTTPInternalServerError(err))
 			return
