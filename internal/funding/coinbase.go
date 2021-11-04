@@ -346,46 +346,12 @@ func (s *coinbaseSource) Callback() func(http.Handler) http.Handler {
 					break
 				}
 
-				// find and add resource to context
-				payload, err := s.extractNotificationPayload(r.Body)
+				tr, err := s.transactionFromBody(r.Body)
 				if err != nil {
-					err = fmt.Errorf("%w:notification: %s", ErrRequestBodyParseError, err)
 					ctx = attachToContext(ctx, nil, &CallbackError{Status: http.StatusBadRequest, Err: err})
 					break
 				}
-
-				if payload.Attempts > 1 {
-					log.Printf("multiple callback attempts '%d' found for notification id '%s'", payload.Attempts, payload.ID)
-				}
-
-				switch payload.Type {
-				case cbNewPayment:
-					var adr coinbaseAddressResourceV2
-					var pmt coinbaseNewPaymentResourceV2
-
-					err = json.Unmarshal(payload.Data, &adr)
-					if err != nil {
-						err = fmt.Errorf("%w:address: %s", ErrRequestBodyParseError, err)
-						ctx = attachToContext(ctx, nil, &CallbackError{Status: http.StatusBadRequest, Err: err})
-						break
-					}
-
-					err = json.Unmarshal(payload.AdditionalData, &pmt)
-					if err != nil {
-						err = fmt.Errorf("%w:payment: %s", ErrRequestBodyParseError, err)
-						ctx = attachToContext(ctx, nil, &CallbackError{Status: http.StatusBadRequest, Err: err})
-						break
-					}
-
-					tr := Transaction{
-						Symbol:          coinbaseSymbol(string(pmt.Amount.Currency)),
-						TransactionHash: pmt.Hash,
-						Address:         adr.Address,
-						Amount:          pmt.Amount.Amount,
-					}
-
-					ctx = attachToContext(ctx, tr, nil)
-				}
+				ctx = attachToContext(ctx, tr, nil)
 
 				ok = false
 			}
@@ -393,6 +359,45 @@ func (s *coinbaseSource) Callback() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func (s *coinbaseSource) transactionFromBody(body io.Reader) (Transaction, error) {
+	var tr Transaction
+
+	// find and add resource to context
+	payload, err := s.extractNotificationPayload(body)
+	if err != nil {
+		return tr, fmt.Errorf("%w:notification: %s", ErrRequestBodyParseError, err)
+	}
+
+	if payload.Attempts > 1 {
+		log.Printf("multiple callback attempts '%d' found for notification id '%s'", payload.Attempts, payload.ID)
+	}
+
+	switch payload.Type {
+	case cbNewPayment:
+		var adr coinbaseAddressResourceV2
+		var pmt coinbaseNewPaymentResourceV2
+
+		err = json.Unmarshal(payload.Data, &adr)
+		if err != nil {
+			return tr, fmt.Errorf("%w:address: %s", ErrRequestBodyParseError, err)
+		}
+
+		err = json.Unmarshal(payload.AdditionalData, &pmt)
+		if err != nil {
+			return tr, fmt.Errorf("%w:payment: %s", ErrRequestBodyParseError, err)
+		}
+
+		tr = Transaction{
+			Symbol:          coinbaseSymbol(string(pmt.Amount.Currency)),
+			TransactionHash: pmt.Hash,
+			Address:         adr.Address,
+			Amount:          pmt.Amount.Amount,
+		}
+	}
+
+	return tr, nil
 }
 
 func (s *coinbaseSource) extractNotificationPayload(r io.Reader) (*coinbaseNotificationPayloadV2, error) {

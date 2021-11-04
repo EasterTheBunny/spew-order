@@ -15,6 +15,15 @@ import (
 // Symbol ...
 type Symbol int
 
+type SwapPair struct {
+	Base Symbol
+	Target Symbol
+}
+
+func (s SwapPair) String() string {
+	return fmt.Sprintf("%s%s", s.Base, s.Target)
+}
+
 const (
 	// SymbolBitcoin ...
 	SymbolBitcoin Symbol = 2

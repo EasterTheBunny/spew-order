@@ -373,7 +373,7 @@ func (m *BalanceManager) FundAccountByAddress(ctx context.Context, hash string, 
 	}
 
 	if a == nil {
-		return fmt.Errorf("no address found for hash '%s' and symbol '%s'", hash, s)
+		return fmt.Errorf("no address found for hash '%s' and symbol '%s' with value '%v'", hash, s, s)
 	}
 
 	r := m.acct.Balances(a, s)

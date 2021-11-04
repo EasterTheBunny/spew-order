@@ -61,7 +61,7 @@ func attachToContext(ctx context.Context, data interface{}, err *CallbackError) 
 	if err != nil {
 		val := ctx.Value(ctxErrorKey)
 		if val == nil {
-			ctx = context.WithValue(ctx, ctxErrorKey, &err)
+			ctx = context.WithValue(ctx, ctxErrorKey, *err)
 		}
 	}
 

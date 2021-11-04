@@ -110,10 +110,16 @@ func (wr *WebhookRouter) Routes() http.Handler {
 
 	// set CORS headers early and short circuit the response loop
 	r.Use(middleware.SetCORSHeaders)
-	r.Use(wr.Funding.Source.Callback())
 
-	r.Post("/funding", wr.Funding.PostFunding())
-	r.Post("/airdrop", wr.Airdrop.PostFunding())
+	r.Route("/funding", func(r chi.Router) {
+		r.Use(wr.Funding.Source.Callback())
+		r.Post("/", wr.Funding.PostFunding())
+	})
+
+	r.Route("/airdrop", func(r chi.Router) {
+		r.Use(wr.Airdrop.Source.Callback())
+		r.Post("/", wr.Airdrop.PostFunding())
+	})
 
 	return r
 }
