@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -39,13 +40,16 @@ func (h *FundingHandler) PostFunding() func(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		err := h.Balance.FundAccountByAddress(r.Context(), tr.Address, tr.TransactionHash, tr.Symbol, tr.Amount)
-		if err != nil {
-			log.Println(err)
-			render.Render(w, r, HTTPInternalServerError(err))
-			return
-		}
+		render.Render(w, r, HTTPInternalServerError(fmt.Errorf("values: %v", tr)))
+		/*
+			err := h.Balance.FundAccountByAddress(r.Context(), tr.Address, tr.TransactionHash, tr.Symbol, tr.Amount)
+			if err != nil {
+				log.Println(err)
+				render.Render(w, r, HTTPInternalServerError(err))
+				return
+			}
 
-		w.WriteHeader(h.Source.OKResponse())
+			w.WriteHeader(h.Source.OKResponse())
+		*/
 	}
 }
