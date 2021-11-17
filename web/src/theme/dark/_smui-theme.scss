@@ -13,6 +13,13 @@
 
 @use '@material/typography/index' as typography;
 
+@font-face {
+   font-family: 'Magistral-Light';
+   src: url("fonts/Magistral-Light.ttf") format("truetype");
+}
+
+$font-main: 'Magistral-Light', Roboto, sans-serif;
+
 app,
 html,
 body {
@@ -27,23 +34,27 @@ body {
   background-color: theme.$background;
   margin: 0;
   box-sizing: border-box;
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	font-family: $font-main;
 }
 
 html {
   @include typography.typography('body1');
+  font-family: $font-main;
 }
 
 h1 {
   @include typography.typography('headline1');
+  font-family: $font-main;
 }
 
 h2 {
   @include typography.typography('headline2');
+  font-family: $font-main;
 }
 
 h3 {
   @include typography.typography('headline3');
+  font-family: $font-main;
 }
 
 a {

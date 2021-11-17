@@ -3,11 +3,7 @@
 </script>
 
 <main>
-  <LayoutGrid>
-    <Cell align="center" span={12}>
-      <h1 class="no-focus-border">Cryptocurrency Simplified</h1>
-    </Cell>
-  </LayoutGrid>
+  <img class="hero" src="hero.jpg" alt="Cipher Mountain" />
 
   <LayoutGrid>
     <Cell align="left" spanDevices={{ desktop: 4, tablet: 6, phone: 12 }}>
@@ -51,6 +47,31 @@
     </Cell>
   </LayoutGrid>
 </main>
+
+<footer>
+
+  <LayoutGrid>
+    <Cell spanDevices={{ desktop: 6, tablet: 12, phone: 12 }}>
+      <h4>About</h4>
+      <p>
+        <a href="https://www.ciphermtn.com/">Home</a>
+      </p>
+      <p>
+        <a href="https://www.ciphermtn.com/our-vision">Our Vision</a>
+      </p>
+    </Cell>
+    <Cell spanDevices={{ desktop: 6, tablet: 12, phone: 12 }}>
+      <h4>Information</h4>
+      <p>
+        <a href="https://www.ciphermtn.com/materials-for-learning">Cryptocurrency Education</a>
+      </p>
+      <p>
+        <a href="https://www.ciphermtn.com/privacy-policy">Privacy Policy</a>
+      </p>
+    </Cell>
+  </LayoutGrid>
+
+</footer>
   
 <style>
   main {
@@ -58,6 +79,12 @@
 		max-width: 240px;
 		margin: 0 auto;
 	}
+
+  footer {
+    padding: 1em;
+    width: 100%;
+    background-color: #333333;
+  }
 
 	@media (min-width: 640px) {
 		main {
@@ -76,5 +103,11 @@
   img {
     width: 100%;
     margin-top: 25px;
+  }
+
+  img.hero {
+    width: 110%;
+    margin-top: 0;
+    margin: -20px;
   }
 </style>
