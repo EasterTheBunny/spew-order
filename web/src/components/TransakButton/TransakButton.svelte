@@ -44,7 +44,7 @@
         
         if (config != null) {
           transak = new transakSDK(config)
-          ready = true
+          //ready = true // TODO: turn on for production
 
           transak.on(transak.EVENTS.TRANSAK_ORDER_SUCCESSFUL, (orderData) => {
             transak.close();
