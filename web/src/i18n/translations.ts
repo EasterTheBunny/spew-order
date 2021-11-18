@@ -30,6 +30,9 @@ export default {
       SubmitWithdrawal: "Submit Withdrawal",
       Markets: "Markets",
       ChoosePair: "Choose a trading pair to get started.",
+      LoginToView: "Log in to view content",
+      AccountAssets: "Account Assets",
+      NominalTo: "nominal to",
     },
   },
   es: {
@@ -63,6 +66,9 @@ export default {
       SubmitWithdrawal: "Ingresar Retiro",
       Markets: "Markets",
       ChoosePair: "Choose a trading pair to get started.",
+      LoginToView: "Log in to view content",
+      AccountAssets: "Account Assets",
+      NominalTo: "nominal to",
     },
   },
 }

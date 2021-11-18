@@ -8,6 +8,7 @@
   import SnapshotInfo from "../components/SnapshotInfo.svelte"
   import AccountSummary from "../components/AccountSummary.svelte"
   import OrderBook from "../components/OrderBook.svelte"
+  import AccessWall from "../components/AccessWall.svelte"
   import { getOidc } from "../oidc"
   import { getDataCtx } from "../exchange"
   import { getMarketCtx } from "../market"
@@ -99,6 +100,8 @@
     </Cell>
   </LayoutGrid>
 </div>
+{:else}
+<AccessWall />
 {/if}
 
 <style lang="scss">

@@ -9,12 +9,16 @@
 
   const Funding = () => import("../views/Funding.svelte")
   const Exchange = () => import("../views/Exchange.svelte")
+  const Accounts = () => import("../views/Account.svelte")
 </script>
 
 <Router url={url}>
   <Nav>
     <LazyRoute path="funding" component={Funding} delayMs={500}>
       <h4>Loading Funding...</h4>
+    </LazyRoute>
+    <LazyRoute path="dashboard" component={Accounts} delayMS={500}>
+      <h4>Loading Dashboard...</h4>
     </LazyRoute>
     <LazyRoute path="dashboard/*" component={Exchange} delayMS={500}>
       <h4>Loading Exchange...</h4>
