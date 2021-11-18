@@ -23,7 +23,6 @@
   }
 
   const getBals: (acc: IfcBalanceResource[], n: any) => AssetItem[] = (acc, n) => {
-    console.log(acc)
     return acc.map((b) => {
       const qty = parseFloat(b.quantity)
       return {

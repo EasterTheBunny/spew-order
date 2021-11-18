@@ -79,7 +79,6 @@
         }
         break;
     }
-    console.log(bm)
 
     const max = bm[b]
 

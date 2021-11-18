@@ -20,15 +20,21 @@
   import { getOidc } from "../oidc"
   import { getLocalization } from '../i18n'
   import { markets } from '../constants'
+  import { Currency } from '../constants'
+
+  import TransakButton from './TransakButton'
   
   let topAppBar;
   let dense = true
   let prominent = false
   let open = false
 
-  const { oidc, loggedIn } = getOidc()
+  const { oidc, user, loggedIn } = getOidc()
   const {t} = getLocalization()
   const marketToName = (m: IfcMarket) => m.base+"-"+m.target
+  
+  let transak_api_key: string = process.env.TRANSAK_API_KEY;
+  let transak_env: string = process.env.TRANSAK_ENV;
 </script>
 
 <TopAppBar bind:this={topAppBar} {dense} {prominent} >
@@ -39,6 +45,7 @@
     </Section>
     <Section align="end" toolbar>
       {#if $loggedIn}
+      <TransakButton label={$t('BuyCrypto')} key={transak_api_key} environment={transak_env} user={$user} />
       <UserMenu />
       {:else}
       <Button on:click={() => oidc.signIn()} variant="unelevated">
@@ -68,6 +75,27 @@
           <Text>{marketToName(market)}</Text>
         </Item>
         {/each}
+      </List>
+    </Content>
+    <Header>
+      <Title>{$t('AccountSummary')}</Title>
+    </Header>
+    <Content>
+      <List>
+        <Item
+          href={"/dashboard"}
+          use={[link]}
+          on:click={() => open = false}
+        >
+          <Text>{$t('Dashboard')}</Text>
+        </Item>
+        <Item
+          href={"/funding"}
+          use={[link]}
+          on:click={() => open = false}
+        >
+          <Text>{$t('AddFunds')}</Text>
+        </Item>
       </List>
     </Content>
   </Drawer>

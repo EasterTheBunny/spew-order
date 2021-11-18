@@ -26,7 +26,6 @@
   
   onMount(() => {
     window.onresize = reportWindowSize;
-    console.log(chartData)
 
     if (!!chart) {
       chart.remove()

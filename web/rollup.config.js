@@ -14,6 +14,8 @@ const production = !process.env.ROLLUP_WATCH;
 const AUTH0_CLIENTID = process.env.AUTH0_CLIENTID;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
 const API_URL = process.env.API_URL;
+const TRANSAK_API_KEY = process.env.TRANSAK_API_KEY;
+const TRANSAK_ENV = process.env.TRANSAK_ENV;
 
 function serve() {
 	let server;
@@ -50,6 +52,8 @@ export default {
 			'process.env.AUTH0_CLIENTID': JSON.stringify(AUTH0_CLIENTID ? AUTH0_CLIENTID : "DcMwCcm9VNE3xMz6Sxtde8FqdXH8Berq"),
 			'process.env.AUTH0_DOMAIN': JSON.stringify(AUTH0_DOMAIN ? AUTH0_DOMAIN : "https://dev-xfscxtiv.us.auth0.com"),
 			'process.env.API_URL': JSON.stringify(API_URL ? API_URL : "http://localhost:8080/api"),
+      'process.env.TRANSAK_API_KEY': JSON.stringify(TRANSAK_API_KEY ? TRANSAK_API_KEY : "bec7a499-5b22-4928-832e-8abd938305b5"),
+      'process.env.TRANSAK_ENV': JSON.stringify(TRANSAK_ENV ? TRANSAK_ENV : "STAGING"),
 		}),
     workerLoader({
       targetPlatform: 'browser',

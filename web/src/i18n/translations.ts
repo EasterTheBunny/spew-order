@@ -33,6 +33,8 @@ export default {
       LoginToView: "Log in to view content",
       AccountAssets: "Account Assets",
       NominalTo: "nominal to",
+      Dashboard: "Dashboard",
+      BuyCrypto: "Buy Crypto",
     },
   },
   es: {
@@ -69,6 +71,8 @@ export default {
       LoginToView: "Log in to view content",
       AccountAssets: "Account Assets",
       NominalTo: "nominal to",
+      Dashboard: "Dashboard",
+      BuyCrypto: "Buy Crypto",
     },
   },
 }
