@@ -318,7 +318,9 @@ func (s *coinbaseSource) Callback() func(http.Handler) http.Handler {
 				}
 
 				signature := r.Header.Get("CB-SIGNATURE")
+				log.Printf("%s", signature)
 				body, err := ioutil.ReadAll(r.Body)
+				log.Printf("%s", body)
 				if err != nil {
 					err = fmt.Errorf("%w:read: %s", ErrRequestBodyParseError, err)
 					ctx = attachToContext(ctx, nil, &CallbackError{Status: http.StatusBadRequest, Err: err})
@@ -347,6 +349,7 @@ func (s *coinbaseSource) Callback() func(http.Handler) http.Handler {
 				}
 
 				tr, err := s.transactionFromBody(r.Body)
+				log.Printf("%v", tr)
 				if err != nil {
 					ctx = attachToContext(ctx, nil, &CallbackError{Status: http.StatusBadRequest, Err: err})
 					break
