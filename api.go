@@ -63,7 +63,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	pubKey := strings.NewReader(strings.Trim(body))
+	pubKey := strings.NewReader(strings.Trim(string(body), " "))
 
 	ky := getEnvVar(envCoinbaseAPIKey)
 	sct := getEnvVar(envCoinbaseAPISecret)
