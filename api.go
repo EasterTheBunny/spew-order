@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -49,7 +50,21 @@ func init() {
 	domain.FundNewAccounts = true
 	domain.NewAccountFunds = decimal.NewFromInt(5000)
 
-	pubKey := strings.NewReader(getEnvVar(envCoinbasePubKey))
+	res, err := http.Get("https://www.coinbase.com/coinbase.pub")
+	if err != nil {
+		log.Fatal(err)
+	}
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode > 299 {
+		log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pubKey := strings.NewReader(strings.Trim(body))
+
 	ky := getEnvVar(envCoinbaseAPIKey)
 	sct := getEnvVar(envCoinbaseAPISecret)
 	srcType := "COINBASE"
