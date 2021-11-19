@@ -348,7 +348,7 @@ func (s *coinbaseSource) Callback() func(http.Handler) http.Handler {
 					break
 				}
 
-				tr, err := s.transactionFromBody(r.Body)
+				tr, err := s.transactionFromBody(bytes.NewReader(body))
 				log.Printf("%v", tr)
 				if err != nil {
 					ctx = attachToContext(ctx, nil, &CallbackError{Status: http.StatusBadRequest, Err: err})
