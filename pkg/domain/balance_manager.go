@@ -384,6 +384,18 @@ func (m *BalanceManager) FundAccountByAddress(ctx context.Context, hash string, 
 
 	var tm = persist.NanoTime(time.Now())
 	trepo := m.acct.Transactions(a)
+
+	existing, err := trepo.GetTransactions(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, tr := range existing {
+		if tr.TransactionHash == transaction {
+			return fmt.Errorf("transaction hash already processed")
+		}
+	}
+
 	err = trepo.SetTransaction(ctx, &persist.Transaction{
 		Type:            persist.DepositTransactionType,
 		TransactionHash: transaction,
