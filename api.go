@@ -49,7 +49,7 @@ func init() {
 	domain.FundNewAccounts = true
 	domain.NewAccountFunds = decimal.NewFromInt(5000)
 
-	pubKeySrc := strings.NewReader(`-----BEGIN PUBLIC KEY-----
+	pubKey := strings.NewReader(`-----BEGIN PUBLIC KEY-----
 MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA9MsJBuXzFGIh/xkAA9Cy
 QdZKRerV+apyOAWY7sEYV/AJg+AX/tW2SHeZj+3OilNYm5DlBi6ZzDboczmENrFn
 mUXQsecsR5qjdDWb2qYqBkDkoZP02m9o9UmKObR8coKW4ZBw0hEf3fP9OEofG2s7
@@ -66,8 +66,6 @@ I7ibYmVR3xNsVEpupdFcTJYGzOQBo8orHKPFn1jj31DIIKociCwu6m8ICDgLuMHj
 
 date: 2014-07-09 13:37:00 UTC
 version: 1`)
-
-	pubKey := strings.NewReader(pubKeySrc)
 
 	ky := getEnvVar(envCoinbaseAPIKey)
 	sct := getEnvVar(envCoinbaseAPISecret)
