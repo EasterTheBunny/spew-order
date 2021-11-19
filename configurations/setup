@@ -17,3 +17,5 @@ sed -e 's/^/export /g;s/:[^:\/\/]/="/g;s/$/"/g;s/ *=/=/g' ./configurations/confi
 
 pub_key=$(cat ./configurations/coinbase.pub)
 export COINBASE_RSA_PUBLIC_KEY="$pub_key"
+
+echo "$pub_key"
