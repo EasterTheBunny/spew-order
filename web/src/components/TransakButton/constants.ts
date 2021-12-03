@@ -47,7 +47,7 @@ export const getTransakConfig: (
     themeColor: '000000',
     email: user.profile.name, // Your customer's email address
     redirectURL: redirect,
-    hostURL: "https://app.ciphermtn.com",
+    hostURL: window.location.origin,
     widgetHeight: '550px',
     widgetWidth: '450px',
     walletAddressesData: {

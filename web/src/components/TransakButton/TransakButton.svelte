@@ -42,9 +42,23 @@
         accountid = acc.id
         config = await getTransakConfig(user, acc, api, purchaseList, key, environment, redirect)
         
-        if (config != null) {
+        if (config != null && !ready) {
           transak = new transakSDK(config)
           ready = true
+
+          // This will trigger when the user closed the widget
+          transak.on(transak.EVENTS.TRANSAK_WIDGET_CLOSE, (orderData) => {
+            transak.close();
+          }); 
+
+          let span = document.getElementsByClassName("transak_close")[0];
+          span.onclick = () => {
+            return transak.close();
+          }; // When the user clicks anywhere outside of the modal, close it
+
+          window.onclick = event => {
+            if (event.target === document.getElementById("transak_modal-overlay")) transak.close();
+          };
 
           transak.on(transak.EVENTS.TRANSAK_ORDER_SUCCESSFUL, (orderData) => {
             transak.close();
