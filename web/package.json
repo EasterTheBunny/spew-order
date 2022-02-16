@@ -11,6 +11,7 @@
     "cypress:run": "npx cypress open-ct"
   },
   "devDependencies": {
+    "@beyonk/svelte-carousel": "^2.8.0",
     "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.0.6",
@@ -64,6 +65,7 @@
     "smui-theme": "^5.0.0-beta.7",
     "svelte": "^3.44.0",
     "svelte-check": "^2.2.7",
+    "svelte-feather-icons": "^3.5.0",
     "svelte-jester": "^2.1.5",
     "svelte-navigator": "^3.1.5",
     "svelte-preprocess": "^4.9.8",

@@ -1,5 +1,6 @@
 <script type="ts">
   import AssetCircle from "../components/AssetCircle.svelte"
+  import AssetCarousel from "../components/AssetCarousel"
   import AccessWall from "../components/AccessWall.svelte"
   import { getOidc } from "../oidc"
   import { getDataCtx } from "../exchange"
@@ -37,8 +38,8 @@
 
 <main>
 {#if $loggedIn && $account}
+  <AssetCarousel assets={getBals($account.balances, nominals)} />
   <div class="lead">
-    <h3>{$t('AccountAssets')}</h3>
     <h4><i>{$t('NominalTo')} BTC</i></h4>
   </div>
   <AssetCircle chartData={getBals($account.balances, nominals)} />

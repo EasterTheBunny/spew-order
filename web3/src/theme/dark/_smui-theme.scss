@@ -1,0 +1,92 @@
+@use 'sass:color';
+
+@use '@material/theme/color-palette';
+
+// Svelte Colors! (Dark Theme)
+@use '@material/theme/index' as theme with (
+  $primary: #672b7a,
+  $secondary: color.scale(#ffbb00, $whiteness: -10%),
+  $surface: #1e1e2d,
+  $on-surface: #fff,
+  $background: #151521,
+  //$surface: color.adjust(color-palette.$grey-900, $blue: +4),
+  //$background: #0d0011,
+  $error: color-palette.$red-700
+);
+
+@use '@material/typography/index' as typography;
+
+@use '../positioning/_primary.scss';
+@use '../positioning/_flex.scss';
+@use '../positioning/_padding.scss';
+@use '../positioning/_media.scss';
+
+@font-face {
+   font-family: 'Magistral-Light';
+   src: url("/fonts/Magistral-Light.ttf") format("truetype");
+}
+
+@font-face {
+   font-family: 'Magistral-Medium';
+   src: url("/fonts/Magistral-Medium.ttf") format("truetype");
+}
+
+$font-main: Roboto, sans-serif;
+$font-titles: 'Magistral-Light', Roboto, sans-serif;
+
+:root {
+  --mdc-typography-font-family: $font-main;
+}
+
+html,
+body {
+  color: theme.$on-surface;
+  background-color: theme.$background;
+  font-family: $font-main;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: $font-titles;
+}
+
+a {
+  color: #40b3ff;
+}
+
+a:visited {
+  color: color.scale(#40b3ff, $lightness: -35%);
+}
+
+.aside {
+  background-color: theme.$surface;
+}
+
+.sidebar {
+  background-color: theme.$surface;
+}
+
+.light-section {
+  background-color: theme.$surface;
+}
+
+.fs-6 {
+  font-size: 1.075rem!important;
+}
+
+.text-muted {
+  color: #565674!important;
+}
+
+.mdc-top-app-bar {
+  background: theme.$background !important;
+}
+
+p {
+  font-size: 1.3rem;
+  letter-spacing: .05rem;
+}

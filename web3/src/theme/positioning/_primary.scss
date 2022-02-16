@@ -1,0 +1,93 @@
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 14px!important;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+img, svg {
+	vertical-align: middle;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.aside .aside-menu {
+	display: flex;
+	align-items: center;
+	width: 100%;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+    width: 100%;
+    padding-right: var(--bs-gutter-x,1.5rem);
+    padding-left: var(--bs-gutter-x,1.5rem);
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.drawer {
+	display: flex!important;
+	overflow: auto;
+	z-index: 110;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	transition: transform .3s ease-in-out;
+}
+
+.drawer.drawer-start {
+	left: 0;
+	transform: translateX(-100%);
+}
+
+.drawer.drawer-end {
+	right: 0;
+	transform: translateX(100%);
+}
+
+.gap-2 {
+	gap: 0.5rem!important;
+}
+
+.mb-9 {
+	margin-bottom: 2.25rem!important;
+}
+
+.mdc-top-app-bar .button-right {
+  margin-right: 10px;
+}
+
+.mdc-top-app-bar .button-left {
+  margin-left: 10px;
+}
+
+.mdc-top-app-bar--short-collapsed .button-left {
+	display: none;	
+}
+
+:root {
+	.mdc-top-app-bar--short-collapsed.mdc-top-app-bar--short-has-action-item {
+		width: 225px !important;
+	}
+}
+
