@@ -33,15 +33,7 @@
   const preMintPrice = "0.05 ETH";
   const mintPrice = "0.06 ETH";
 
-  onMount(() => {
-    if (typeof window.ethereum !== 'undefined') {
-      if (ethereum.selectedAddress === null) {
-        getAddr()
-      } else {
-        walletConnectText = shortenAddr(ethereum.selectedAddress)
-      }
-    }
-  })
+  onMount(() => {})
 
   const getAddr = async () => {
     const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
@@ -55,6 +47,17 @@
     const lastThree = addr.slice(-3)
 
     return `${firstFive}...${lastThree}`
+  }
+
+  const onConnectBtnClick = async () => {
+    if (walletConnectText === "Connect" && typeof window.ethereum !== 'undefined') {
+      if (ethereum.selectedAddress === null) {
+        getAddr()
+      } else {
+        walletConnectText = shortenAddr(ethereum.selectedAddress)
+      }
+    }
+
   }
 </script>
 
@@ -79,7 +82,7 @@
       <Button on:click={() => (open = true)} variant="outlined" class="button-right">
         <Label>Mint</Label>
       </Button>
-      <Button on:click={() => clicked++} variant="outlined" class="button-right">
+      <Button on:click={onConnectBtnClick} variant="outlined" class="button-right">
         <Label>{walletConnectText}</Label>
       </Button>
     </Section>
