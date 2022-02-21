@@ -9,6 +9,9 @@
   let panel5Open = false;
   let panel6Open = false;
   let panel7Open = false;
+
+  export let mintPrice = "0.06 ETH";
+  export let preMintPrice = "0.04 ETH";
 </script>
 
 <Accordion class="demo-small-titles">
@@ -38,13 +41,13 @@
   >
     <Header>
       How much to mint a Goat?
-      <span slot="description">0.05 ETH</span>
+      <span slot="description">{mintPrice}</span>
       <IconButton slot="icon" toggle pressed={panel2Open}>
         <Icon class="material-icons" on>unfold_less</Icon>
         <Icon class="material-icons">unfold_more</Icon>
       </IconButton>
     </Header>
-    <Content>The public sale price to mint is 0.05 ETH. A special pre-sale price will be 0.04 ETH available only to whitelisted addresses.</Content>
+    <Content>The public sale price to mint is {mintPrice}. A special pre-sale price will be {preMintPrice} available only to whitelisted addresses.</Content>
   </Panel>
   <Panel
     square
@@ -78,7 +81,7 @@
         <Icon class="material-icons">unfold_more</Icon>
       </IconButton>
     </Header>
-    <Content>The pre-sale date is May 3rd 2022 and pre-sale availability will be determined by a whitelist with a special mint price of 0.04 ETH. The public sale will begin on May 4th 2022 and will be available for anyone to mint.</Content>
+    <Content>The pre-sale date is May 3rd 2022 and pre-sale availability will be determined by a whitelist with a special mint price of {preMintPrice}. The public sale will begin on May 4th 2022 and will be available for anyone to mint.</Content>
   </Panel>
   <Panel
     square

@@ -29,6 +29,9 @@
   let clicked = 0;
   let walletConnectText = "Connect";
   let open = false;
+  
+  const preMintPrice = "0.05 ETH";
+  const mintPrice = "0.06 ETH";
 
   onMount(() => {
     if (typeof window.ethereum !== 'undefined') {
@@ -144,7 +147,7 @@
   <LayoutGrid class="main-section">
     <Cell spanDevices={{ desktop: 8, tablet: 6, phone: 12 }}>
       <p>Owning a Goat gives you access to exclusive benefits in the entire ecosystem of Cipher Mountain.</p>
-      <p>Purchasing a Goat at mint costs 0.05 ETH. The pre-sale price is 0.03 ETH.</p>
+      <p>Purchasing a Goat at mint costs {mintPrice}. The pre-sale price is {preMintPrice}.</p>
       <p>Level based staking ensures that higher levels earn more rewards. $CMTN is the utility token and $DMTN is the DAO coin.</p>
       <p>The Goat minting contract is based on the ERC-721 standard on the Ethereum blockchain. All image assets are stored on IPFS.</p>
     </Cell>
@@ -220,13 +223,11 @@
     </div>
   </div>
 
-  <!--
   <LayoutGrid class="main-section">
     <Cell span={12}>
-      <p>roadmap</p>
+      <img src="/images/roadmap.svg" />
     </Cell>
   </LayoutGrid>
-  -->
 
   <div class="main-section">
     <div class="limited-width">
@@ -255,7 +256,7 @@
       <LayoutGrid>
         <Cell span={12}>
           <h1>Frequently Asked Questions</h1>
-          <FAQ />
+          <FAQ mintPrice={mintPrice} preMintPrice={preMintPrice} />
         </Cell>
       </LayoutGrid>
     </div>
