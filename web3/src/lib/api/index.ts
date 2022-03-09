@@ -5,6 +5,7 @@ import auth from './auth'
 
 const client: Client = createClient({
   url: 'https://api.ciphermtn.com/graphql',
+  //url: 'http://localhost:8080/graphql',
   exchanges: [
     dedupExchange,
     cacheExchange,

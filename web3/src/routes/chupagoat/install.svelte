@@ -15,7 +15,7 @@
     let id: Identity = null
 
     if (stuff.hasOwnProperty('identity')) {
-      id = identity
+      id = stuff.identity
     }
 
     if (!isServerSide && id == null) {
