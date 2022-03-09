@@ -1,13 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import TopAppBar, {
-    Row,
-    Section,
-    Title,
-    AutoAdjust,
-    TopAppBarComponentDev,
-  } from '@smui/top-app-bar';
-  import IconButton, { Icon } from '@smui/icon-button';
   import Button, { Label } from '@smui/button';
   import LayoutGrid, { Cell } from '@smui/layout-grid';
   import Card, {
@@ -18,79 +9,28 @@
     ActionIcons,
   } from '@smui/card';
   import Paper, { Title, Content } from '@smui/paper';
-  import { Svg } from '@smui/common/elements';
-  import { mdiDiscord, mdiTwitter } from '@mdi/js';
-  import Dialog, { Title, Content, Actions } from '@smui/dialog';
 
   import Hero from '$lib/hero-section';
   import FAQ from '$lib/sections';
 
-  let topAppBar: TopAppBarComponentDev;
-  let clicked = 0;
-  let walletConnectText = "Connect";
-  let open = false;
-  
   const preMintPrice = "0.05 ETH";
   const mintPrice = "0.06 ETH";
 
-  onMount(() => {})
-
-  const getAddr = async () => {
-    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-    const account = accounts[0];
-
-    walletConnectText = shortenAddr(account)
-  }
-
-  const shortenAddr: (addr: string) => string = (addr) => {
-    const firstFive = addr.slice(0, 5)
-    const lastThree = addr.slice(-3)
-
-    return `${firstFive}...${lastThree}`
-  }
-
-  const onConnectBtnClick = async () => {
-    if (walletConnectText === "Connect" && typeof window.ethereum !== 'undefined') {
-      if (ethereum.selectedAddress === null) {
-        getAddr()
-      } else {
-        walletConnectText = shortenAddr(ethereum.selectedAddress)
-      }
-    }
-
-  }
 </script>
 
-<TopAppBar bind:this={topAppBar} variant="short">
-  <Row>
-    <Section>
-      <!--<IconButton class="material-icons">menu</IconButton>-->
-      <Title>Cipher Mountain</Title>
-      <Button href="#staking" variant="outlined" class="button-left">
-        <Label>Stake</Label>
-      </Button>
-      <Button href="/whitepaper.pdf" target="_blank" variant="outlined" class="button-left">
-        <Label>Whitepaper</Label>
-      </Button>
-      <!--
-      <Button on:click={() => clicked++} variant="outlined" class="button-left">
-        <Label>Roadmap</Label>
-      </Button>
-      -->
-    </Section>
-    <Section align="end" toolbar>
-      <Button on:click={() => (open = true)} variant="outlined" class="button-right">
-        <Label>Mint</Label>
-      </Button>
-      <Button on:click={onConnectBtnClick} variant="outlined" class="button-right">
-        <Label>{walletConnectText}</Label>
-      </Button>
-    </Section>
-  </Row>
-</TopAppBar>
+<svelte:head>
+  <title>Cipher Mountain | NFT Minting May 4th</title>
+  <meta name="description" content="Cipher Mountain provides tools creative cryptocurrency projects to grow and connect with their communities." />
 
-<AutoAdjust {topAppBar}>
-  <Hero>
+  <meta property="og:title" content="Cipher Mountain | NFT Minting May 4th" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://www.ciphermtn.com/images/header_logo.png" />
+  <meta property="og:url" content="https://www.ciphermtn.com" />
+  <meta property="og:description" content="Cipher Mountain provides tools creative cryptocurrency projects to grow and connect with their communities." />
+
+</svelte:head>  
+
+  <Hero style="background-image: url('/images/base_logo.png'); background-size: cover; background-position: center;">
     <div class="hero-notice bottom">
       <h1 class="smui-button--color-secondary">Minting May 4th 2022</h1>
     </div>
@@ -264,42 +204,6 @@
       </LayoutGrid>
     </div>
   </div>
-
-  <LayoutGrid class="main-section">
-    <Cell span={12}>
-      <div style="text-align: center">
-        <IconButton mini href="https://discord.gg/6gfNxC9Hj5" target="_blank" ripple={false}>
-          <Icon component={Svg} viewBox="0 0 24 24">
-            <path fill="currentColor" d={mdiDiscord} />
-          </Icon>
-        </IconButton>
-        <IconButton mini href="https://twitter.com/CipherMountain" target="_blank" ripple={false}>
-          <Icon component={Svg} viewBox="0 0 24 24">
-            <path fill="currentColor" d={mdiTwitter} />
-          </Icon>
-        </IconButton>
-      </div>
-      <p style="text-align: center;font-size: 1.0rem;">
-        <small>(c) 2022 Cipher Mountain LLC</small>
-      </p>
-    </Cell>
-  </LayoutGrid>
-</AutoAdjust>
-
-<Dialog
-  bind:open
-  aria-labelledby="simple-title"
-  aria-describedby="simple-content"
->
-  <!-- Title cannot contain leading whitespace due to mdc-typography-baseline-top() -->
-  <Title id="simple-title">Minting Notice</Title>
-  <Content id="simple-content">Pre-sale mint begins on May 3rd 2022. Public sale begins May 4th 2022.</Content>
-  <Actions>
-    <Button on:click={() => (open = false)}>
-      <Label>Ok</Label>
-    </Button>
-  </Actions>
-</Dialog>
 
 <style>
   /* Hide everything above this component. */

@@ -4,7 +4,7 @@
 
 // Svelte Colors!
 @use '@material/theme/index' as theme with (
-  $primary: #672b7a,
+  $primary: #543885,
   $secondary: color.scale(#b58502, $whiteness: -10%),
   $surface: #cdcdcd,
   $background: #fff,
@@ -72,10 +72,6 @@ a:visited {
 
 .text-muted {
   color: #565674!important;
-}
-
-.mdc-top-app-bar {
-  background: #543885 !important;
 }
 
 p {

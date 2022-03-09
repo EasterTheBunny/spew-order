@@ -20,7 +20,12 @@ const config = {
       serviceWorker: 'src/service-worker',
       template: 'src/app.html',
     },
-	}
+    vite: {
+      optimizeDeps: {
+        exclude: ['@urql/svelte'],
+      },
+    },
+	},
 };
 
 export default config;

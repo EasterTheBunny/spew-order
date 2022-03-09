@@ -9,6 +9,7 @@
   })}
   style={Object.entries(internalStyles)
     .map(([name, value]) => `${name}: ${value};`)
+    .concat([style])
     .join(' ')}
 >
     <slot/>
@@ -21,6 +22,7 @@
 
   let className = '';
   export { className as class };
+  export let style = '';
   let element: HTMLElement;
 
   let height = 800;
@@ -36,14 +38,11 @@
 <style>
   :global(.hero) {
     position: relative;
-    display: block;
+    display: flex;
     width: 100%;
-    margin: -56px 0px;
     padding: 0;
     height: 100vh;
-    background-image: url('/images/base_logo.png');
-    background-size: cover;
-    background-position: center;
+    margin-top: -56px;
   }
 
 </style>

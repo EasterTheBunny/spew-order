@@ -65,6 +65,12 @@ img, svg {
 	transform: translateX(100%);
 }
 
+.drawer.drawer-on {
+	transform: none;
+	box-shadow: 0 0 30px rgb(0 0 0 / 10%);
+	transition: transform .3s ease-in-out;
+}
+
 .gap-2 {
 	gap: 0.5rem!important;
 }
@@ -83,6 +89,14 @@ img, svg {
 
 .mdc-top-app-bar--short-collapsed .button-left {
 	display: none;	
+}
+
+.nav-bar-extra-link {
+	display: none!important;
+}
+
+.mdc-top-app-bar--short-collapsed .nav-bar-extra-link {
+	display: none!important;
 }
 
 :root {
