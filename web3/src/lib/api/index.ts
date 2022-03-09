@@ -4,7 +4,7 @@ import type { Client, OperationResult } from '@urql/core';
 import auth from './auth'
 
 const client: Client = createClient({
-  url: 'http://localhost:8080/graphql',
+  url: 'https://api.ciphermtn.com/graphql',
   exchanges: [
     dedupExchange,
     cacheExchange,
