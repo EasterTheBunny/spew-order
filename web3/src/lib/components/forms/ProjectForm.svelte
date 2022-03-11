@@ -46,6 +46,7 @@
         // sign the request and get a token
         await loginWithEthereum()
       }
+      console.log(project)
 
       const projectInput: NewProjectInput = {
         name: project.name,

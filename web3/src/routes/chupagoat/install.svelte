@@ -56,6 +56,7 @@
     slug: "",
     name: "",
     motto: "",
+    prettyPath: "",
     description: "",
     permissions: [],
   }
@@ -88,6 +89,7 @@
       slug: "",
       name: "",
       motto: "",
+      prettyPath: "",
       description: "",
       permissions: [],
     }
@@ -178,6 +180,7 @@
       slug: "",
       name: "",
       motto: "",
+      prettyPath: "",
       description: "",
       permissions: [],
     }
