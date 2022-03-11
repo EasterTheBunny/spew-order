@@ -14,7 +14,7 @@
   import { auth } from '$lib/state';
   import state from './state'
   import {
-    clearLoginData,
+    updateTokenInAuth,
     shortenAddress,
   } from './util'
 
@@ -78,7 +78,7 @@
       <Separator />
       {/if}
       {#if loggedIn}
-      <Item on:SMUI:action={clearLoginData}>
+      <Item on:SMUI:action={() => {updateTokenInAuth('')}}>
         <Text>Sign Out</Text>
       </Item>
       {:else}

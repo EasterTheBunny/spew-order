@@ -8,6 +8,7 @@ state.auth.subscribe(authState => auth = authState);
 
 if (ethereumActive) {
   ethereum.on('accountsChanged', function (accounts) {
+    console.log("account changed")
     if (!accounts || accounts.length == 0) {
       clearLoginData()
     } else {
@@ -17,11 +18,19 @@ if (ethereumActive) {
 }
 
 export const shortenAddress: (addr: string) => string = (addr) => {
+  if (!addr) {
+    return ""
+  }
+
+  if (addr.length < 10) {
+    return addr
+  }
   return `${addr.slice(0, 5)}...${addr.slice(-3)}`
 }
 
 export const updateAddressInAuth = (address) => {
   state.auth.update((oldAuth) => {
+    console.log(`updating address: old '${oldAuth.address}' --> new '${address}`)
     return {
       ...oldAuth,
       token: address == oldAuth.address ? oldAuth.token : '',
@@ -33,6 +42,7 @@ export const updateAddressInAuth = (address) => {
 
 export const updateTokenInAuth = (token) => {
   state.auth.update((oldAuth) => {
+    console.log(`updating token: old '${oldAuth.token}' --> new '${token}`)
     return {
       ...oldAuth,
       token,
@@ -43,9 +53,10 @@ export const updateTokenInAuth = (token) => {
 
 export const clearLoginData = () => {
   state.auth.update((oldAuth) => {
+    console.log("clearing login data")
     return {
       ...oldAuth,
-      address: '', // added because: when a user disconnects their wallet, the site said it was still connected
+      address: '', // added because: when a user disconnects their wallet, the site said it was still connected; however, when a user logs out, they are only discarding their token
       token: '',
       loggedIn: false,
     }
@@ -68,14 +79,59 @@ export const loginWithEthereum = async () => {
   }
 }
 
-export const checkConnectionStatus = async () => {
+const detectProvider: () => boolean = () => {
   if (ethereumActive) {
-    if (ethereum.selectedAddress !== null) {
+    if (typeof ethereum.selectedAddress === "undefined") {
+      return false
+    }
+
+    return true
+  }
+
+  return false
+}
+
+export const checkConnectionStatus: () => Promise<string | null> = async () => {
+  const simpleRetry = [100, 500, 1000, 2000, 4000]
+  let retryPosition = 0
+
+  return new Promise((resolve, reject) => {
+    const retryFunc = () => {
+      if (retryPosition >= simpleRetry.length) {
+        console.log("retry length exceeded")
+        clearLoginData()
+        reject(new Error("ethereum provider and address not detected"))
+        return
+      }
+
+      setTimeout(() => {
+        if (!detectProvider()) {
+          console.log("retrying again")
+          retryFunc()
+        } else {
+          console.log(`resolved address to ${ethereum.selectedAddress}`)
+          updateAddressInAuth(!ethereum.selectedAddress ? "" : ethereum.selectedAddress)
+          resolve(ethereum.selectedAddress)
+        }
+      }, simpleRetry[retryPosition])
+
+      retryPosition++
+    }
+
+    retryFunc()
+  })
+
+  /*
+  if (ethereumActive) {
+    if (ethereum.selectedAddress !== null && typeof ethereum.selectedAddress !== "undefined") {
+      console.log(`updating address to ${ethereum.selectedAddress}`)
       updateAddressInAuth(ethereum.selectedAddress)
     } else {
-      clearLoginData()
+      console.log("clear login data")
+      //clearLoginData()
     }
   }
+  */
 }
 
 export const promptForAddress = async () => {

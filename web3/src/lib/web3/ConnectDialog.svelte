@@ -36,9 +36,9 @@
     }
   }
 
-  onMount(() => {
+  onMount(async () => {
     close()
-    checkConnectionStatus()
+    await checkConnectionStatus()
     return dialogOpen.subscribe((newState) => {
 
       if (open == newState) {

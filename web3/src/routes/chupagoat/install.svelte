@@ -63,7 +63,7 @@
   let selectedGuild: DiscordGuild = !!identity && !!identity.discordUser ? (typeof guildFromQuery !== "undefined" ? guildFromQuery : null) : null
   let createProject = false
 
-  const { loginWithEthereum } = util
+  const { promptForAddress, loginWithEthereum } = util
 
   const projectFilter: (p: Project) => boolean = (p) => {
     if (p.discord == null) {
@@ -77,8 +77,9 @@
     return true
   }
 
+  $: connected = $auth.address != ''
   $: loggedIn = $auth.loggedIn
-  $: projects = !!identity ? identity.projects.filter(p => p.discord == null) : []
+  $: projects = !!identity ? identity.projects : []
   $: guilds = !!identity && !!identity.discordUser ? identity.discordUser?.guilds : []
 
   const showFormBtn = () => {
@@ -93,17 +94,74 @@
   }
 
   const run = async () => {
+    if (!connected) {
+      if (code == "" || state == "") {
+        return
+      }
+
+      try {
+        await promptForAddress()
+      } catch(e) {
+        // TODO: handle errors
+        console.log(e)
+        return
+      }
+    }
+
     if (!loggedIn) {
       if (code == "" || state == "") {
         return
       }
+
       // prompt login
-      await loginWithEthereum()
+      try {
+        await loginWithEthereum()
+      } catch(e) {
+        // TODO: handle errors
+        console.log(e)
+        return
+      }
     }
 
     if (loggedIn) {
-      if ($session.oauth.retryOauthClient && !identity.discordUser?.oauthToken) {
-        identity.discordUser = await registerDiscordOauth(state, code)
+      if (!identity) {
+        try {
+          const id = await getIdentity()
+          identity = {
+            ...id,
+          }
+
+          // select the guild again
+          selectedGuild = !!identity.discordUser ? (typeof guildFromQuery !== "undefined" ? guildFromQuery : null) : null
+        } catch(e) {
+          // TODO: handle errors
+          console.log(e)
+          return
+        }
+      }
+
+      if ($session.oauth.retryOauthClient) {
+        // if the code has already been used, the oauth request will fail
+        // fall back to the old oauth if possible
+        try {
+          const newAuth = await registerDiscordOauth(state, code)
+          identity.discordUser = newAuth
+          identity = {
+            ...identity
+          }
+        } catch(e) {
+          console.log(identity)
+          if (!identity.discordUser) {
+            return
+          }
+
+          if (!identity.discordUser.oauthToken) {
+            return
+          }
+
+          // TODO: handle errors
+          console.log(e)
+        }
       }
 
       const perms = parseInt(permissions, 10)
@@ -138,33 +196,37 @@
     <BotButton color="secondary" variant="outlined" />
     {/if}
 
-    <Select
-      variant="outlined"
-      bind:value={selectedGuild}
-      on:select={run}
-      label="Discord Server"
-      style="width: 100%;"
-    >
-      <Option value={null} />
-      {#each guilds as g}
-        <Option value={g}>{g.name}</Option>
-      {/each}
-    </Select>
+    <div>
+      <Select
+        variant="outlined"
+        bind:value={selectedGuild}
+        on:select={run}
+        label="Discord Server"
+        style="width: 100%;"
+      >
+        <Option value={null}>Select a discord</Option>
+        {#each guilds as g}
+          <Option value={g}>{g.name}</Option>
+        {/each}
+      </Select>
+    </div>
 
     {#if !createProject}
     {#if projects.length > 0}
-    <Select
-      variant="outlined"
-      bind:value={project}
-      on:select={run}
-      label="Project"
-      style="width: 100%;margin-top: 20px;"
-    >
-      <Option value={null} />
-      {#each projects as p}
-        <Option value={p}>{p.name}</Option>
-      {/each}
-    </Select>
+    <div style="margin-top: 20px;">
+      <Select
+        variant="outlined"
+        bind:value={project}
+        on:select={run}
+        label="Project"
+        style="width: 100%;"
+      >
+        <Option value={null} />
+        {#each projects as p}
+          <Option value={p}>{p.name}</Option>
+        {/each}
+      </Select>
+    </div>
     {/if}
 
     <div style="margin-top: 20px;">
