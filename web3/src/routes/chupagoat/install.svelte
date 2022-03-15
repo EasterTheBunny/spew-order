@@ -187,7 +187,7 @@
   }
 
   onMount(() => {
-    run()
+    setTimeout(run, 1000);
   })
 
 </script>
