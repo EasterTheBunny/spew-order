@@ -53,8 +53,11 @@
   const routes = [
     { url: `/p/${slug}`, text: 'About', restricted: false, active: $page.path == `/p/${slug}` },
     { url: `/p/${slug}/chupagoat`, text: 'Chupagoat', restricted: true, active: $page.path == `/p/${slug}/chupagoat` },
-    { url: `/p/${slug}/update`, text: 'Update Project', restricted: true, active: $page.path == `/p/${slug}/update` },
   ];
+
+  if (project.permissions.includes('project.info.update')) {
+    routes.push({ url: `/p/${slug}/update`, text: 'Update Project', restricted: true, active: $page.path == `/p/${slug}/update` })
+  }
 
   setContext('SMUI:list:item:nav', true)
 </script>

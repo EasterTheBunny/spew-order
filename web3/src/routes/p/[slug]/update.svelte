@@ -10,6 +10,10 @@
       return { status: 302, redirect: `/p/${project.prettyPath}` }
     }
 
+    if (!project.permissions.includes('project.info.update')) {
+      return { status: 302, redirect: `/p/${project.prettyPath}`}
+    }
+
     return { props: { project }, maxage: 0 }
   }
 </script>
