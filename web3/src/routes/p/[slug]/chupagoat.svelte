@@ -17,22 +17,36 @@
   import Button, { Label } from '@smui/button';
   import LayoutGrid, { Cell } from '@smui/layout-grid';
   import Paper, { Title, Content } from '@smui/paper';
+  import dayjs from 'dayjs'
   import BotButton from '$lib/components/discord';
   import { TwitterBotForm } from '$lib/components/forms';
+  import LineChart from '$lib/charts/line';
+  import { getMetrics } from '$lib/api';
 
   export let project: Project
+  export let chartData: ChartItem[] = [];
 
   $: inGuild = !!project.discord
   $: inTwitter = !!project.twitter && project.twitter.connected
 
   let open = false
 
+  getMetrics({ projectSlugs: [project.slug], metricTypes: ['HASHTAG'], startTime: '2022-03-13T14:00:00+00:00', blockSize: '5m' }).then((data) => {
+    chartData = data.map((d) => {
+      return {
+        time: dayjs(d.startTime).toDate(),
+        value: d.tweetCount,
+      }
+    })
+    console.log(data)
+  })
+
 </script>
 
 
 <LayoutGrid>
-  <Cell spanDevices={{ desktop: 6, tablet: 6, phone: 12 }}>
-
+    {#if !inGuild}
+  <Cell spanDevices={{ desktop: 12, tablet: 12, phone: 12 }}>
     <Paper color="primary" elevation={12}>
       <Title>Discord</Title>
       <Content>
@@ -46,8 +60,10 @@
       </Content>
     </Paper>
   </Cell>
+    {/if}
 
-  <Cell spanDevices={{ desktop: 6, tablet: 6, phone: 12 }}>
+    {#if !inTwitter}
+  <Cell spanDevices={{ desktop: 12, tablet: 12, phone: 12 }}>
     <Paper color="secondary" elevation={12}>
       <Title>Twitter</Title>
       <Content>
@@ -63,6 +79,15 @@
       </Content>
     </Paper>
 
+  </Cell>
+  {/if}
+
+  <Cell spanDevices={{ desktop: 12, tablet: 12, phone: 12 }} style="display:none;">
+    <Paper elevation={0}>
+      <Content>
+        <LineChart bind:chartData />
+      </Content>
+    </Paper>
   </Cell>
 </LayoutGrid>
 

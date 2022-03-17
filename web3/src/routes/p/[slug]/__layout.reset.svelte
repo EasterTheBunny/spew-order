@@ -7,8 +7,8 @@
   let loggedIn = false;
   auth.subscribe(authState => loggedIn = authState.loggedIn);
 
-  export const load: Load = async ({ page, stuff, props }) => {
-    const { slug } = page.params
+  export const load: Load = async ({ params }) => {
+    const { slug } = params
     
     let identity: Identity = null
     let project: Project = null
@@ -51,12 +51,12 @@
   export let slug: string
 
   const routes = [
-    { url: `/p/${slug}`, text: 'About', restricted: false, active: $page.path == `/p/${slug}` },
-    { url: `/p/${slug}/chupagoat`, text: 'Chupagoat', restricted: true, active: $page.path == `/p/${slug}/chupagoat` },
+    { url: `/p/${slug}`, text: 'About', restricted: false, active: $page.url.pathname == `/p/${slug}` },
+    { url: `/p/${slug}/chupagoat`, text: 'Chupagoat', restricted: true, active: $page.url.pathname == `/p/${slug}/chupagoat` },
   ];
 
   if (project.permissions.includes('project.info.update')) {
-    routes.push({ url: `/p/${slug}/update`, text: 'Update Project', restricted: true, active: $page.path == `/p/${slug}/update` })
+    routes.push({ url: `/p/${slug}/update`, text: 'Update Project', restricted: true, active: $page.url.pathname == `/p/${slug}/update` })
   }
 
   setContext('SMUI:list:item:nav', true)
